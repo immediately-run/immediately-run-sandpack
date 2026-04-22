@@ -16,7 +16,7 @@ export const FADE_ANIMATION_DURATION = 200;
  */
 export const useLoadingOverlayState = (
   clientId?: string,
-  externalLoading?: boolean
+  externalLoading?: boolean,
 ): LoadingOverlayState => {
   const { sandpack, listen } = useSandpack();
   const [state, setState] = React.useState<LoadingOverlayState>("LOADING");
@@ -47,14 +47,14 @@ export const useLoadingOverlayState = (
    * Fading transient state
    */
   React.useEffect(() => {
-    let fadeTimeout: NodeJS.Timer;
+    let fadeTimeout: ReturnType<typeof setTimeout>;
 
     if (state === "PRE_FADING" && !externalLoading) {
       setState("FADING");
     } else if (state === "FADING") {
       fadeTimeout = setTimeout(
         () => setState("HIDDEN"),
-        FADE_ANIMATION_DURATION
+        FADE_ANIMATION_DURATION,
       );
     }
 

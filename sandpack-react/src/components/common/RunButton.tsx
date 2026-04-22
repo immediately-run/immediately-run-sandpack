@@ -15,7 +15,7 @@ const runButtonClassName = css({
 
 export const RunButton: React.FC<
   React.PropsWithChildren & React.ButtonHTMLAttributes<unknown>
-> = ({ className, onClick, ...props }) => {
+> = ({ className: _className, onClick, ...props }) => {
   const { sandpack } = useSandpack();
 
   return (

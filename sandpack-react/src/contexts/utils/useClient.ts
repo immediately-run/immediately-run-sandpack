@@ -48,15 +48,15 @@ export interface UseClientOperations {
   registerBundler: (
     iframe: HTMLIFrameElement,
     clientId: string,
-    clientPropsOverride?: ClientPropsOverride
+    clientPropsOverride?: ClientPropsOverride,
   ) => Promise<void>;
   registerReactDevTools: (value: ReactDevToolsMode) => void;
   addListener: (
     listener: ListenerFunction,
-    clientId?: string
+    clientId?: string,
   ) => UnsubscribeFunction;
   dispatchMessage: (message: SandpackMessage, clientId?: string) => void;
-  lazyAnchorRef: React.RefObject<HTMLDivElement>;
+  lazyAnchorRef: React.RefObject<HTMLDivElement | null>;
   unsubscribeClientListenersRef: React.MutableRefObject<
     Record<string, Record<string, UnsubscribeFunction>>
   >;
@@ -67,12 +67,12 @@ export interface UseClientOperations {
 
 type UseClient = (
   props: SandpackProviderProps,
-  filesState: FilesState
+  filesState: FilesState,
 ) => [SandpackConfigState, UseClientOperations];
 
 export const useClient: UseClient = (
   { options, customSetup, teamId, sandboxId },
-  filesState
+  filesState,
 ) => {
   options ??= {};
   customSetup ??= {};
@@ -85,18 +85,18 @@ export const useClient: UseClient = (
     error: null,
     initMode: initModeFromProps,
     reactDevTools: undefined,
-    status: options?.autorun ?? true ? "initial" : "idle",
+    status: (options?.autorun ?? true) ? "initial" : "idle",
   });
 
   /**
    * Refs
    */
   type InterserctionObserverCallback = (
-    entries: IntersectionObserverEntry[]
+    entries: IntersectionObserverEntry[],
   ) => void;
   const intersectionObserverCallback = useRef<
     InterserctionObserverCallback | undefined
-  >();
+  >(undefined);
   const intersectionObserver = useRef<IntersectionObserver | null>(null);
   const lazyAnchorRef = useRef<HTMLDivElement>(null);
   const registeredIframes = useRef<
@@ -106,15 +106,15 @@ export const useClient: UseClient = (
     >
   >({});
   const clients = useRef<Record<string, SandpackClientType>>({});
-  const timeoutHook = useRef<NodeJS.Timer | null>(null);
+  const timeoutHook = useRef<ReturnType<typeof setTimeout> | null>(null);
   const unsubscribeClientListeners = useRef<
     Record<string, Record<string, UnsubscribeFunction>>
   >({});
-  const unsubscribe = useRef<() => void | undefined>();
+  const unsubscribe = useRef<(() => void) | undefined>(undefined);
   const queuedListeners = useRef<
     Record<string, Record<string, ListenerFunction>>
   >({ global: {} });
-  const debounceHook = useRef<number | undefined>();
+  const debounceHook = useRef<number | undefined>(undefined);
   const prevEnvironment = useRef(filesState.environment);
 
   const asyncSandpackId = useAsyncSandpackId(filesState.files);
@@ -126,7 +126,7 @@ export const useClient: UseClient = (
     async (
       iframe: HTMLIFrameElement,
       clientId: string,
-      clientPropsOverride?: ClientPropsOverride
+      clientPropsOverride?: ClientPropsOverride,
     ): Promise<void> => {
       // Clean up any existing clients that
       // have been created with the given id
@@ -196,7 +196,7 @@ export const useClient: UseClient = (
             !!options?.experimental_enableServiceWorker,
           experimental_stableServiceWorkerId: await getStableServiceWorkerId(),
           sandboxId,
-        }
+        },
       );
 
       if (typeof unsubscribe.current !== "function") {
@@ -238,7 +238,7 @@ export const useClient: UseClient = (
 
       clients.current[clientId] = client;
     },
-    [filesState.environment, filesState.files, state.reactDevTools]
+    [filesState.environment, filesState.files, state.reactDevTools],
   );
 
   const unregisterAllClients = useCallback((): void => {
@@ -255,15 +255,15 @@ export const useClient: UseClient = (
       Object.entries(registeredIframes.current).map(
         async ([clientId, { iframe, clientPropsOverride = {} }]) => {
           await createClient(iframe, clientId, clientPropsOverride);
-        }
-      )
+        },
+      ),
     );
 
     setState((prev) => ({ ...prev, error: null, status: "running" }));
   }, [createClient]);
 
   intersectionObserverCallback.current = (
-    entries: IntersectionObserverEntry[]
+    entries: IntersectionObserverEntry[],
   ): void => {
     if (entries.some((entry) => entry.isIntersecting)) {
       runSandpack();
@@ -325,7 +325,7 @@ export const useClient: UseClient = (
     async (
       iframe: HTMLIFrameElement,
       clientId: string,
-      clientPropsOverride?: ClientPropsOverride
+      clientPropsOverride?: ClientPropsOverride,
     ): Promise<void> => {
       // Store the iframe info so it can be
       // used later to manually run sandpack
@@ -338,7 +338,7 @@ export const useClient: UseClient = (
         await createClient(iframe, clientId, clientPropsOverride);
       }
     },
-    [createClient, state.status]
+    [createClient, state.status],
   );
 
   const unregisterBundler = (clientId: string): void => {
@@ -357,7 +357,7 @@ export const useClient: UseClient = (
     }
 
     const unsubscribeQueuedClients = Object.values(
-      unsubscribeClientListeners.current[clientId] ?? {}
+      unsubscribeClientListeners.current[clientId] ?? {},
     );
 
     // Unsubscribing all listener registered
@@ -413,11 +413,11 @@ export const useClient: UseClient = (
 
   const dispatchMessage = (
     message: SandpackMessage,
-    clientId?: string
+    clientId?: string,
   ): void => {
     if (state.status !== "running") {
       console.warn(
-        `[sandpack-react]: dispatch cannot be called while in idle mode`
+        `[sandpack-react]: dispatch cannot be called while in idle mode`,
       );
       return;
     }
@@ -433,7 +433,7 @@ export const useClient: UseClient = (
 
   const addListener = (
     listener: ListenerFunction,
-    clientId?: string
+    clientId?: string,
   ): UnsubscribeFunction => {
     if (clientId) {
       if (clients.current[clientId]) {
@@ -481,13 +481,13 @@ export const useClient: UseClient = (
       // Add to the current clients
       const clientsList = Object.values(clients.current);
       const currentClientUnsubscribeListeners = clientsList.map((client) =>
-        client.listen(listener)
+        client.listen(listener),
       );
 
       const unsubscribeListener = (): void => {
         // Unsubscribing from the clients already created
         currentClientUnsubscribeListeners.forEach((unsubscribe) =>
-          unsubscribe()
+          unsubscribe(),
         );
 
         delete queuedListeners.current.global[listenerId];
@@ -569,7 +569,7 @@ export const useClient: UseClient = (
       recompileMode,
       registerBundler,
       state.status,
-    ]
+    ],
   );
 
   useEffect(
@@ -580,7 +580,7 @@ export const useClient: UseClient = (
         initializeSandpackIframe();
       }
     },
-    [initModeFromProps, initializeSandpackIframe, state.initMode]
+    [initModeFromProps, initializeSandpackIframe, state.initMode],
   );
 
   useEffect(() => {

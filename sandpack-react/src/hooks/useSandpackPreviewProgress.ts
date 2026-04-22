@@ -5,7 +5,7 @@ import { useSandpack } from "./useSandpack";
 
 const mapProgressMessage = (
   originalMessage: WorkerStatusUpdate & { command?: string },
-  firstTotalPending: number
+  firstTotalPending: number,
 ): string | null => {
   switch (originalMessage.state) {
     case "downloading_manifest":
@@ -30,12 +30,12 @@ export const useSandpackPreviewProgress = (
         timeout?: number;
         clientId?: string;
       }
-    | undefined
+    | undefined,
 ) => {
   const [isReady, setIsReady] = React.useState(false);
   const [totalDependencies, setTotalDependencies] = React.useState<number>();
   const [loadingMessage, setLoadingMessage] = React.useState<null | string>(
-    null
+    null,
   );
 
   const timeout = props?.timeout;
@@ -44,7 +44,7 @@ export const useSandpackPreviewProgress = (
   const { listen } = useSandpack();
 
   React.useEffect(() => {
-    let timer: NodeJS.Timer;
+    let timer: ReturnType<typeof setTimeout>;
     const unsubscribe = listen((message) => {
       if (message.type === "start" && message.firstLoad) {
         setIsReady(false);
@@ -78,7 +78,7 @@ export const useSandpackPreviewProgress = (
 
         if (totalDependencies !== undefined) {
           setLoadingMessage(
-            mapProgressMessage(message.data, totalDependencies)
+            mapProgressMessage(message.data, totalDependencies),
           );
         }
       }

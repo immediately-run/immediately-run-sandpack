@@ -24,7 +24,7 @@ export const SandpackReactDevTools = ({
   const { themeMode } = useSandpackTheme();
   const classNames = useClassNames();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const reactDevtools = React.useRef<any>();
+  const reactDevtools = React.useRef<any>(undefined);
 
   const [ReactDevTools, setDevTools] = React.useState<React.FunctionComponent<{
     browserTheme: DevToolsTheme;

@@ -117,17 +117,17 @@ export const CodeMirror = React.forwardRef<CodeMirrorRef, CodeMirrorProps>(
       extensionsKeymap = [],
       additionalLanguages = [],
     },
-    ref
+    ref,
   ) => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const wrapper = React.useRef<any | HTMLElement>(null);
     const combinedRef = useCombinedRefs(wrapper, ref);
 
-    const cmView = React.useRef<EditorView>();
+    const cmView = React.useRef<EditorView | undefined>(undefined);
     const { theme, themeId } = useSandpackTheme();
     const [internalCode, setInternalCode] = React.useState<string>(code);
     const [shouldInitEditor, setShouldInitEditor] = React.useState(
-      initMode === "immediate"
+      initMode === "immediate",
     );
 
     const classNames = useClassNames();
@@ -159,11 +159,11 @@ export const CodeMirror = React.forwardRef<CodeMirrorRef, CodeMirrorProps>(
     const languageExtension = getLanguageFromFile(
       filePath,
       fileType,
-      additionalLanguages
+      additionalLanguages,
     );
     const langSupport = getCodeMirrorLanguage(
       languageExtension,
-      additionalLanguages
+      additionalLanguages,
     );
     const highlightTheme = getSyntaxHighlight(theme);
 
@@ -180,7 +180,7 @@ export const CodeMirror = React.forwardRef<CodeMirrorRef, CodeMirrorProps>(
         decorators
           ? decorators.sort((d1, d2) => d1.line - d2.line)
           : decorators,
-      [decorators]
+      [decorators],
     );
 
     const useStaticReadOnly =
@@ -193,7 +193,7 @@ export const CodeMirror = React.forwardRef<CodeMirrorRef, CodeMirrorProps>(
 
       const parentDiv = wrapper.current;
       const existingPlaceholder = parentDiv.querySelector(
-        ".sp-pre-placeholder"
+        ".sp-pre-placeholder",
       );
       if (existingPlaceholder) {
         parentDiv.removeChild(existingPlaceholder);
@@ -209,7 +209,7 @@ export const CodeMirror = React.forwardRef<CodeMirrorRef, CodeMirrorProps>(
       view.contentDOM.setAttribute("data-lt-active", "false");
       view.contentDOM.setAttribute(
         "aria-label",
-        filePath ? `Code Editor for ${getFileName(filePath)}` : `Code Editor`
+        filePath ? `Code Editor for ${getFileName(filePath)}` : `Code Editor`,
       );
       view.contentDOM.setAttribute("tabIndex", "-1");
 
@@ -234,7 +234,7 @@ export const CodeMirror = React.forwardRef<CodeMirrorRef, CodeMirrorProps>(
               indentMore(view);
 
               const customKey = extensionsKeymap.find(
-                ({ key }) => key === "Tab"
+                ({ key }) => key === "Tab",
               );
 
               return customKey?.run?.(view) ?? true;
@@ -246,7 +246,7 @@ export const CodeMirror = React.forwardRef<CodeMirrorRef, CodeMirrorProps>(
               indentLess({ state: view.state, dispatch: view.dispatch });
 
               const customKey = extensionsKeymap.find(
-                ({ key }) => key === "Shift-Tab"
+                ({ key }) => key === "Shift-Tab",
               );
 
               return customKey?.run?.(view) ?? true;
@@ -355,7 +355,7 @@ export const CodeMirror = React.forwardRef<CodeMirrorRef, CodeMirrorProps>(
 
           view.dispatch({
             effects: StateEffect.appendConfig.of(
-              keymap.of([...extensionsKeymap] as unknown as KeyBinding[])
+              keymap.of([...extensionsKeymap] as unknown as KeyBinding[]),
             ),
           });
 
@@ -363,7 +363,7 @@ export const CodeMirror = React.forwardRef<CodeMirrorRef, CodeMirrorProps>(
           prevExtensionKeymap.current = extensionsKeymap;
         }
       },
-      [extensions, extensionsKeymap]
+      [extensions, extensionsKeymap],
     );
 
     React.useEffect(() => {
@@ -385,7 +385,7 @@ export const CodeMirror = React.forwardRef<CodeMirrorRef, CodeMirrorProps>(
         const view = cmView.current;
 
         const selection = view.state.selection.ranges.some(
-          ({ to, from }) => to > code.length || from > code.length
+          ({ to, from }) => to > code.length || from > code.length,
         )
           ? EditorSelection.cursor(code.length)
           : view.state.selection;
@@ -424,7 +424,7 @@ export const CodeMirror = React.forwardRef<CodeMirrorRef, CodeMirrorProps>(
 
         return (): void => unsubscribe();
       },
-      [listen, showInlineErrors]
+      [listen, showInlineErrors],
     );
 
     const handleContainerKeyDown = (evt: React.KeyboardEvent): void => {
@@ -512,5 +512,7 @@ export const CodeMirror = React.forwardRef<CodeMirrorRef, CodeMirrorProps>(
         </pre>
       </div>
     );
-  }
+  },
 );
+
+CodeMirror.displayName = "CodeMirror";

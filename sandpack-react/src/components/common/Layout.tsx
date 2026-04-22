@@ -73,3 +73,5 @@ export const SandpackLayout = React.forwardRef<
     </div>
   );
 });
+
+SandpackLayout.displayName = "SandpackLayout";

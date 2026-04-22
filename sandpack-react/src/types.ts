@@ -406,24 +406,24 @@ export type SandpackThemeProp =
  */
 
 export type TemplateFiles<Name extends SandpackPredefinedTemplate> =
-  keyof typeof SANDBOX_TEMPLATES[Name]["files"];
+  keyof (typeof SANDBOX_TEMPLATES)[Name]["files"];
 
 export interface SandpackInternal {
   <
     Files extends SandpackFiles | any,
-    TemplateName extends SandpackPredefinedTemplate = "vanilla"
+    TemplateName extends SandpackPredefinedTemplate = "vanilla",
   >(
     props: SandpackInternalProps<Files, TemplateName> & {
       files?: Files;
       template?: TemplateName;
-    }
+    },
   ): JSX.Element;
 }
 
 export interface SandpackInternalProvider {
   <
     Files extends SandpackFiles,
-    TemplateName extends SandpackPredefinedTemplate
+    TemplateName extends SandpackPredefinedTemplate,
   >(
     /**
      * Infer files & template values
@@ -433,7 +433,7 @@ export interface SandpackInternalProvider {
         files?: Files;
         template?: TemplateName;
       }
-    >
+    >,
   ): React.ReactElement<
     SandpackProviderProps,
     React.Provider<SandpackProviderState>
@@ -442,7 +442,7 @@ export interface SandpackInternalProvider {
 
 interface SandpackRootProps<
   Files extends SandpackFiles | any,
-  TemplateName extends SandpackPredefinedTemplate
+  TemplateName extends SandpackPredefinedTemplate,
 > {
   files?: Files;
   template?: TemplateName;
@@ -454,7 +454,7 @@ interface SandpackRootProps<
 
 export interface SandpackInternalOptions<
   Files extends SandpackFiles | any = any,
-  TemplateName extends SandpackPredefinedTemplate = SandpackPredefinedTemplate
+  TemplateName extends SandpackPredefinedTemplate = SandpackPredefinedTemplate,
 > {
   visibleFiles?: Array<
     Files extends SandpackFiles
@@ -486,7 +486,7 @@ export interface SandpackInternalOptions<
 
 interface SandpackInternalProps<
   Files extends SandpackFiles | any,
-  TemplateName extends SandpackPredefinedTemplate
+  TemplateName extends SandpackPredefinedTemplate,
 > extends SandpackRootProps<Files, TemplateName> {
   options?: SandpackInternalOptions<Files, TemplateName> & {
     editorWidthPercentage?: number;
@@ -526,8 +526,10 @@ interface SandpackInternalProps<
 
 export interface SandpackProviderProps<
   Files extends SandpackFiles = SandpackFiles,
-  TemplateName extends SandpackPredefinedTemplate = SandpackPredefinedTemplate
-> extends SandpackRootProps<Files, TemplateName>,
+  TemplateName extends SandpackPredefinedTemplate = SandpackPredefinedTemplate,
+>
+  extends
+    SandpackRootProps<Files, TemplateName>,
     React.HTMLAttributes<HTMLDivElement> {
   options?: SandpackInternalOptions<Files, TemplateName>;
   children?: React.ReactNode;
@@ -535,12 +537,12 @@ export interface SandpackProviderProps<
 
 export type SandpackClientDispatch = (
   msg: SandpackMessage,
-  clientId?: string
+  clientId?: string,
 ) => void;
 
 export type SandpackClientListen = (
   listener: ListenerFunction,
-  clientId?: string
+  clientId?: string,
 ) => UnsubscribeFunction;
 
 export type SandpackContext = SandpackState & {
@@ -593,18 +595,18 @@ export interface SandpackState {
   registerBundler: (
     iframe: HTMLIFrameElement,
     clientId: string,
-    clientPropsOverride?: ClientPropsOverride
+    clientPropsOverride?: ClientPropsOverride,
   ) => Promise<void>;
   unregisterBundler: (clientId: string) => void;
   updateFile: (
     pathOrFiles: string | SandpackFiles,
     code?: string,
-    shouldUpdatePreview?: boolean
+    shouldUpdatePreview?: boolean,
   ) => void;
   addFile: (
     pathOrFiles: string | SandpackFiles,
     code?: string,
-    shouldUpdatePreview?: boolean
+    shouldUpdatePreview?: boolean,
   ) => void;
   updateCurrentFile: (newCode: string, shouldUpdatePreview?: boolean) => void;
   openFile: (path: string) => void;
@@ -619,7 +621,7 @@ export interface SandpackState {
    * Different components inside the SandpackProvider might register certain elements of interest for sandpack
    * eg: lazy anchor - if no component registers this, then the sandpack runs on mount, without lazy mode
    */
-  lazyAnchorRef: React.RefObject<HTMLDivElement>;
+  lazyAnchorRef: React.RefObject<HTMLDivElement | null>;
 
   unsubscribeClientListenersRef: React.MutableRefObject<
     Record<string, Record<string, UnsubscribeFunction>>

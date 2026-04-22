@@ -9,7 +9,7 @@ const MAX_MESSAGE_COUNT = 400 * 2;
 export const useSandpackShellStdout = ({
   clientId,
   maxMessageCount = MAX_MESSAGE_COUNT,
-  resetOnPreviewRestart = false,
+  resetOnPreviewRestart: _resetOnPreviewRestart = false,
 }: {
   clientId?: string;
   maxMessageCount?: number;
@@ -19,7 +19,7 @@ export const useSandpackShellStdout = ({
   reset: () => void;
 } => {
   const [logs, setLogs] = React.useState<Array<{ id: string; data: string }>>(
-    []
+    [],
   );
   const { listen } = useSandpack();
 

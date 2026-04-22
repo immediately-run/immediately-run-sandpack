@@ -79,7 +79,7 @@ export const SandpackCodeEditor = forwardRef<CodeMirrorRef, CodeEditorProps>(
       className,
       ...props
     },
-    ref
+    ref,
   ) => {
     const { sandpack } = useSandpack();
     const { code, updateCode, readOnly: readOnlyFile } = useActiveCode();
@@ -90,7 +90,7 @@ export const SandpackCodeEditor = forwardRef<CodeMirrorRef, CodeEditorProps>(
 
     const handleCodeUpdate = (
       newCode: string,
-      shouldUpdatePreview = true
+      shouldUpdatePreview = true,
     ): void => {
       updateCode(newCode, shouldUpdatePreview);
     };
@@ -138,5 +138,7 @@ export const SandpackCodeEditor = forwardRef<CodeMirrorRef, CodeEditorProps>(
         </div>
       </SandpackStack>
     );
-  }
+  },
 );
+
+SandpackCodeEditor.displayName = "SandpackCodeEditor";

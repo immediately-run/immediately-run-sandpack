@@ -21,7 +21,18 @@ const configBase = {
     },
   ],
 
-  plugins: [typescript({ tsconfig: "./tsconfig.json" })],
+  plugins: [
+    typescript({
+      tsconfig: "./tsconfig.json",
+      compilerOptions: {
+        declaration: false,
+        declarationMap: false,
+        emitDeclarationOnly: false,
+        outDir: "dist",
+        types: [],
+      },
+    }),
+  ],
   external: [...Object.keys(pkg.devDependencies)],
 };
 

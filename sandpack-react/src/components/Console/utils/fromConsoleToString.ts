@@ -1,8 +1,5 @@
 /* eslint-disable @typescript-eslint/array-type */
 /* eslint-disable @typescript-eslint/ban-ts-comment */
-/* eslint-disable @typescript-eslint/no-empty-function */
-/* eslint-disable @typescript-eslint/explicit-function-return-type */
-/* eslint-disable @typescript-eslint/ban-types */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import {
@@ -23,8 +20,8 @@ export type Message =
   | undefined
   | Array<any>
   | Record<any, any>
-  | Boolean
-  | Symbol
+  | boolean
+  | symbol
   | { "@r": number }
   | {
       "@t": TransformsTypes;
@@ -76,13 +73,13 @@ const formatSymbols = (message: Message): any => {
 const arrayToString = (
   output: Array<any>,
   references: Array<Message>,
-  level: number
+  level: number,
 ) => {
   const mergeArray = output.reduce<string>((acc, curr, index) => {
     return `${acc}${index ? ", " : ""}${fromConsoleToString(
       curr,
       references,
-      level
+      level,
     )}`;
   }, "");
 
@@ -92,7 +89,7 @@ const arrayToString = (
 const objectToString = (
   output: Record<string, Message>,
   references: Array<Message>,
-  level: number
+  level: number,
 ) => {
   const constructorName =
     output.constructor.name !== "Object" ? `${output.constructor.name} ` : "";
@@ -116,7 +113,7 @@ const objectToString = (
 
       return acc + `${comma}${breakLine}${key}: ` + formatted;
     },
-    ""
+    "",
   );
 
   return `${constructorName}{ ${formattedObject}${
@@ -127,7 +124,7 @@ const objectToString = (
 export const fromConsoleToString = (
   message: Message,
   references: Array<Message>,
-  level = 0
+  level = 0,
 ): string => {
   try {
     const output = formatSymbols(message);

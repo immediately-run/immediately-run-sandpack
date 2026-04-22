@@ -15,7 +15,7 @@ export function highlightDecorators(positions: Decorators): Extension {
         this.decorations = this.getDecoration(view);
       }
 
-      update(update: ViewUpdate): void {
+      update(_update: ViewUpdate): void {
         return;
       }
 
@@ -56,6 +56,6 @@ export function highlightDecorators(positions: Decorators): Extension {
     },
     {
       decorations: (v) => v.decorations,
-    }
+    },
   );
 }

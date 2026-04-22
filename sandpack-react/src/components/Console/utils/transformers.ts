@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 /* eslint-disable @typescript-eslint/no-empty-function */
-/* eslint-disable @typescript-eslint/explicit-function-return-type */
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // Const
 const GLOBAL = (function getGlobal(): any {
@@ -10,7 +10,6 @@ const GLOBAL = (function getGlobal(): any {
 
   if (typeof global !== "undefined") return global; // Node.js
 
-  // eslint-disable-next-line no-restricted-globals
   if (typeof self !== "undefined") return self; // Web Worker
 
   throw Error("Unable to locate global object");
@@ -71,7 +70,7 @@ export const transformers: Transforms = {
         }
       }
       return element;
-    } catch (e) {
+    } catch {
       return data;
     }
   },

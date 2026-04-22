@@ -52,7 +52,7 @@ export const SandpackConsole = React.forwardRef<
       maxMessageCount,
       onLogsChange,
       className,
-      showSetupProgress = false,
+      showSetupProgress: _showSetupProgress = false,
       showResetConsoleButton = true,
       showRestartButton = true,
       resetOnPreviewRestart = false,
@@ -60,7 +60,7 @@ export const SandpackConsole = React.forwardRef<
       standalone = false,
       ...props
     },
-    ref
+    ref,
   ) => {
     const {
       sandpack: { environment },
@@ -71,7 +71,7 @@ export const SandpackConsole = React.forwardRef<
     const { restart } = useSandpackShell();
 
     const [currentTab, setCurrentTab] = React.useState<"server" | "client">(
-      environment === "node" ? "server" : "client"
+      environment === "node" ? "server" : "client",
     );
 
     const clientId = standalone ? internalClientId : undefined;
@@ -205,5 +205,7 @@ export const SandpackConsole = React.forwardRef<
         )}
       </SandpackStack>
     );
-  }
+  },
 );
+
+SandpackConsole.displayName = "SandpackConsole";

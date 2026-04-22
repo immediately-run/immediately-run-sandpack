@@ -17,7 +17,12 @@ const configs = [
     plugins: [
       typescript({
         tsconfig: "./tsconfig.json",
-        compilerOptions: { declaration: false },
+        compilerOptions: {
+          declaration: false,
+          declarationMap: false,
+          emitDeclarationOnly: false,
+          outDir: "src/inject-scripts/dist",
+        },
       }),
       commonjs(),
       nodeResolve(),
@@ -46,7 +51,13 @@ const configs = [
     ],
 
     plugins: [
-      typescript({ tsconfig: "./tsconfig.json" }),
+      typescript({
+        tsconfig: "./tsconfig.json",
+        compilerOptions: {
+          emitDeclarationOnly: false,
+          outDir: "dist",
+        },
+      }),
       string({ include: "**/dist/consoleHook.js" }),
       replace({
         preventAssignment: true,

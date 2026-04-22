@@ -66,7 +66,7 @@
     "react-dom": "^18.2.0",
     "scroll-into-view-if-needed": "^2.2.29",
     "tsup": "^6.4.0",
-    "typescript": "^5.2.2"
+    "typescript": "^5.7.2"
   },
   "peerDependencies": {
     "next": ">=9.5.3",

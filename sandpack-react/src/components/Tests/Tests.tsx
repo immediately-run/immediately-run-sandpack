@@ -47,7 +47,7 @@ interface SandpackTests extends React.HtmlHTMLAttributes<HTMLDivElement> {
   tests: Test[];
 }
 
-export const Tests: React.FC<SandpackTests> = ({ tests, style }) => {
+export const Tests: React.FC<SandpackTests> = ({ tests, style: _style }) => {
   const classNames = useClassNames();
   return (
     <div className={classNames("test", [testContainerClassName])}>

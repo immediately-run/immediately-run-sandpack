@@ -52,7 +52,7 @@ export const SandpackCodeViewer = React.forwardRef<
       additionalLanguages,
       ...props
     },
-    ref
+    ref,
   ) => {
     const { sandpack } = useSandpack();
     const { code } = useActiveCode();
@@ -91,5 +91,7 @@ export const SandpackCodeViewer = React.forwardRef<
         {sandpack.status === "idle" ? <RunButton /> : null}
       </SandpackStack>
     );
-  }
+  },
 );
+
+SandpackCodeViewer.displayName = "SandpackCodeViewer";

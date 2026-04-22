@@ -53,7 +53,7 @@ export const ErrorOverlay: React.FC<ErrorOverlayProps> = (props) => {
 
   const isSandpackBundlerError = errorMessage?.startsWith("[sandpack-client]");
   const privateDependencyError = errorMessage?.includes(
-    "NPM_REGISTRY_UNAUTHENTICATED_REQUEST"
+    "NPM_REGISTRY_UNAUTHENTICATED_REQUEST",
   );
 
   const onSignIn = () => {
@@ -121,7 +121,7 @@ export const ErrorOverlay: React.FC<ErrorOverlayProps> = (props) => {
           <p
             className={classNames("error-title", [css({ fontWeight: "bold" })])}
           >
-            Couldn't connect to server
+            Couldn&apos;t connect to server
           </p>
           <p>{mapBundlerErrors(errorMessage)}</p>
 

@@ -22,12 +22,15 @@ export const useSyntaxHighlight = ({
 
       codeElementsRender.push(
         className
-          ? createElement("span", {
+          ? createElement(
+              "span",
+              {
+                className,
+                key: `${to}${offSet}`,
+              },
               children,
-              className,
-              key: `${to}${offSet}`,
-            })
-          : children
+            )
+          : children,
       );
 
       offSet = to;

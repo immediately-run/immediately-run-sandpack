@@ -61,7 +61,7 @@ export const LoadingOverlay: React.FC<
   const { logs: stdoutData } = useSandpackShellStdout({ clientId });
 
   React.useEffect(() => {
-    let timer: NodeJS.Timer;
+    let timer: ReturnType<typeof setTimeout>;
     if (progressMessage?.includes("Running")) {
       timer = setTimeout(() => {
         setShouldShowStdout(true);
@@ -95,7 +95,7 @@ export const LoadingOverlay: React.FC<
           <p
             className={classNames("error-title", [css({ fontWeight: "bold" })])}
           >
-            Couldn't connect to server
+            Couldn&apos;t connect to server
           </p>
 
           <div className={classNames("error-message", [errorMessageClassName])}>

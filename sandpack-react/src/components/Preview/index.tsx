@@ -105,7 +105,7 @@ export const SandpackPreview = React.forwardRef<
       showRefreshButton = true,
       showOpenInCodeSandbox = true,
       showSandpackErrorOverlay = true,
-      showOpenNewtab = true,
+      showOpenNewtab: _showOpenNewtab = true,
       showRestartButton = true,
       actionsChildren = <></>,
       children,
@@ -113,7 +113,7 @@ export const SandpackPreview = React.forwardRef<
       startRoute = "/",
       ...props
     },
-    ref
+    ref,
   ) => {
     const { sandpack, listen, iframe, getClient, clientId, dispatch } =
       useSandpackClient({ startRoute });
@@ -143,7 +143,7 @@ export const SandpackPreview = React.forwardRef<
         clientId: clientId,
         getClient,
       }),
-      [getClient, clientId]
+      [getClient, clientId],
     );
 
     const handleNewURL = (newUrl: string): void => {
@@ -152,7 +152,6 @@ export const SandpackPreview = React.forwardRef<
       }
 
       iframe.current.src = newUrl;
-      // eslint-disable-next-line react-hooks/exhaustive-deps
     };
 
     return (
@@ -224,5 +223,7 @@ export const SandpackPreview = React.forwardRef<
         </div>
       </SandpackStack>
     );
-  }
+  },
 );
+
+SandpackPreview.displayName = "SandpackPreview";

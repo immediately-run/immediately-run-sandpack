@@ -10,6 +10,7 @@
     "emitDecoratorMetadata": true,
     "noImplicitAny": true,
     "jsx": "react-jsx",
+    "types": ["node", "jest", "@testing-library/jest-dom"],
     "outDir": "dist",
     "skipLibCheck": true
   },

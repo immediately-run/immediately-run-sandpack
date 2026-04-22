@@ -38,11 +38,11 @@ describe(useSyntaxHighlight, () => {
       const languageExtension = getLanguageFromFile(
         "",
         fileType,
-        additionalLanguages
+        additionalLanguages,
       );
       const langSupport = getCodeMirrorLanguage(
         languageExtension,
-        additionalLanguages
+        additionalLanguages,
       );
 
       const reactElements = useSyntaxHighlight({

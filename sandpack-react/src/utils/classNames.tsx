@@ -27,7 +27,7 @@ export const useClassNames = () => {
   return function sandpackClassNames(
     customClassName: string,
     /* eslint-disable @typescript-eslint/no-explicit-any */
-    allClassNames: any[] = []
+    allClassNames: any[] = [],
   ): string {
     const custom = `${THEME_PREFIX}-${customClassName}`;
 
@@ -35,7 +35,6 @@ export const useClassNames = () => {
   };
 };
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const joinClassNames = (...args: any[]): string => {
   return args.filter(Boolean).join(" ");
 };

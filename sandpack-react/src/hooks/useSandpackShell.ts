@@ -4,7 +4,7 @@ import { useSandpack } from "./useSandpack";
  * @category Hooks
  */
 export const useSandpackShell = (
-  clientId?: string
+  clientId?: string,
 ): {
   restart: () => void;
   openPreview: () => void;

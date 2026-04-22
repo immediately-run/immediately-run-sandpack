@@ -23,7 +23,7 @@ export const ConsoleList: React.FC<{ data: SandpackConsoleData }> = ({
               {data.map((msg, msgIndex) => {
                 const fixReferences = references.slice(
                   logIndex,
-                  references.length
+                  references.length,
                 );
 
                 return (

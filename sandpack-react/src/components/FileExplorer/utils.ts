@@ -37,7 +37,7 @@ export const fromPropsToModules = ({
   const directories = new Set(
     fileListWithoutPrefix
       .filter((file) => file.includes("/"))
-      .map((file) => `${prefixedPath}${file.split("/")[0]}/`)
+      .map((file) => `${prefixedPath}${file.split("/")[0]}/`),
   );
 
   const modules = fileListWithoutPrefix

@@ -21,7 +21,7 @@ const scripts = [
 
 export const injectScriptToIframe = (
   iframe: HTMLIFrameElement,
-  channelId: string
+  channelId: string,
 ): void => {
   scripts.forEach(({ code, id }) => {
     const message: InjectMessage = {

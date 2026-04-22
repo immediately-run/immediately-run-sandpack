@@ -26,7 +26,7 @@ export class SandpackClient {
   constructor(
     iframeSelector: string | HTMLIFrameElement,
     sandboxSetup: SandboxSetup,
-    options: ClientOptions = {}
+    options: ClientOptions = {},
   ) {
     this.options = options;
     this.sandboxSetup = sandboxSetup;
@@ -45,7 +45,7 @@ export class SandpackClient {
 
   public updateSandbox(
     _sandboxSetup = this.sandboxSetup,
-    _isInitializationCompile?: boolean
+    _isInitializationCompile?: boolean,
   ): void {
     throw Error("Method not implemented");
   }

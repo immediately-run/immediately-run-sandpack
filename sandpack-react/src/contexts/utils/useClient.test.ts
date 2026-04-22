@@ -12,7 +12,7 @@ import type { UseClientOperations } from "./useClient";
 const getAmountOfListener = (
   instance: UseClientOperations,
   name = "client-id",
-  ignoreGlobalListener = false
+  ignoreGlobalListener = false,
 ): number => {
   return (
     Object.keys(instance.clients[name].iframeProtocol.channelListeners).length -
@@ -25,7 +25,7 @@ describe(useClient, () => {
   describe("listeners", () => {
     it("sets a listener, but the client hasn't been created yet - no global listener", async () => {
       const { result } = renderHook(() =>
-        useClient({}, getSandpackStateFromProps({}))
+        useClient({}, getSandpackStateFromProps({})),
       );
 
       const operations = result.current[1];
@@ -40,7 +40,7 @@ describe(useClient, () => {
       await act(async () => {
         await operations.registerBundler(
           document.createElement("iframe"),
-          "client-id"
+          "client-id",
         );
 
         await operations.runSandpack();
@@ -49,13 +49,13 @@ describe(useClient, () => {
       // Expect: one pending unsubscribe function
       expect(
         Object.keys(
-          operations.unsubscribeClientListenersRef.current["client-id"]
-        ).length
+          operations.unsubscribeClientListenersRef.current["client-id"],
+        ).length,
       ).toBe(1);
 
       // Expect: no global listener
       expect(
-        Object.keys(operations.queuedListenersRef.current.global).length
+        Object.keys(operations.queuedListenersRef.current.global).length,
       ).toBe(0);
 
       // Expect: one client
@@ -64,7 +64,7 @@ describe(useClient, () => {
 
     it("sets a listener, but the client hasn't been created yet - global listener", async () => {
       const { result } = renderHook(() =>
-        useClient({}, getSandpackStateFromProps({}))
+        useClient({}, getSandpackStateFromProps({})),
       );
 
       const operations = result.current[1];
@@ -79,7 +79,7 @@ describe(useClient, () => {
       await act(async () => {
         await operations.registerBundler(
           document.createElement("iframe"),
-          "client-id"
+          "client-id",
         );
         await operations.runSandpack();
       });
@@ -87,13 +87,13 @@ describe(useClient, () => {
       // Expect: one pending unsubscribe function
       expect(
         Object.keys(
-          operations.unsubscribeClientListenersRef.current["client-id"]
-        ).length
+          operations.unsubscribeClientListenersRef.current["client-id"],
+        ).length,
       ).toBe(1);
 
       // Expect: no global listener
       expect(
-        Object.keys(operations.queuedListenersRef.current.global).length
+        Object.keys(operations.queuedListenersRef.current.global).length,
       ).toBe(1);
 
       // Expect: one listener in the client
@@ -102,7 +102,7 @@ describe(useClient, () => {
 
     it("set a listener, but the client has already been created - no global listener", async () => {
       const { result } = renderHook(() =>
-        useClient({}, getSandpackStateFromProps({}))
+        useClient({}, getSandpackStateFromProps({})),
       );
       const operations = result.current[1];
 
@@ -110,7 +110,7 @@ describe(useClient, () => {
       await act(async () => {
         await operations.registerBundler(
           document.createElement("iframe"),
-          "client-id"
+          "client-id",
         );
         await operations.runSandpack();
       });
@@ -118,13 +118,13 @@ describe(useClient, () => {
       // Expect: no pending unsubscribe function
       expect(
         Object.keys(
-          operations.unsubscribeClientListenersRef.current["client-id"]
-        ).length
+          operations.unsubscribeClientListenersRef.current["client-id"],
+        ).length,
       ).toBe(0);
 
       // Expect: no global listener
       expect(
-        Object.keys(operations.queuedListenersRef.current.global).length
+        Object.keys(operations.queuedListenersRef.current.global).length,
       ).toBe(0);
 
       // Act: Add listener
@@ -136,13 +136,13 @@ describe(useClient, () => {
       // Expect: no pending unsubscribe function
       expect(
         Object.keys(
-          operations.unsubscribeClientListenersRef.current["client-id"]
-        ).length
+          operations.unsubscribeClientListenersRef.current["client-id"],
+        ).length,
       ).toBe(0);
 
       // Expect: no global listener
       expect(
-        Object.keys(operations.queuedListenersRef.current.global).length
+        Object.keys(operations.queuedListenersRef.current.global).length,
       ).toBe(0);
 
       // Expect: one listener in the client
@@ -151,7 +151,7 @@ describe(useClient, () => {
 
     it("set a listener, but the client has already been created - global listener", async () => {
       const { result } = renderHook(() =>
-        useClient({}, getSandpackStateFromProps({}))
+        useClient({}, getSandpackStateFromProps({})),
       );
       const operations = result.current[1];
 
@@ -159,7 +159,7 @@ describe(useClient, () => {
       await act(async () => {
         await operations.registerBundler(
           document.createElement("iframe"),
-          "client-id"
+          "client-id",
         );
 
         await operations.runSandpack();
@@ -168,13 +168,13 @@ describe(useClient, () => {
       // Expect: no pending unsubscribe function
       expect(
         Object.keys(
-          operations.unsubscribeClientListenersRef.current["client-id"]
-        ).length
+          operations.unsubscribeClientListenersRef.current["client-id"],
+        ).length,
       ).toBe(0);
 
       // Expect: no global listener
       expect(
-        Object.keys(operations.queuedListenersRef.current.global).length
+        Object.keys(operations.queuedListenersRef.current.global).length,
       ).toBe(0);
 
       // Act: Add listener
@@ -186,13 +186,13 @@ describe(useClient, () => {
       // Expect: no pending unsubscribe function, because it's a global
       expect(
         Object.keys(
-          operations.unsubscribeClientListenersRef.current["client-id"]
-        ).length
+          operations.unsubscribeClientListenersRef.current["client-id"],
+        ).length,
       ).toBe(0);
 
       // Expect: one global listener
       expect(
-        Object.keys(operations.queuedListenersRef.current.global).length
+        Object.keys(operations.queuedListenersRef.current.global).length,
       ).toBe(1);
 
       // Expect: one listener in the client
@@ -201,7 +201,7 @@ describe(useClient, () => {
 
     it("sets a new listener, and then create one more client", async () => {
       const { result } = renderHook(() =>
-        useClient({}, getSandpackStateFromProps({}))
+        useClient({}, getSandpackStateFromProps({})),
       );
       const operations = result.current[1];
 
@@ -215,7 +215,7 @@ describe(useClient, () => {
       await act(async () => {
         await operations.registerBundler(
           document.createElement("iframe"),
-          "client-id"
+          "client-id",
         );
         await operations.runSandpack();
       });
@@ -223,13 +223,13 @@ describe(useClient, () => {
       // Expect: one pending unsubscribe function
       expect(
         Object.keys(
-          operations.unsubscribeClientListenersRef.current["client-id"]
-        ).length
+          operations.unsubscribeClientListenersRef.current["client-id"],
+        ).length,
       ).toBe(1);
 
       // Expect: no global listener
       expect(
-        Object.keys(operations.queuedListenersRef.current.global).length
+        Object.keys(operations.queuedListenersRef.current.global).length,
       ).toBe(0);
 
       // Expect: one listener in the client
@@ -243,7 +243,7 @@ describe(useClient, () => {
 
       // Expect: one global listener
       expect(
-        Object.keys(operations.queuedListenersRef.current.global).length
+        Object.keys(operations.queuedListenersRef.current.global).length,
       ).toBe(1);
 
       // Expect: two listener in the client
@@ -252,18 +252,18 @@ describe(useClient, () => {
 
     it("unsubscribes only from the assigned client id", async () => {
       const { result } = renderHook(() =>
-        useClient({}, getSandpackStateFromProps({}))
+        useClient({}, getSandpackStateFromProps({})),
       );
       const operations = result.current[1];
 
       await act(async () => {
         await operations.registerBundler(
           document.createElement("iframe"),
-          "client-1"
+          "client-1",
         );
         await operations.registerBundler(
           document.createElement("iframe"),
-          "client-2"
+          "client-2",
         );
 
         await operations.runSandpack();
@@ -293,18 +293,18 @@ describe(useClient, () => {
 
     it("doesn't trigger global unsubscribe", async () => {
       const { result } = renderHook(() =>
-        useClient({}, getSandpackStateFromProps({}))
+        useClient({}, getSandpackStateFromProps({})),
       );
       const operations = result.current[1];
 
       await act(async () => {
         await operations.registerBundler(
           document.createElement("iframe"),
-          "client-1"
+          "client-1",
         );
         await operations.registerBundler(
           document.createElement("iframe"),
-          "client-2"
+          "client-2",
         );
 
         await operations.runSandpack();
@@ -327,18 +327,18 @@ describe(useClient, () => {
 
     it("unsubscribe all the listeners from a specific client when it unmonts", async () => {
       const { result } = renderHook(() =>
-        useClient({}, getSandpackStateFromProps({}))
+        useClient({}, getSandpackStateFromProps({})),
       );
       const operations = result.current[1];
 
       await act(async () => {
         await operations.registerBundler(
           document.createElement("iframe"),
-          "client-1"
+          "client-1",
         );
         await operations.registerBundler(
           document.createElement("iframe"),
-          "client-2"
+          "client-2",
         );
 
         operations.addListener(jest.fn());
@@ -363,7 +363,7 @@ describe(useClient, () => {
   describe("status", () => {
     it("returns the initial state", () => {
       const { result } = renderHook(() =>
-        useClient({}, getSandpackStateFromProps({}))
+        useClient({}, getSandpackStateFromProps({})),
       );
       const state = result.current[0];
 
@@ -372,7 +372,7 @@ describe(useClient, () => {
 
     it("returns the initial state, after register a bundler", async () => {
       const { result } = renderHook(() =>
-        useClient({}, getSandpackStateFromProps({}))
+        useClient({}, getSandpackStateFromProps({})),
       );
 
       const operations = result.current[1];
@@ -380,7 +380,7 @@ describe(useClient, () => {
       await act(async () => {
         await operations.registerBundler(
           document.createElement("iframe"),
-          "client-1"
+          "client-1",
         );
       });
 
@@ -389,14 +389,14 @@ describe(useClient, () => {
 
     it("returns the running state, after init client", async () => {
       const { result } = renderHook(() =>
-        useClient({}, getSandpackStateFromProps({}))
+        useClient({}, getSandpackStateFromProps({})),
       );
       const operations = result.current[1];
 
       await act(async () => {
         await operations.registerBundler(
           document.createElement("iframe"),
-          "client-1"
+          "client-1",
         );
 
         await operations.runSandpack();
@@ -407,14 +407,14 @@ describe(useClient, () => {
 
     it("returns the idle state, after unmounting client", async () => {
       const { result } = renderHook(() =>
-        useClient({}, getSandpackStateFromProps({}))
+        useClient({}, getSandpackStateFromProps({})),
       );
       const operations = result.current[1];
 
       await act(async () => {
         await operations.registerBundler(
           document.createElement("iframe"),
-          "client-1"
+          "client-1",
         );
 
         await operations.runSandpack();
@@ -431,18 +431,18 @@ describe(useClient, () => {
 
     it("keeps running if it unmounts a client and there's still another one running", async () => {
       const { result } = renderHook(() =>
-        useClient({}, getSandpackStateFromProps({}))
+        useClient({}, getSandpackStateFromProps({})),
       );
       const operations = result.current[1];
 
       await act(async () => {
         await operations.registerBundler(
           document.createElement("iframe"),
-          "client-1"
+          "client-1",
         );
         await operations.registerBundler(
           document.createElement("iframe"),
-          "client-2"
+          "client-2",
         );
 
         await operations.runSandpack();

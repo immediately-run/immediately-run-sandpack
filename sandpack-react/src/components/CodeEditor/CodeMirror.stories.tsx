@@ -23,7 +23,7 @@ Object.entries(mocks).forEach(([languageName, mockFile]) =>
         showLineNumbers={false}
       />
     </SandpackProvider>
-  ))
+  )),
 );
 
 stories.add("Ready only", () => {

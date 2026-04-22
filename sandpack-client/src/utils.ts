@@ -23,7 +23,7 @@ const ENTRY_ERROR_MESSAGE = `"entry" was not specified - provide either a packag
 export function createPackageJSON(
   dependencies: Dependencies = {},
   devDependencies: Dependencies = {},
-  entry = "/index.js"
+  entry = "/index.js",
 ): string {
   return JSON.stringify(
     {
@@ -33,7 +33,7 @@ export function createPackageJSON(
       devDependencies,
     },
     null,
-    2
+    2,
   );
 }
 
@@ -41,7 +41,7 @@ export function addPackageJSONIfNeeded(
   files: SandpackBundlerFiles,
   dependencies?: Dependencies,
   devDependencies?: Dependencies,
-  entry?: string
+  entry?: string,
 ): SandpackBundlerFiles {
   const normalizedFilesPath = normalizePath(files);
 
@@ -69,7 +69,7 @@ export function addPackageJSONIfNeeded(
 
     nullthrows(
       !(!dependencies && !packageJsonContent.dependencies),
-      ENTRY_ERROR_MESSAGE
+      ENTRY_ERROR_MESSAGE,
     );
 
     if (dependencies) {
@@ -115,7 +115,7 @@ export function extractErrorDetails(msg: SandpackErrorMessage): SandpackError {
     relevantStackFrame._originalFileName,
     msg.message,
     errorLocation,
-    errorInCode
+    errorInCode,
   );
 
   return {
@@ -128,7 +128,7 @@ export function extractErrorDetails(msg: SandpackErrorMessage): SandpackError {
 }
 
 function getRelevantStackFrame(
-  frames?: ErrorStackFrame[]
+  frames?: ErrorStackFrame[],
 ): ErrorStackFrame | undefined {
   if (!frames) {
     return;
@@ -185,7 +185,7 @@ function formatErrorMessage(
   filePath: string,
   message: string,
   location: string,
-  errorInCode: string
+  errorInCode: string,
 ): string {
   return `${filePath}: ${message}${location}
 ${errorInCode}`;
@@ -210,7 +210,7 @@ export const normalizePath = <R>(path: R): R => {
 
         return acc;
       },
-      {}
+      {},
     );
   }
 

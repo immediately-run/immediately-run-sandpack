@@ -49,7 +49,7 @@ export const useSandpackConsole = ({
                   if (typeof dataItem !== "string") return true;
 
                   const matches = SYNTAX_ERROR_PATTERN.filter((lookFor) =>
-                    dataItem.startsWith(lookFor)
+                    dataItem.startsWith(lookFor),
                   );
 
                   return matches.length === 0;
@@ -64,7 +64,7 @@ export const useSandpackConsole = ({
           const messages = [...prev, ...logsMessages].filter(
             (value, index, self) => {
               return index === self.findIndex((s) => s.id === value.id);
-            }
+            },
           );
 
           while (messages.length > maxMessageCount) {

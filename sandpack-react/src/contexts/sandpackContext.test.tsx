@@ -28,7 +28,7 @@ const getAmountOfListener = (
   /* eslint-disable @typescript-eslint/no-explicit-any */
   instance: any,
   name = "client-id",
-  ignoreGlobalListener = false
+  ignoreGlobalListener = false,
 ): number => {
   return (
     Object.keys(instance.sandpack.clients[name].iframeProtocol.channelListeners)
@@ -48,7 +48,7 @@ describe(SandpackProvider, () => {
       });
 
       expect(instance.current.sandpack.files["/new-file.js"].code).toBe(
-        "new-content"
+        "new-content",
       );
     });
 
@@ -210,7 +210,7 @@ describe(SandpackProvider, () => {
       act(() => {
         instance.current.sandpack.updateFile(
           "/App.js",
-          REACT_TEMPLATE["files"]["/App.js"].code
+          REACT_TEMPLATE["files"]["/App.js"].code,
         );
       });
 
@@ -232,7 +232,7 @@ describe(SandpackProvider, () => {
       await act(async () => {
         await instance.current.sandpack.registerBundler(
           document.createElement("iframe"),
-          "client-id"
+          "client-id",
         );
       });
 
@@ -241,14 +241,14 @@ describe(SandpackProvider, () => {
         Object.keys(
           instance.current.sandpack.unsubscribeClientListenersRef.current[
             "client-id"
-          ]
-        ).length
+          ],
+        ).length,
       ).toBe(1);
 
       // Expect: no global listener
       expect(
         Object.keys(instance.current.sandpack.queuedListenersRef.current.global)
-          .length
+          .length,
       ).toBe(0);
 
       // Expect: one client
@@ -275,7 +275,7 @@ describe(SandpackProvider, () => {
       await act(async () => {
         await instance.current.sandpack.registerBundler(
           document.createElement("iframe"),
-          "client-id"
+          "client-id",
         );
       });
 
@@ -284,14 +284,14 @@ describe(SandpackProvider, () => {
         Object.keys(
           instance.current.sandpack.unsubscribeClientListenersRef.current[
             "client-id"
-          ]
-        ).length
+          ],
+        ).length,
       ).toBe(1);
 
       // Expect: no global listener
       expect(
         Object.keys(instance.current.sandpack.queuedListenersRef.current.global)
-          .length
+          .length,
       ).toBe(1);
 
       // Expect: one listener in the client
@@ -305,7 +305,7 @@ describe(SandpackProvider, () => {
       await act(async () => {
         await instance.current.sandpack.registerBundler(
           document.createElement("iframe"),
-          "client-id"
+          "client-id",
         );
       });
 
@@ -314,14 +314,14 @@ describe(SandpackProvider, () => {
         Object.keys(
           instance.current.sandpack.unsubscribeClientListenersRef.current[
             "client-id"
-          ]
-        ).length
+          ],
+        ).length,
       ).toBe(0);
 
       // Expect: no global listener
       expect(
         Object.keys(instance.current.sandpack.queuedListenersRef.current.global)
-          .length
+          .length,
       ).toBe(0);
 
       // Act: Add listener
@@ -335,14 +335,14 @@ describe(SandpackProvider, () => {
         Object.keys(
           instance.current.sandpack.unsubscribeClientListenersRef.current[
             "client-id"
-          ]
-        ).length
+          ],
+        ).length,
       ).toBe(0);
 
       // Expect: no global listener
       expect(
         Object.keys(instance.current.sandpack.queuedListenersRef.current.global)
-          .length
+          .length,
       ).toBe(0);
 
       // Expect: one listener in the client
@@ -356,7 +356,7 @@ describe(SandpackProvider, () => {
       await act(async () => {
         await instance.current.sandpack.registerBundler(
           document.createElement("iframe"),
-          "client-id"
+          "client-id",
         );
       });
 
@@ -365,14 +365,14 @@ describe(SandpackProvider, () => {
         Object.keys(
           instance.current.sandpack.unsubscribeClientListenersRef.current[
             "client-id"
-          ]
-        ).length
+          ],
+        ).length,
       ).toBe(0);
 
       // Expect: no global listener
       expect(
         Object.keys(instance.current.sandpack.queuedListenersRef.current.global)
-          .length
+          .length,
       ).toBe(0);
 
       // Act: Add listener
@@ -386,14 +386,14 @@ describe(SandpackProvider, () => {
         Object.keys(
           instance.current.sandpack.unsubscribeClientListenersRef.current[
             "client-id"
-          ]
-        ).length
+          ],
+        ).length,
       ).toBe(0);
 
       // Expect: one global listener
       expect(
         Object.keys(instance.current.sandpack.queuedListenersRef.current.global)
-          .length
+          .length,
       ).toBe(1);
 
       // Expect: one listener in the client
@@ -413,7 +413,7 @@ describe(SandpackProvider, () => {
       await act(async () => {
         await instance.current.sandpack.registerBundler(
           document.createElement("iframe"),
-          "client-id"
+          "client-id",
         );
       });
 
@@ -422,14 +422,14 @@ describe(SandpackProvider, () => {
         Object.keys(
           instance.current.sandpack.unsubscribeClientListenersRef.current[
             "client-id"
-          ]
-        ).length
+          ],
+        ).length,
       ).toBe(1);
 
       // Expect: no global listener
       expect(
         Object.keys(instance.current.sandpack.queuedListenersRef.current.global)
-          .length
+          .length,
       ).toBe(0);
 
       // Expect: one listener in the client
@@ -444,7 +444,7 @@ describe(SandpackProvider, () => {
       // Expect: one global listener
       expect(
         Object.keys(instance.current.sandpack.queuedListenersRef.current.global)
-          .length
+          .length,
       ).toBe(1);
 
       // Expect: two listener in the client
@@ -457,11 +457,11 @@ describe(SandpackProvider, () => {
       await act(async () => {
         await instance.current.sandpack.registerBundler(
           document.createElement("iframe"),
-          "client-1"
+          "client-1",
         );
         await instance.current.sandpack.registerBundler(
           document.createElement("iframe"),
-          "client-2"
+          "client-2",
         );
       });
 
@@ -475,7 +475,7 @@ describe(SandpackProvider, () => {
       });
       const unsubscribeClientTwo = instance.current.listen(
         jest.fn(),
-        "client-2"
+        "client-2",
       );
 
       expect(getAmountOfListener(instance.current, "client-1")).toBe(1);
@@ -493,11 +493,11 @@ describe(SandpackProvider, () => {
       await act(async () => {
         await instance.current.sandpack.registerBundler(
           document.createElement("iframe"),
-          "client-1"
+          "client-1",
         );
         await instance.current.sandpack.registerBundler(
           document.createElement("iframe"),
-          "client-2"
+          "client-2",
         );
       });
 
@@ -521,11 +521,11 @@ describe(SandpackProvider, () => {
       await act(async () => {
         await instance.current.sandpack.registerBundler(
           document.createElement("iframe"),
-          "client-1"
+          "client-1",
         );
         await instance.current.sandpack.registerBundler(
           document.createElement("iframe"),
-          "client-2"
+          "client-2",
         );
 
         instance.current.listen(jest.fn());

@@ -6,7 +6,7 @@ describe(calculateNearestUniquePath, () => {
       calculateNearestUniquePath("/index.js", [
         "/other/index.js",
         "/test/index.js",
-      ])
+      ]),
     ).toBe("index.js");
   });
 
@@ -16,7 +16,7 @@ describe(calculateNearestUniquePath, () => {
         "/index.js",
         "/other/index.js",
         "/other/something/index.js",
-      ])
+      ]),
     ).toBe("test/index.js");
 
     expect(
@@ -24,13 +24,13 @@ describe(calculateNearestUniquePath, () => {
         "/index.js",
         "/other/index.js",
         "/other/something/index.js",
-      ])
+      ]),
     ).toBe("test/something/index.js");
   });
 
   it("keeps path when same level and same name", () => {
     expect(
-      calculateNearestUniquePath("/other/index.js", ["/test/index.js"])
+      calculateNearestUniquePath("/other/index.js", ["/test/index.js"]),
     ).toBe("other/index.js");
   });
 
@@ -40,13 +40,13 @@ describe(calculateNearestUniquePath, () => {
         "/index.js",
         "/example/index.js",
         "/example/something/else/index.js",
-      ])
+      ]),
     ).toBe("../something/index.js");
   });
 
   it("supports root paths", () => {
     expect(
-      calculateNearestUniquePath("README.md", [".gitignore", ".eslintignore"])
+      calculateNearestUniquePath("README.md", [".gitignore", ".eslintignore"]),
     ).toBe("README.md");
   });
 });

@@ -53,7 +53,7 @@ export class IFrameProtocol {
         origin: document.location.origin,
         id: this.channelId,
       },
-      this.origin
+      this.origin,
     );
   }
 
@@ -69,7 +69,7 @@ export class IFrameProtocol {
         codesandbox: true,
         ...message,
       },
-      this.origin
+      this.origin,
     );
   }
 
@@ -120,7 +120,7 @@ export class IFrameProtocol {
     }
 
     Object.values(this.globalListeners).forEach((listener) =>
-      listener(message)
+      listener(message),
     );
 
     if (message.$id !== this.channelId) {
@@ -128,7 +128,7 @@ export class IFrameProtocol {
     }
 
     Object.values(this.channelListeners).forEach((listener) =>
-      listener(message)
+      listener(message),
     );
   }
 }

@@ -50,16 +50,16 @@ const formatDiffMessage = (error: TestError, path: string): string => {
       .replace(/(Difference:)/m, `<span>$1</span>`)
       .replace(
         /(Expected:)(.*)/m,
-        `<span>$1</span><span class="${passTextClassName}">$2</span>`
+        `<span>$1</span><span class="${passTextClassName}">$2</span>`,
       )
       .replace(
         /(Received:)(.*)/m,
-        `<span>$1</span><span class="${failTextClassName}">$2</span>`
+        `<span>$1</span><span class="${failTextClassName}">$2</span>`,
       )
       .replace(/^(-.*)/gm, `<span class="${failTextClassName}">$1</span>`)
       .replace(
         /^(\+.*)/gm,
-        `<span class="${passTextClassName}">$1</span>`
+        `<span class="${passTextClassName}">$1</span>`,
       )}</span>`;
   } else {
     finalMessage = escapeHtml(error.message ?? "");
@@ -77,7 +77,7 @@ const formatDiffMessage = (error: TestError, path: string): string => {
 
     const widestNumber =
       Math.max(
-        ..._originalScriptCode.map((code) => (code.lineNumber + "").length)
+        ..._originalScriptCode.map((code) => (code.lineNumber + "").length),
       ) + 2;
 
     const margin = Array.from({ length: widestNumber }).map(() => " ");
@@ -98,17 +98,17 @@ const formatDiffMessage = (error: TestError, path: string): string => {
         const toBeIndex = code.content.indexOf(".to");
         const toBeMargin = Array.from(
           { length: margin.length + toBeIndex - (widestNumber - 1) },
-          () => " "
+          () => " ",
         );
 
         const content = escapeHtml(code.content)
           .replace(
             /(describe|test|it)(\()(&#039;|&quot;|`)(.*)(&#039;|&quot;|`)/m,
-            `<span>$1$2$3</span><span class="${titleTextClassName}">$4</span><span>$5</span>`
+            `<span>$1$2$3</span><span class="${titleTextClassName}">$4</span><span>$5</span>`,
           )
           .replace(
             /(expect\()(.*)(\)\..*)(to[\w\d]*)(\()(.*)(\))/m,
-            `<span>$1</span><span class="${failTextClassName}">$2</span><span>$3</span><span style="text-decoration: underline; font-weight: 900">$4</span><span>$5</span><span class="${passTextClassName}">$6</span><span>$7</span>`
+            `<span>$1</span><span class="${failTextClassName}">$2</span><span>$3</span><span style="text-decoration: underline; font-weight: 900">$4</span><span>$5</span><span class="${passTextClassName}">$6</span><span>$7</span>`,
           );
 
         finalMessage +=

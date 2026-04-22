@@ -7,7 +7,7 @@ module.exports = function () {
     buildEnd() {
       fs.writeFileSync(
         "dist/unstyled.d.ts",
-        `export * from './unstyled/index';`
+        `export * from './unstyled/index';`,
       );
     },
   };

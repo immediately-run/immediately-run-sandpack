@@ -187,7 +187,7 @@ export const SandpackTests: React.FC<
               describes: {},
               tests: {},
               name: data.path,
-            })
+            }),
           );
         }
 
@@ -201,7 +201,7 @@ export const SandpackTests: React.FC<
                   return { ...acc, [key]: value };
                 }
               },
-              {}
+              {},
             );
 
             return { ...oldState, specs };
@@ -215,7 +215,7 @@ export const SandpackTests: React.FC<
         if (data.event === "describe_start") {
           currentDescribeBlocks.push(data.blockName);
           const [describePath, currentDescribe] = splitTail(
-            currentDescribeBlocks
+            currentDescribeBlocks,
           );
           const spec = currentSpec;
 
@@ -236,8 +236,8 @@ export const SandpackTests: React.FC<
                 name: data.blockName,
                 tests: {},
                 describes: {},
-              }
-            )
+              },
+            ),
           );
         }
 
@@ -248,7 +248,7 @@ export const SandpackTests: React.FC<
 
         if (data.event === "add_test") {
           const [describePath, currentDescribe] = splitTail(
-            currentDescribeBlocks
+            currentDescribeBlocks,
           );
           const test: Test = {
             status: "idle",
@@ -259,7 +259,7 @@ export const SandpackTests: React.FC<
           };
           if (currentDescribe === undefined) {
             return setState(
-              set(["specs", data.path, "tests", data.testName], test)
+              set(["specs", data.path, "tests", data.testName], test),
             );
           } else {
             return setState(
@@ -273,8 +273,8 @@ export const SandpackTests: React.FC<
                   "tests",
                   data.testName,
                 ],
-                test
-              )
+                test,
+              ),
             );
           }
         }
@@ -293,7 +293,7 @@ export const SandpackTests: React.FC<
 
           if (currentDescribe === undefined) {
             return setState(
-              set(["specs", test.path, "tests", test.name], startedTest)
+              set(["specs", test.path, "tests", test.name], startedTest),
             );
           } else {
             return setState(
@@ -307,8 +307,8 @@ export const SandpackTests: React.FC<
                   "tests",
                   test.name,
                 ],
-                startedTest
-              )
+                startedTest,
+              ),
             );
           }
         }
@@ -327,7 +327,7 @@ export const SandpackTests: React.FC<
 
           if (currentDescribe === undefined) {
             return setState(
-              set(["specs", test.path, "tests", test.name], endedTest)
+              set(["specs", test.path, "tests", test.name], endedTest),
             );
           } else {
             return setState(
@@ -341,8 +341,8 @@ export const SandpackTests: React.FC<
                   "tests",
                   test.name,
                 ],
-                endedTest
-              )
+                endedTest,
+              ),
             );
           }
         }
@@ -366,7 +366,7 @@ export const SandpackTests: React.FC<
 
       return unsunscribe;
     },
-    [runSpec, runAllTests, state.watchMode, isSpecOpen]
+    [runSpec, runAllTests, state.watchMode, isSpecOpen],
   );
 
   const openSpec = (file: string): void => {

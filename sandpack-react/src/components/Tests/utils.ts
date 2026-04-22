@@ -7,7 +7,7 @@ import type { Test } from "./Tests";
 
 const getTests = (block: Describe | Spec): Test[] =>
   Object.values(block.tests ?? {}).concat(
-    ...Object.values(block.describes ?? {}).map(getTests)
+    ...Object.values(block.describes ?? {}).map(getTests),
   );
 
 export const getFailingTests = (block: Describe | Spec): Test[] =>
@@ -23,7 +23,7 @@ export const getAllTestResults = (specs: Spec[]): TestResults =>
         total: acc.total + stats.total,
       };
     },
-    { pass: 0, skip: 0, fail: 0, total: 0 }
+    { pass: 0, skip: 0, fail: 0, total: 0 },
   );
 
 export const getSpecTestResults = (spec: Spec): TestResults =>
@@ -39,7 +39,7 @@ export const getSpecTestResults = (spec: Spec): TestResults =>
         total: acc.total + 1,
       };
     },
-    { pass: 0, fail: 0, skip: 0, total: 0 }
+    { pass: 0, fail: 0, skip: 0, total: 0 },
   );
 
 export const getAllSuiteResults = (specs: Spec[]): SuiteResults =>
@@ -47,7 +47,7 @@ export const getAllSuiteResults = (specs: Spec[]): SuiteResults =>
     .filter(
       (spec) =>
         Object.values(spec.describes ?? {}).length > 0 ||
-        Object.values(spec.tests ?? {}).length > 0
+        Object.values(spec.tests ?? {}).length > 0,
     )
     .map(getSpecTestResults)
     .reduce(
@@ -58,7 +58,7 @@ export const getAllSuiteResults = (specs: Spec[]): SuiteResults =>
           total: acc.total + 1,
         };
       },
-      { pass: 0, fail: 0, total: 0 }
+      { pass: 0, fail: 0, total: 0 },
     );
 
 export const getDuration = (specs: Spec[]): number =>

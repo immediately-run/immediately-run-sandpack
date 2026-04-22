@@ -30,7 +30,7 @@ interface UseSandpackClient {
  * @category Hooks
  */
 export const useSandpackClient = (
-  clientPropsOverride?: ClientPropsOverride
+  clientPropsOverride?: ClientPropsOverride,
 ): UseSandpackClient => {
   const { sandpack, listen, dispatch } = useSandpack();
   const iframeRef = React.useRef<HTMLIFrameElement | null>(null);
@@ -44,7 +44,7 @@ export const useSandpackClient = (
       sandpack.registerBundler(
         iframeElement,
         clientIdValue,
-        clientPropsOverride
+        clientPropsOverride,
       );
     }
 

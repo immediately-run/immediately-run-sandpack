@@ -35,11 +35,11 @@ describe(addPackageJSONIfNeeded, () => {
       files,
       undefined,
       undefined,
-      "new-entry.js"
+      "new-entry.js",
     );
 
     expect(JSON.parse(output["/package.json"].code).main).toEqual(
-      "new-entry.js"
+      "new-entry.js",
     );
   });
 
@@ -56,11 +56,11 @@ describe(addPackageJSONIfNeeded, () => {
       },
       undefined,
       undefined,
-      "new-entry.js"
+      "new-entry.js",
     );
 
     expect(JSON.parse(output["/package.json"].code).main).toEqual(
-      "new-entry.js"
+      "new-entry.js",
     );
   });
 
@@ -71,7 +71,7 @@ describe(addPackageJSONIfNeeded, () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       expect(err.message).toBe(
-        '[sandpack-client]: "dependencies" was not specified - provide either a package.json or a "dependencies" value'
+        '[sandpack-client]: "dependencies" was not specified - provide either a package.json or a "dependencies" value',
       );
     }
   });
@@ -88,7 +88,7 @@ describe(addPackageJSONIfNeeded, () => {
       },
       { foo: "*" },
       { foo: "*" },
-      "new-entry.ts"
+      "new-entry.ts",
     );
 
     expect(JSON.parse(output["/package.json"].code)).toEqual({

@@ -32,7 +32,7 @@ export const readBuffer = (content: string | Uint8Array): string => {
 };
 
 export const fromBundlerFilesToFS = (
-  files: SandpackBundlerFiles
+  files: SandpackBundlerFiles,
 ): Record<string, Uint8Array> => {
   return Object.entries(files).reduce<Record<string, Uint8Array>>(
     (acc, [key, value]) => {
@@ -40,7 +40,7 @@ export const fromBundlerFilesToFS = (
 
       return acc;
     },
-    {}
+    {},
   );
 };
 
@@ -48,7 +48,7 @@ export const fromBundlerFilesToFS = (
  * Figure out which script it must run to start a server
  */
 export const findStartScriptPackageJson = (
-  packageJson: string
+  packageJson: string,
 ): [string, string[], ShellCommandOptions] => {
   let scripts: Record<string, string> = {};
   // TODO: support postinstall
@@ -58,13 +58,13 @@ export const findStartScriptPackageJson = (
     scripts = JSON.parse(packageJson).scripts;
   } catch (e) {
     throw createError(
-      "Could not parse package.json file: " + (e as Error).message
+      "Could not parse package.json file: " + (e as Error).message,
     );
   }
 
   invariant(
     scripts,
-    "Failed to start. Please provide a `start` or `dev` script on the package.json"
+    "Failed to start. Please provide a `start` or `dev` script on the package.json",
   );
 
   for (let index = 0; index < possibleKeys.length; index++) {
@@ -103,7 +103,7 @@ export const findStartScriptPackageJson = (
   }
 
   throw createError(
-    "Failed to start. Please provide a `start` or `dev` script on the package.json"
+    "Failed to start. Please provide a `start` or `dev` script on the package.json",
   );
 };
 
@@ -115,6 +115,6 @@ export const getMessageFromError = (error: Error | string): string => {
   }
 
   return createError(
-    "The server could not be reached. Make sure that the node script is running and that a port has been started."
+    "The server could not be reached. Make sure that the node script is running and that a port has been started.",
   );
 };

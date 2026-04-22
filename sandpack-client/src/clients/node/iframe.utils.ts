@@ -4,13 +4,13 @@ import { nullthrows } from "../..";
 
 export async function loadPreviewIframe(
   iframe: HTMLIFrameElement,
-  url: string
+  url: string,
 ): Promise<void> {
   const { contentWindow } = iframe;
 
   nullthrows(
     contentWindow,
-    "Failed to await preview iframe: no content window found"
+    "Failed to await preview iframe: no content window found",
   );
 
   const TIME_OUT = 90_000;
@@ -55,7 +55,7 @@ export async function loadPreviewIframe(
 
 export const setPreviewIframeProperties = (
   iframe: HTMLIFrameElement,
-  options: ClientOptions
+  options: ClientOptions,
 ): void => {
   iframe.style.border = "0";
   iframe.style.width = options.width || "100%";

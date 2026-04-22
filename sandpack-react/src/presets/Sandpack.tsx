@@ -81,19 +81,18 @@ export const Sandpack: SandpackInternal = ({
    * Console
    */
   const [consoleVisibility, setConsoleVisibility] = React.useState(
-    options.showConsole
+    options.showConsole,
   );
   const [counter, setCounter] = React.useState(0);
   const hasRightColumn = options.showConsole || options.showConsoleButton;
 
-  /* eslint-disable-next-line @typescript-eslint/no-non-null-assertion */
   const templateFiles = SANDBOX_TEMPLATES[template!] ?? {};
   const mode = (
     options?.layout
       ? options?.layout
       : "mode" in templateFiles
-      ? templateFiles.mode
-      : "preview"
+        ? templateFiles.mode
+        : "preview"
   ) as typeof options.layout;
 
   const actionsChildren = options.showConsoleButton ? (
@@ -110,7 +109,7 @@ export const Sandpack: SandpackInternal = ({
   const dragEventTargetRef = React.useRef<any>(null);
 
   const [horizontalSize, setHorizontalSize] = React.useState(
-    options.editorWidthPercentage
+    options.editorWidthPercentage,
   );
   const [verticalSize, setVerticalSize] = React.useState(70);
 

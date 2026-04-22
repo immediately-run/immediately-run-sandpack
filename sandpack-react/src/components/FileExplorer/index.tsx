@@ -63,7 +63,7 @@ export const SandpackFileExplorer = ({
 
       return unsubscribe;
     },
-    [status]
+    [status],
   );
 
   const orderedFiles = Object.keys(files)

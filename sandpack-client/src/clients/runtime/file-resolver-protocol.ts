@@ -19,7 +19,7 @@ export default class Protocol {
   constructor(
     private type: string,
     private handleMessage: (message: ProtocolRequestMessage) => any,
-    private protocol: IFrameProtocol
+    private protocol: IFrameProtocol,
   ) {
     this._disposeMessageListener = this.protocol.channelListen(
       async (msg: any) => {
@@ -44,7 +44,7 @@ export default class Protocol {
             this.protocol.dispatch(response as any);
           }
         }
-      }
+      },
     );
   }
 

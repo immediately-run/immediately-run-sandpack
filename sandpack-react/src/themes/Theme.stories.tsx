@@ -20,7 +20,7 @@ Object.keys(SANDPACK_THEMES).forEach((themeName) =>
       template="react"
       theme={themeName as keyof typeof SANDPACK_THEMES}
     />
-  ))
+  )),
 );
 
 export const ThemeSwitcher = () => {

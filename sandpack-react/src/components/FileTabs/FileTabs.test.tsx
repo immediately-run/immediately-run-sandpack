@@ -22,7 +22,7 @@ describe("FileTabs", () => {
         template="react"
       >
         <SandpackCodeEditor />
-      </SandpackProvider>
+      </SandpackProvider>,
     );
 
     act(() => {
@@ -49,7 +49,7 @@ describe("FileTabs", () => {
         template="react"
       >
         <SandpackCodeEditor />
-      </SandpackProvider>
+      </SandpackProvider>,
     );
 
     act(() => {

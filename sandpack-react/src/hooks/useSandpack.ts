@@ -24,7 +24,7 @@ export function useSandpack(): UseSandpack {
 
   if (sandpack === null) {
     throw new Error(
-      `[sandpack-react]: "useSandpack" must be wrapped by a "SandpackProvider"`
+      `[sandpack-react]: "useSandpack" must be wrapped by a "SandpackProvider"`,
     );
   }
 

@@ -8,7 +8,7 @@ interface PackageJSON {
 export function getTemplate(
   pkg: PackageJSON | null,
   /* eslint-disable @typescript-eslint/no-explicit-any */
-  modules: any
+  modules: any,
 ): string | undefined {
   if (!pkg) {
     return "static";

@@ -13,7 +13,7 @@ import type { CustomLanguage, SandpackTheme } from "../../types";
 
 export const getCodeMirrorPosition = (
   doc: Text,
-  { line, column }: { line: number; column?: number }
+  { line, column }: { line: number; column?: number },
 ): number => {
   return doc.line(line).from + (column ?? 0) - 1;
 };
@@ -167,7 +167,7 @@ type SandpackLanguageSupport = "javascript" | "typescript" | "html" | "css";
 export const getLanguageFromFile = (
   filePath: string | undefined,
   fileType: string | undefined,
-  additionalLanguages: CustomLanguage[]
+  additionalLanguages: CustomLanguage[],
 ): string => {
   if (!filePath && !fileType) return "javascript";
 
@@ -209,7 +209,7 @@ export const getLanguageFromFile = (
 
 export const getCodeMirrorLanguage = (
   extension: string,
-  additionalLanguages: CustomLanguage[]
+  additionalLanguages: CustomLanguage[],
 ): LanguageSupport => {
   const options: Record<SandpackLanguageSupport, LanguageSupport> = {
     javascript: javascript({ jsx: true, typescript: false }),
@@ -248,5 +248,5 @@ export const useCombinedRefs = <T>(
         (ref as any).current = element;
       }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    refs
+    refs,
   );

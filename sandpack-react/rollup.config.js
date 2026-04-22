@@ -34,7 +34,7 @@ const configBase = [
         },
       }),
       typescript({ tsconfig: "./tsconfig.json" }),
-      filesize()
+      filesize(),
     ),
     output: [
       {
@@ -79,7 +79,7 @@ const configBase = [
       }),
       removeCss(),
       generateUnstyledTypes(),
-      filesize()
+      filesize(),
     ),
     output: [
       {

@@ -3,7 +3,7 @@ import type { FileContent } from "static-browser-server";
 export const insertHtmlAfterRegex = (
   regex: RegExp,
   content: string,
-  insertable: string
+  insertable: string,
 ): string | void => {
   const match = regex.exec(content);
   if (match && match.length >= 1) {

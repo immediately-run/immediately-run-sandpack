@@ -183,7 +183,7 @@ export type UnsubscribeFunction = () => void;
 
 export type Listen = (
   listener: ListenerFunction,
-  clientId?: string
+  clientId?: string,
 ) => UnsubscribeFunction;
 export type Dispatch = (msg: SandpackMessage, clientId?: string) => void;
 

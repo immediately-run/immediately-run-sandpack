@@ -41,5 +41,5 @@ Object.keys(SANDBOX_TEMPLATES).forEach((template) =>
         </SandpackLayout>
       </SandpackProvider>
     );
-  })
+  }),
 );

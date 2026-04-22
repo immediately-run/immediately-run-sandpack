@@ -5,7 +5,7 @@ export const getFileName = (filePath: string): string => {
 
 export const calculateNearestUniquePath = (
   currentPath: string,
-  otherPaths: string[]
+  otherPaths: string[],
 ): string => {
   const currentPathParts = (
     currentPath[0] === "/" ? currentPath.slice(1) : currentPath
@@ -54,7 +54,7 @@ export const calculateNearestUniquePath = (
 };
 
 export const hexToRGB = (
-  hex: string
+  hex: string,
 ): { red: number; green: number; blue: number } => {
   let r = "0";
   let g = "0";

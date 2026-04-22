@@ -31,12 +31,12 @@ interface FilesOperations {
   updateFile: (
     pathOrFiles: string | SandpackFiles,
     code?: string,
-    shouldUpdatePreview?: boolean
+    shouldUpdatePreview?: boolean,
   ) => void;
   addFile: (
     pathOrFiles: string | SandpackFiles,
     code?: string,
-    shouldUpdatePreview?: boolean
+    shouldUpdatePreview?: boolean,
   ) => void;
   closeFile: (path: string) => void;
   deleteFile: (path: string, shouldUpdatePreview?: boolean) => void;
@@ -48,7 +48,7 @@ export type UseFiles = (props: SandpackProviderProps) => [
       TemplateFiles<SandpackPredefinedTemplate> | string
     >;
   },
-  FilesOperations
+  FilesOperations,
 ];
 
 export const useFiles: UseFiles = (props) => {
@@ -68,7 +68,7 @@ export const useFiles: UseFiles = (props) => {
   const updateFile = (
     pathOrFiles: string | SandpackFiles,
     code?: string,
-    shouldUpdatePreview = true
+    shouldUpdatePreview = true,
   ): void => {
     setState((prev) => {
       let files = prev.files;
@@ -156,7 +156,7 @@ export const useFiles: UseFiles = (props) => {
         delete newFiles[path];
 
         const remainingVisibleFiles = visibleFiles.filter(
-          (openPath) => openPath !== path
+          (openPath) => openPath !== path,
         );
         const deletedLastVisibleFile = remainingVisibleFiles.length === 0;
 

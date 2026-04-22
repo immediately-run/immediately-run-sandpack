@@ -3,15 +3,17 @@ import { findStartScriptPackageJson } from "./client.utils";
 describe(findStartScriptPackageJson, () => {
   it("should parse a regular command", () => {
     expect(
-      findStartScriptPackageJson(JSON.stringify({ scripts: { start: "node" } }))
+      findStartScriptPackageJson(
+        JSON.stringify({ scripts: { start: "node" } }),
+      ),
     ).toEqual(["node", [], { env: {} }]);
   });
 
   it("should parse a regular command with arguments", () => {
     expect(
       findStartScriptPackageJson(
-        JSON.stringify({ scripts: { start: "node dev --foo" } })
-      )
+        JSON.stringify({ scripts: { start: "node dev --foo" } }),
+      ),
     ).toEqual(["node", ["dev", "--foo"], { env: {} }]);
   });
 
@@ -20,8 +22,8 @@ describe(findStartScriptPackageJson, () => {
       findStartScriptPackageJson(
         JSON.stringify({
           scripts: { start: "node start --foo", dev: "node dev --foo" },
-        })
-      )
+        }),
+      ),
     ).toEqual(["node", ["dev", "--foo"], { env: {} }]);
   });
 
@@ -30,8 +32,8 @@ describe(findStartScriptPackageJson, () => {
       findStartScriptPackageJson(
         JSON.stringify({
           scripts: { start: "NODE=1 ANOTHER=2 node start --foo" },
-        })
-      )
+        }),
+      ),
     ).toEqual([
       "node",
       ["start", "--foo"],
@@ -44,8 +46,8 @@ describe(findStartScriptPackageJson, () => {
       findStartScriptPackageJson(
         JSON.stringify({
           scripts: { start: "NODE=1 node start --foo" },
-        })
-      )
+        }),
+      ),
     ).toEqual(["node", ["start", "--foo"], { env: { NODE: "1" } }]);
   });
 
@@ -54,8 +56,8 @@ describe(findStartScriptPackageJson, () => {
       findStartScriptPackageJson(
         JSON.stringify({
           scripts: { start: "NODE=1 node" },
-        })
-      )
+        }),
+      ),
     ).toEqual(["node", [], { env: { NODE: "1" } }]);
   });
 });

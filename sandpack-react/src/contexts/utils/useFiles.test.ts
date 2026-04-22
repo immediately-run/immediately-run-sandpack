@@ -50,7 +50,7 @@ describe(useFiles, () => {
     // New list without deleted file
     expect(result.current[0].files["/src/index.js"]).toBe(undefined);
     expect(Object.keys(result.current[0].files)).toEqual(
-      fileList.filter((file) => file !== "/src/index.js")
+      fileList.filter((file) => file !== "/src/index.js"),
     );
   });
 
@@ -59,7 +59,7 @@ describe(useFiles, () => {
       useFiles({
         template: "react",
         options: { activeFile: "/App.js", visibleFiles: ["/styles.css"] },
-      })
+      }),
     );
 
     await act(async () => {
@@ -74,7 +74,7 @@ describe(useFiles, () => {
       useFiles({
         template: "react",
         options: { activeFile: "/App.js", visibleFiles: [] },
-      })
+      }),
     );
 
     await act(async () => {

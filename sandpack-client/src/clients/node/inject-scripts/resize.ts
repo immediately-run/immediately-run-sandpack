@@ -23,7 +23,7 @@ export function watchResize({ scope }: { scope: { channelId: string } }) {
           codesandbox: true,
           channelId: scope.channelId,
         },
-        "*"
+        "*",
       );
     }
 

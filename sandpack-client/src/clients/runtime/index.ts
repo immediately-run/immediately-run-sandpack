@@ -36,7 +36,7 @@ const BUNDLER_URL =
     ? "http://localhost:3000/"
     : `https://${process.env.PACKAGE_VERSION?.replace(
         /\./g,
-        "-"
+        "-",
       )}${SUFFIX_PLACEHOLDER}-sandpack.codesandbox.io/`;
 
 export class SandpackRuntime extends SandpackClient {
@@ -55,7 +55,7 @@ export class SandpackRuntime extends SandpackClient {
   constructor(
     selector: string | HTMLIFrameElement,
     sandboxSetup: SandboxSetup,
-    options: ClientOptions = {}
+    options: ClientOptions = {},
   ) {
     super(selector, sandboxSetup, options);
 
@@ -81,12 +81,12 @@ export class SandpackRuntime extends SandpackClient {
     if (!this.iframe.getAttribute("sandbox")) {
       this.iframe.setAttribute(
         "sandbox",
-        "allow-forms allow-modals allow-popups allow-presentation allow-same-origin allow-scripts allow-downloads allow-pointer-lock"
+        "allow-forms allow-modals allow-popups allow-presentation allow-same-origin allow-scripts allow-downloads allow-pointer-lock",
       );
 
       this.iframe.setAttribute(
         "allow",
-        "accelerometer; camera; encrypted-media; geolocation; gyroscope; hid; microphone; midi; clipboard-read; clipboard-write; xr-spatial-tracking;"
+        "accelerometer; camera; encrypted-media; geolocation; gyroscope; hid; microphone; midi; clipboard-read; clipboard-write; xr-spatial-tracking;",
       );
     }
 
@@ -107,21 +107,19 @@ export class SandpackRuntime extends SandpackClient {
             "fs",
             async (data) => {
               if (data.method === "isFile") {
-                // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
                 return this.options.fileResolver!.isFile(data.params[0]);
               } else if (data.method === "readFile") {
-                // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
                 return this.options.fileResolver!.readFile(data.params[0]);
               } else {
                 throw new Error("Method not supported");
               }
             },
-            this.iframeProtocol
+            this.iframeProtocol,
           );
         }
 
         this.updateSandbox(this.sandboxSetup, true);
-      }
+      },
     );
 
     this.unsubscribeChannelListener = this.iframeProtocol.channelListen(
@@ -150,7 +148,7 @@ export class SandpackRuntime extends SandpackClient {
             break;
           }
         }
-      }
+      },
     );
 
     if (options.experimental_enableServiceWorker) {
@@ -180,7 +178,7 @@ export class SandpackRuntime extends SandpackClient {
         SUFFIX_PLACEHOLDER,
         `-${
           this.options.experimental_stableServiceWorkerId ?? suffixes.join("-")
-        }`
+        }`,
       );
     } else {
       bundlerURL = bundlerURL.replace(SUFFIX_PLACEHOLDER, "");
@@ -228,7 +226,7 @@ export class SandpackRuntime extends SandpackClient {
 
   private async handleWorkerRequest(
     request: IPreviewRequestMessage,
-    port: MessagePort
+    port: MessagePort,
   ) {
     const notFound = () => {
       const responseMessage: IPreviewResponseMessage = {
@@ -256,7 +254,7 @@ export class SandpackRuntime extends SandpackClient {
         const modulesFromManager = await this.getTranspiledFiles();
 
         file = modulesFromManager.find((item) =>
-          item.path.endsWith(filepath)
+          item.path.endsWith(filepath),
         ) as SandpackBundlerFile;
 
         if (!file) {
@@ -315,7 +313,7 @@ export class SandpackRuntime extends SandpackClient {
 
   updateSandbox(
     sandboxSetup = this.sandboxSetup,
-    isInitializationCompile?: boolean
+    isInitializationCompile?: boolean,
   ): void {
     this.sandboxSetup = {
       ...this.sandboxSetup,
@@ -332,23 +330,23 @@ export class SandpackRuntime extends SandpackClient {
           path: next,
         },
       }),
-      {}
+      {},
     );
 
     let packageJSON = JSON.parse(
       createPackageJSON(
         this.sandboxSetup.dependencies,
         this.sandboxSetup.devDependencies,
-        this.sandboxSetup.entry
-      )
+        this.sandboxSetup.entry,
+      ),
     );
     try {
       packageJSON = JSON.parse(files["/package.json"].code);
     } catch (e) {
       console.error(
         createError(
-          "could not parse package.json file: " + (e as Error).message
-        )
+          "could not parse package.json file: " + (e as Error).message,
+        ),
       );
     }
 
@@ -361,7 +359,7 @@ export class SandpackRuntime extends SandpackClient {
           path: next,
         },
       }),
-      {}
+      {},
     );
 
     this.dispatch({
@@ -433,7 +431,7 @@ export class SandpackRuntime extends SandpackClient {
           isBinary: false,
         },
       }),
-      {}
+      {},
     );
 
     return fetch("https://codesandbox.io/api/v1/sandboxes/define?json=1", {
@@ -491,7 +489,7 @@ export class SandpackRuntime extends SandpackClient {
         sandboxSetup.files,
         sandboxSetup.dependencies,
         sandboxSetup.devDependencies,
-        sandboxSetup.entry
+        sandboxSetup.entry,
       );
     }
 
@@ -506,7 +504,7 @@ export class SandpackRuntime extends SandpackClient {
 
     nullthrows(
       this.element.parentNode,
-      "The given iframe does not have a parent."
+      "The given iframe does not have a parent.",
     );
 
     this.element.parentNode!.replaceChild(this.iframe, this.element);

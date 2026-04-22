@@ -30,12 +30,12 @@ export const useAsyncSandpackId = (files: SandpackBundlerFiles) => {
         .map((path, code) => path + "|" + code)
         .join("|||");
       const sha = await generateShortId(
-        allCode + reactDomId + sandpackClientVersion
+        allCode + reactDomId + sandpackClientVersion,
       );
 
       return ensureLength(
         sha.replace(/:/g, "sp").replace(/[^a-zA-Z]/g, ""),
-        MAX_ID_LENGTH
+        MAX_ID_LENGTH,
       );
     };
   } else {

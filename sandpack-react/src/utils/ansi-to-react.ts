@@ -108,7 +108,7 @@ function convertBundleIntoReact(
   linkify: boolean,
   useClasses: boolean,
   bundle: AnserJsonEntry,
-  key: number
+  key: number,
 ): JSX.Element {
   const style = useClasses ? null : createStyle(bundle);
   const className = useClasses ? createClass(bundle) : null;
@@ -117,7 +117,7 @@ function convertBundleIntoReact(
     return React.createElement(
       "span",
       { style, key, className },
-      bundle.content
+      bundle.content,
     );
   }
 
@@ -146,8 +146,8 @@ function convertBundleIntoReact(
           href,
           target: "_blank",
         },
-        `${url}`
-      )
+        `${url}`,
+      ),
     );
 
     index = linkRegex.lastIndex;
@@ -173,8 +173,8 @@ export default function Ansi(props: Props): JSX.Element {
     "code",
     { className },
     ansiToJSON(children ?? "", useClasses ?? false).map(
-      convertBundleIntoReact.bind(null, linkify ?? false, useClasses ?? false)
-    )
+      convertBundleIntoReact.bind(null, linkify ?? false, useClasses ?? false),
+    ),
   );
 }
 

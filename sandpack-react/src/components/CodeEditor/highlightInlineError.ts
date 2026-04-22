@@ -41,5 +41,5 @@ const activeLineHighlighter = ViewPlugin.fromClass(
   },
   {
     decorations: (v) => v.decorations,
-  }
+  },
 );

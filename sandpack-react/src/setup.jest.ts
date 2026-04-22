@@ -6,7 +6,7 @@ Object.assign(global, { TextDecoder, TextEncoder });
 const subtle = {
   digest: async function (
     algorithm: string,
-    data: Uint8Array
+    data: Uint8Array,
   ): Promise<ArrayBuffer> {
     const hash = crypto.createHash("sha256");
     hash.update(Buffer.from(data));

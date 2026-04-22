@@ -39,7 +39,7 @@ const defaultVariables = {
  * @category Theme
  */
 export const standardizeStitchesTheme = (
-  theme: SandpackTheme
+  theme: SandpackTheme,
 ): Record<string, Record<string, string>> => {
   // Flat values
   const syntaxEntries = Object.entries(theme.syntax);
@@ -56,7 +56,7 @@ export const standardizeStitchesTheme = (
             [`${styleProp}-${tokenName}`]: styleValue,
           };
         },
-        {}
+        {},
       );
     }
 
@@ -75,7 +75,7 @@ export const standardizeStitchesTheme = (
  * @category Theme
  */
 export const standardizeTheme = (
-  inputTheme: SandpackThemeProp = "light"
+  inputTheme: SandpackThemeProp = "light",
 ): { id: string; theme: SandpackTheme; mode: "dark" | "light" } => {
   const defaultLightThemeKey = "default";
 
@@ -86,7 +86,7 @@ export const standardizeTheme = (
     const predefinedTheme = SANDPACK_THEMES[inputTheme];
     if (!predefinedTheme) {
       throw new Error(
-        `[sandpack-react]: invalid theme '${inputTheme}' provided.`
+        `[sandpack-react]: invalid theme '${inputTheme}' provided.`,
       );
     }
 
@@ -101,7 +101,7 @@ export const standardizeTheme = (
    * Fullfill the colors key, in case it's missing any key
    */
   const mode = isDarkColor(
-    inputTheme?.colors?.surface1 ?? defaultLight.colors.surface1
+    inputTheme?.colors?.surface1 ?? defaultLight.colors.surface1,
   )
     ? "dark"
     : "light";

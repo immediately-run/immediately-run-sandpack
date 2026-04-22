@@ -60,7 +60,7 @@ export const Navigator = ({
   const { sandpack, dispatch, listen } = useSandpack();
 
   const [relativeUrl, setRelativeUrl] = React.useState<string>(
-    startRoute ?? sandpack.startRoute ?? "/"
+    startRoute ?? sandpack.startRoute ?? "/",
   );
 
   const [backEnabled, setBackEnabled] = React.useState(false);

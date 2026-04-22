@@ -14,7 +14,7 @@ describe(useAppState, () => {
     const internalState = getSandpackStateFromProps(props);
 
     const { result } = renderHook(() =>
-      useAppState(props, internalState.files)
+      useAppState(props, internalState.files),
     );
 
     expect(result.current.editorState).toBe("pristine");
@@ -26,7 +26,7 @@ describe(useAppState, () => {
 
     const { result, rerender } = renderHook(
       (initialInternalState) => useAppState(props, initialInternalState.files),
-      { initialProps: internalState }
+      { initialProps: internalState },
     );
     expect(result.current.editorState).toBe("pristine");
 
@@ -46,7 +46,7 @@ describe(useAppState, () => {
 
     const { result, rerender } = renderHook(
       (initialInternalState) => useAppState(props, initialInternalState.files),
-      { initialProps: internalState }
+      { initialProps: internalState },
     );
     expect(result.current.editorState).toBe("pristine");
 
@@ -70,7 +70,7 @@ describe(useAppState, () => {
 
     const { result, rerender } = renderHook(
       (initialInternalState) => useAppState(props, initialInternalState.files),
-      { initialProps: internalState }
+      { initialProps: internalState },
     );
     expect(result.current.editorState).toBe("pristine");
 
@@ -93,7 +93,7 @@ describe(useAppState, () => {
             code: VANILLA_TEMPLATE["files"]["/index.js"].code,
           },
         },
-      })
+      }),
     );
     expect(result.current.editorState).toBe("pristine");
   });

@@ -11,7 +11,7 @@ interface SandpackAppState {
 
 type UseAppState = (
   props: SandpackProviderProps,
-  files: SandpackBundlerFiles
+  files: SandpackBundlerFiles,
 ) => SandpackAppState;
 
 export const useAppState: UseAppState = (props, files) => {

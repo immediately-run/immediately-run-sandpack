@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/ban-ts-comment, @typescript-eslint/explicit-function-return-type, no-restricted-globals, @typescript-eslint/no-explicit-any  */
+/* eslint-disable @typescript-eslint/ban-ts-comment  */
 
 export function setupHistoryListeners({
   scope,
@@ -20,7 +20,7 @@ export function setupHistoryListeners({
         forward: historyPosition < historyList.length - 1,
         channelId: scope.channelId,
       },
-      "*"
+      "*",
     );
   };
 

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/explicit-function-return-type */
 import type { SandpackBundlerFiles } from "@codesandbox/sandpack-client";
 import LZString from "lz-string";
 import * as React from "react";
@@ -17,7 +16,7 @@ const CSB_URL = "https://codesandbox.io/api/v1/sandboxes/define";
 
 const getFileParameters = (
   files: SandpackBundlerFiles,
-  environment?: SandboxEnvironment
+  environment?: SandboxEnvironment,
 ): string => {
   type NormalizedFiles = Record<
     string,
@@ -86,7 +85,7 @@ export const ExportToWorkspaceButton: React.FC<
 
     window.open(
       `https://codesandbox.io/p/sandbox/${data.data.alias}?file=/${state.activeFile}&utm-source=storybook-addon`,
-      "_blank"
+      "_blank",
     );
   };
 
@@ -128,7 +127,7 @@ const RegularExportButton: React.FC<
         clearTimeout(timer);
       };
     },
-    [state.activeFile, state.environment, state.files]
+    [state.activeFile, state.environment, state.files],
   );
 
   /**
@@ -159,7 +158,7 @@ const RegularExportButton: React.FC<
             paramsValues as unknown as Array<[string, string]>,
             ([key, value]) => (
               <input key={key} name={key} type="hidden" value={value} />
-            )
+            ),
           )}
         </form>
         {children}

@@ -1,7 +1,7 @@
 import type { SandpackMessageConsoleMethods } from "@codesandbox/sandpack-client";
 
 export const getType = (
-  message: SandpackMessageConsoleMethods
+  message: SandpackMessageConsoleMethods,
 ): "info" | "warning" | "error" | "clear" => {
   switch (message) {
     case "warn":

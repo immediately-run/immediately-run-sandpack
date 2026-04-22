@@ -32,7 +32,7 @@ export interface SandpackContextInfo {
  * sandpack-content throughout application
  */
 export const getSandpackStateFromProps = (
-  props: SandpackProviderProps
+  props: SandpackProviderProps,
 ): SandpackContextInfo => {
   const normalizedFilesPath = normalizePath(props.files);
 
@@ -103,14 +103,14 @@ export const getSandpackStateFromProps = (
     projectSetup.files,
     projectSetup.dependencies ?? {},
     projectSetup.devDependencies ?? {},
-    projectSetup.entry
+    projectSetup.entry,
   );
 
   const existOpenPath = visibleFiles.filter((path) => files[path]);
 
   return {
     visibleFiles: existOpenPath,
-    /* eslint-disable-next-line @typescript-eslint/no-non-null-assertion */
+
     activeFile: activeFile!,
     files,
     environment: projectSetup.environment,
@@ -128,7 +128,7 @@ export const getSandpackStateFromProps = (
  */
 export const resolveFile = (
   path: string,
-  files: SandpackFiles
+  files: SandpackFiles,
 ): string | null => {
   const normalizedFilesPath = normalizePath(files);
   const normalizedPath = normalizePath(path);
@@ -190,7 +190,7 @@ const combineTemplateFilesToSetup = ({
 
     if (!files || Object.keys(files).length === 0) {
       throw new Error(
-        `[sandpack-react]: without a template, you must pass at least one file`
+        `[sandpack-react]: without a template, you must pass at least one file`,
       );
     }
 
@@ -206,7 +206,7 @@ const combineTemplateFilesToSetup = ({
   ] as unknown as SandboxTemplate;
   if (!baseTemplate) {
     throw new Error(
-      `[sandpack-react]: invalid template "${template}" provided`
+      `[sandpack-react]: invalid template "${template}" provided`,
     );
   }
 
@@ -248,7 +248,7 @@ const combineTemplateFilesToSetup = ({
  * To: Record<string, { code: string }>
  */
 export const convertedFilesToBundlerFiles = (
-  files?: SandpackFiles
+  files?: SandpackFiles,
 ): SandpackBundlerFiles => {
   if (!files) return {};
 

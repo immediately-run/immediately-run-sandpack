@@ -35,5 +35,5 @@ Object.entries(allThemes).forEach(([themeName, value]) =>
         </SandpackLayout>
       </SandpackProvider>
     </>
-  ))
+  )),
 );

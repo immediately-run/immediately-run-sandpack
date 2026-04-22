@@ -394,7 +394,7 @@ describe(getSandpackStateFromProps, () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       expect(err.message).toEqual(
-        `[sandpack-client]: "entry" was not specified - provide either a package.json with the "main" field or na "entry" value`
+        `[sandpack-client]: "entry" was not specified - provide either a package.json with the "main" field or na "entry" value`,
       );
     }
   });
@@ -407,7 +407,7 @@ describe(getSandpackStateFromProps, () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       expect(err.message).toEqual(
-        "[sandpack-react]: without a template, you must pass at least one file"
+        "[sandpack-react]: without a template, you must pass at least one file",
       );
     }
   });
@@ -422,7 +422,7 @@ describe(getSandpackStateFromProps, () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       expect(err.message).toEqual(
-        `[sandpack-react]: invalid template "WHATEVER" provided`
+        `[sandpack-react]: invalid template "WHATEVER" provided`,
       );
     }
   });
@@ -437,7 +437,7 @@ describe(convertedFilesToBundlerFiles, () => {
 
   it("keeps bundler files original", () => {
     expect(
-      convertedFilesToBundlerFiles({ name: { code: "code", hidden: true } })
+      convertedFilesToBundlerFiles({ name: { code: "code", hidden: true } }),
     ).toEqual({
       name: { code: "code", hidden: true },
     });

@@ -1,4 +1,4 @@
-// Jest Snapshot v1, https://goo.gl/fbAQLP
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
 
 exports[`useSyntaxHighlight renders a css block 1`] = `
 <div>
@@ -731,12 +731,7 @@ exports[`useSyntaxHighlight renders a js block 1`] = `
   >
     new
   </span>
-   
-  <span
-    class="sp-syntax-plain"
-  >
-    Regex
-  </span>
+   Regex
   <span
     class="sp-syntax-punctuation"
   >
@@ -1353,12 +1348,7 @@ exports[`useSyntaxHighlight renders a less block 1`] = `
   >
     :
   </span>
-   10
-  <span
-    class="sp-syntax-keyword"
-  >
-    px
-  </span>
+   10px
   <span
     class="sp-syntax-punctuation"
   >
@@ -1382,12 +1372,7 @@ exports[`useSyntaxHighlight renders a less block 1`] = `
   >
     @width
   </span>
-   + 10
-  <span
-    class="sp-syntax-definition"
-  >
-    px
-  </span>
+   + 10px
   <span
     class="sp-syntax-punctuation"
   >
@@ -1413,11 +1398,11 @@ exports[`useSyntaxHighlight renders a less block 1`] = `
   >
     :
   </span>
-   @
+   
   <span
-    class="sp-syntax-static"
+    class="sp-syntax-keyword"
   >
-    width
+    @width
   </span>
   <span
     class="sp-syntax-punctuation"
@@ -1427,7 +1412,7 @@ exports[`useSyntaxHighlight renders a less block 1`] = `
   
   
   <span
-    class="sp-syntax-property"
+    class="sp-syntax-definition"
   >
     height
   </span>
@@ -1436,11 +1421,11 @@ exports[`useSyntaxHighlight renders a less block 1`] = `
   >
     :
   </span>
-   @
+   
   <span
-    class="sp-syntax-static"
+    class="sp-syntax-keyword"
   >
-    height
+    @height
   </span>
   <span
     class="sp-syntax-punctuation"

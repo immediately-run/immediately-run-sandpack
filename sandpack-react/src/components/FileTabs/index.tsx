@@ -119,7 +119,7 @@ export const FileTabs = ({
     } else {
       return calculateNearestUniquePath(
         currentPath,
-        pathsWithDuplicateFileNames
+        pathsWithDuplicateFileNames,
       );
     }
   };
@@ -189,6 +189,7 @@ export const FileTabs = ({
       >
         {visibleFiles.map((filePath, index) => (
           <div
+            key={filePath}
             aria-controls={`${filePath}-${activeFileUniqueId}-tab-panel`}
             aria-selected={filePath === activeFile}
             className={classNames("tab-container", [tabContainer])}
@@ -196,7 +197,6 @@ export const FileTabs = ({
             onMouseEnter={() => setIsHoveredIndex(index)}
             onMouseLeave={() => setIsHoveredIndex(null)}
             role="tab"
-            key={filePath}
           >
             <button
               className={classNames("tab-button", [buttonClassName, tabButton])}

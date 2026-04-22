@@ -1,5 +1,3 @@
-/* eslint-disable no-console,@typescript-eslint/no-explicit-any,prefer-rest-params,@typescript-eslint/explicit-module-boundary-types */
-
 import { PREVIEW_LOADED_MESSAGE_TYPE, Nodebox } from "@codesandbox/nodebox";
 import type {
   FilesMap,
@@ -52,7 +50,7 @@ export class SandpackNode extends SandpackClient {
   constructor(
     selector: string | HTMLIFrameElement,
     sandboxInfo: SandboxSetup,
-    options: ClientOptions = {}
+    options: ClientOptions = {},
   ) {
     super(selector, sandboxInfo, {
       ...options,
@@ -125,7 +123,7 @@ export class SandpackNode extends SandpackClient {
    * It creates a new shell and run the starting task
    */
   private async createShellProcessFromTask(
-    files: FilesMap
+    files: FilesMap,
   ): Promise<{ id: string }> {
     const packageJsonContent = readBuffer(files["/package.json"]);
 
@@ -212,7 +210,7 @@ export class SandpackNode extends SandpackClient {
 
     nullthrows(
       this.iframe.parentNode,
-      `The given iframe does not have a parent.`
+      `The given iframe does not have a parent.`,
     );
 
     /**
@@ -290,8 +288,8 @@ export class SandpackNode extends SandpackClient {
           "newPath" in event
             ? event.newPath
             : "path" in event
-            ? event.path
-            : "";
+              ? event.path
+              : "";
         const { type } = await this.emulator.fs.stat(path);
         if (type !== "file") return null;
 
@@ -301,7 +299,7 @@ export class SandpackNode extends SandpackClient {
             case "create": {
               const content = await this.emulator.fs.readFile(
                 event.path,
-                "utf8"
+                "utf8",
               );
               this.dispatch({
                 type: "fs/change",
@@ -333,7 +331,7 @@ export class SandpackNode extends SandpackClient {
 
               const newContent = await this.emulator.fs.readFile(
                 event.newPath,
-                "utf8"
+                "utf8",
               );
               this.dispatch({
                 type: "fs/change",
@@ -357,7 +355,7 @@ export class SandpackNode extends SandpackClient {
             title: getMessageFromError(err as Error),
           });
         }
-      }
+      },
     );
   }
 

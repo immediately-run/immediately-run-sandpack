@@ -31,7 +31,7 @@ export class SandpackStatic extends SandpackClient {
   constructor(
     selector: string | HTMLIFrameElement,
     sandboxSetup: SandboxSetup,
-    options: ClientOptions = {}
+    options: ClientOptions = {},
   ) {
     super(selector, sandboxSetup, options);
 
@@ -54,7 +54,7 @@ export class SandpackStatic extends SandpackClient {
             content = this.injectProtocolScript(content);
             content = this.injectExternalResources(
               content,
-              options.externalResources
+              options.externalResources,
             );
             content = this.injectScriptIntoHead(content, {
               script: consoleHook,
@@ -81,12 +81,12 @@ export class SandpackStatic extends SandpackClient {
     if (!this.iframe.getAttribute("sandbox")) {
       this.iframe.setAttribute(
         "sandbox",
-        "allow-forms allow-modals allow-popups allow-presentation allow-same-origin allow-scripts allow-downloads allow-pointer-lock"
+        "allow-forms allow-modals allow-popups allow-presentation allow-same-origin allow-scripts allow-downloads allow-pointer-lock",
       );
 
       this.iframe.setAttribute(
         "allow",
-        "accelerometer; camera; encrypted-media; geolocation; gyroscope; hid; microphone; midi; clipboard-read; clipboard-write; xr-spatial-tracking;"
+        "accelerometer; camera; encrypted-media; geolocation; gyroscope; hid; microphone; midi; clipboard-read; clipboard-write; xr-spatial-tracking;",
       );
     }
 
@@ -101,7 +101,7 @@ export class SandpackStatic extends SandpackClient {
 
   private injectContentIntoHead(
     content: FileContent,
-    contentToInsert: string
+    contentToInsert: string,
   ): FileContent {
     // Make it a string
     content = readBuffer(content);
@@ -128,7 +128,7 @@ export class SandpackStatic extends SandpackClient {
 
   private injectExternalResources(
     content: FileContent,
-    externalResources: ClientOptions["externalResources"] = []
+    externalResources: ClientOptions["externalResources"] = [],
   ): FileContent {
     const tagsToInsert = externalResources
       .map((resource) => {
@@ -144,7 +144,7 @@ export class SandpackStatic extends SandpackClient {
         }
 
         throw new Error(
-          `Unable to determine file type for external resource: ${resource}`
+          `Unable to determine file type for external resource: ${resource}`,
         );
       })
       .join("\n");
@@ -158,7 +158,7 @@ export class SandpackStatic extends SandpackClient {
       script: string;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       scope?: { channelId: string } & Record<string, any>;
-    }
+    },
   ): FileContent {
     const { script, scope = {} } = opts;
     const scriptToInsert = `
@@ -173,7 +173,7 @@ export class SandpackStatic extends SandpackClient {
 
   public updateSandbox(
     setup = this.sandboxSetup,
-    _isInitializationCompile?: boolean
+    _isInitializationCompile?: boolean,
   ): void {
     const modules = fromBundlerFilesToFS(setup.files);
 

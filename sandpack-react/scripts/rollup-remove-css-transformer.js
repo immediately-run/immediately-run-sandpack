@@ -24,7 +24,7 @@ module.exports = function () {
             path.join(__dirname, "../src/styles")
           ) {
             const specify = _node.specifiers?.find(
-              (specify) => specify.imported.name === "css"
+              (specify) => specify.imported.name === "css",
             );
 
             if (specify) {

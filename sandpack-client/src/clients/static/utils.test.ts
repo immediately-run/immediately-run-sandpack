@@ -12,7 +12,7 @@ describe(validateHtml, () => {
 
     expect(validatedContent).toContain("<!DOCTYPE html>");
     expect(validatedContent).toContain(
-      '<html lang="en"><head><title>Test</title></head><body><p>Hello world!</p></body></html>'
+      '<html lang="en"><head><title>Test</title></head><body><p>Hello world!</p></body></html>',
     );
   });
 
@@ -22,7 +22,7 @@ describe(validateHtml, () => {
 
     expect(validatedContent).toContain("<!DOCTYPE html>");
     expect(validatedContent).toContain(
-      '<html lang="en"><head></head><body></body></html>'
+      '<html lang="en"><head></head><body></body></html>',
     );
   });
 

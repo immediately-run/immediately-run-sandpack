@@ -38,7 +38,7 @@ describe("getSandpackCssText", () => {
     renderToString(
       <SandpackProvider>
         <div />
-      </SandpackProvider>
+      </SandpackProvider>,
     );
 
     expect(getSandpackCssText().length).toBe(4600);
@@ -62,7 +62,7 @@ describe("getSandpackCssText", () => {
     renderToString(
       <SandpackProvider>
         <SandpackCodeEditor />
-      </SandpackProvider>
+      </SandpackProvider>,
     );
 
     expect(getSandpackCssText()).toContain(componentClassName);
@@ -91,7 +91,7 @@ describe("getSandpackCssText", () => {
         <SandpackProvider>
           <SandpackCodeEditor />
         </SandpackProvider>
-      </>
+      </>,
     );
 
     const selector = new RegExp(`${componentClassName}{`, "gm");
@@ -113,7 +113,7 @@ describe("getSandpackCssText", () => {
       <>
         <Sandpack theme="light" />
         <Sandpack theme="light" />
-      </>
+      </>,
     );
 
     expect(getSandpackCssText()).toContain("--sxs{--sxs:0 light}");
@@ -135,7 +135,7 @@ describe("getSandpackCssText", () => {
       <>
         <Sandpack theme="light" />
         <Sandpack theme="dark" />
-      </>
+      </>,
     );
 
     expect(getSandpackCssText()).toContain("--sxs{--sxs:0 light dark}");

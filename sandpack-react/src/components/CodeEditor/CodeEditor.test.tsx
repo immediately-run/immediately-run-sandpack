@@ -16,7 +16,7 @@ describe("read-only", () => {
     render(
       <SandpackProvider>
         <SandpackCodeEditor readOnly />
-      </SandpackProvider>
+      </SandpackProvider>,
     );
 
     act(() => {
@@ -31,7 +31,7 @@ describe("read-only", () => {
     render(
       <SandpackProvider>
         <SandpackCodeEditor showReadOnly={false} readOnly />
-      </SandpackProvider>
+      </SandpackProvider>,
     );
 
     act(() => {

@@ -1,9 +1,7 @@
-import { styled } from "../../stitches.config";
+import { styled } from "../../styles/styled";
 
-export const List = styled("ul", {
-  listStyle: "none",
-  margin: 0,
-  padding: 0,
-});
+import { listClassName, listItemClassName } from "./List.css";
 
-export const ListItem = styled("li", { flex: 1 });
+export const List = styled("ul", listClassName);
+
+export const ListItem = styled("li", listItemClassName);

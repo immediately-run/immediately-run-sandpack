@@ -1,7 +1,6 @@
 import type { TestError } from "@codesandbox/sandpack-client";
 import React from "react";
 
-import { css } from "../../styles";
 import { useClassNames } from "../../utils/classNames";
 
 import {
@@ -9,28 +8,13 @@ import {
   passTextClassName,
   skipTextClassName,
 } from "./style";
-
-const testContainerClassName = css({
-  marginLeft: "$space$4",
-});
-
-const containerClassName = css({
-  marginBottom: "$space$2",
-  color: "$colors$clickable",
-});
-
-const testClassName = css({
-  marginBottom: "$space$2",
-  color: "$colors$hover",
-});
-
-const durationClassName = css({
-  marginLeft: "$space$2",
-});
-
-const gapRightClassName = css({
-  marginRight: "$space$2",
-});
+import {
+  containerClassName,
+  durationClassName,
+  gapRightClassName,
+  testClassName,
+  testContainerClassName,
+} from "./Tests.css";
 
 type TestStatus = "idle" | "running" | "pass" | "fail";
 

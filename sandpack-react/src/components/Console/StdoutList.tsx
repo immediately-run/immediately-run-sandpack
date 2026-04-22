@@ -1,8 +1,9 @@
 import * as React from "react";
 
-import { css } from "../../styles";
 import Ansi from "../../utils/ansi-to-react";
 import { useClassNames } from "../../utils/classNames";
+
+import { consoleItemClassName } from "./StdoutList.css";
 
 export const StdoutList: React.FC<{
   data: Array<{ data: string; id: string }>;
@@ -23,21 +24,3 @@ export const StdoutList: React.FC<{
     </>
   );
 };
-
-const consoleItemClassName = css({
-  width: "100%",
-  padding: "$space$3 $space$2",
-  fontSize: ".85em",
-  position: "relative",
-  whiteSpace: "pre",
-
-  "&:not(:first-child):after": {
-    content: "",
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 1,
-    background: "$colors$surface3",
-  },
-});

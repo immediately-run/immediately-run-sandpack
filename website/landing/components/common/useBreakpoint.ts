@@ -1,19 +1,22 @@
 import { useCallback, useEffect, useState } from "react";
 
-import { media } from "../../stitches.config";
+import { breakpoints } from "../../styles/breakpoints";
+
+const stripScreenPrefix = (mq: string): string =>
+  mq.replace(/^screen and /, "");
 
 export const useBreakpoint = (
-  breakpoint: keyof typeof media | string
+  breakpoint: keyof typeof breakpoints | string,
 ): boolean => {
   const [value, setValue] = useState(true);
 
   const checkBreakpoint = useCallback(() => {
-    const query =
-      breakpoint in media
-        ? media[breakpoint as keyof typeof media]
+    const raw =
+      breakpoint in breakpoints
+        ? breakpoints[breakpoint as keyof typeof breakpoints]
         : `(min-width: ${breakpoint}px)`;
 
-    setValue(window.matchMedia(query).matches);
+    setValue(window.matchMedia(stripScreenPrefix(raw)).matches);
   }, [breakpoint]);
 
   useEffect(() => {

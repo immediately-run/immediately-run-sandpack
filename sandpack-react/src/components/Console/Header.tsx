@@ -1,27 +1,15 @@
 import React from "react";
 
-import { css } from "../../styles";
-import { buttonClassName, roundedButtonClassName } from "../../styles/shared";
+import { buttonClassName, roundedButtonClassName } from "../../styles/shared.css";
 import { useClassNames } from "../../utils/classNames";
 import { ConsoleIcon } from "../icons";
 
-const wrapperClassName = css({
-  justifyContent: "space-between",
-  borderBottom: "1px solid $colors$surface2",
-  padding: "0 $space$2",
-  fontFamily: "$font$mono",
-  height: "$layout$headerHeight",
-  minHeight: "$layout$headerHeight",
-  overflowX: "auto",
-  whiteSpace: "nowrap",
-});
-
-const flexClassName = css({
-  display: "flex",
-  flexDirection: "row",
-  alignItems: "center",
-  gap: "$space$2",
-});
+import {
+  flexClassName,
+  headerButtonClassName,
+  headerTitleClassName,
+  wrapperClassName,
+} from "./Header.css";
 
 export const Header: React.FC<{
   currentTab: "server" | "client";
@@ -33,7 +21,7 @@ export const Header: React.FC<{
   const buttonsClassName = classNames("console-header-button", [
     buttonClassName,
     roundedButtonClassName,
-    css({ padding: "$space$1 $space$3" }),
+    headerButtonClassName,
   ]);
 
   return (
@@ -44,19 +32,7 @@ export const Header: React.FC<{
       ])}
     >
       <p
-        className={classNames("console-header-title", [
-          css({
-            lineHeight: 1,
-            margin: 0,
-            color: "$colors$base",
-            fontSize: "$font$size",
-
-            display: "flex",
-            alignItems: "center",
-
-            gap: "$space$2",
-          }),
-        ])}
+        className={classNames("console-header-title", [headerTitleClassName])}
       >
         <ConsoleIcon />
         <span>Terminal</span>

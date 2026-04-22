@@ -1,8 +1,7 @@
 import * as React from "react";
 
 import { useSandpack } from "../../hooks/useSandpack";
-import { css } from "../../styles";
-import { buttonClassName } from "../../styles/shared";
+import { buttonClassName } from "../../styles/shared.css";
 import { useClassNames } from "../../utils/classNames";
 import {
   calculateNearestUniquePath,
@@ -10,63 +9,15 @@ import {
 } from "../../utils/stringUtils";
 import { CloseIcon } from "../icons";
 
-const tabsClassName = css({
-  borderBottom: "1px solid $colors$surface2",
-  background: "$colors$surface1",
-});
+import {
+  closeButtonClassName,
+  tabButton,
+  tabContainer,
+  tabsClassName,
+  tabsScrollableClassName,
+} from "./FileTabs.css";
 
-const tabsScrollableClassName = css({
-  padding: "0 $space$2",
-  overflow: "auto",
-  display: "flex",
-  flexWrap: "nowrap",
-  alignItems: "stretch",
-  minHeight: "40px",
-  marginBottom: "-1px",
-});
-
-const tabContainer = css({
-  display: "flex",
-  alignItems: "center",
-  outline: "none",
-  position: "relative",
-  paddingRight: "20px",
-  margin: "1px 0",
-
-  "&:has(button:focus)": {
-    outline: "$colors$accent auto 1px",
-  },
-});
-
-const closeButtonClassName = css({
-  padding: "0 $space$1 0 $space$1",
-  borderRadius: "$border$radius",
-  marginLeft: "$space$1",
-  width: "$space$5",
-  visibility: "hidden",
-  cursor: "pointer",
-  position: "absolute",
-  right: "0px",
-
-  svg: {
-    width: "$space$3",
-    height: "$space$3",
-    display: "block",
-    position: "relative",
-    top: 1,
-  },
-});
-
-export const tabButton = css({
-  padding: "0 $space$2",
-  height: "$layout$headerHeight",
-  whiteSpace: "nowrap",
-
-  "&:focus": {
-    outline: "none",
-  },
-  [`&:hover ~ .${closeButtonClassName}`]: { visibility: "visible" },
-});
+export { tabButton };
 
 export interface FileTabsProps {
   /**

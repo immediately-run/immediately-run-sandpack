@@ -2,7 +2,7 @@ import {
   buttonClassName,
   iconStandaloneClassName,
   roundedButtonClassName,
-} from "../../../styles/shared";
+} from "../../../styles/shared.css";
 import { useClassNames } from "../../../utils/classNames";
 import { ExportIcon } from "../../icons";
 

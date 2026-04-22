@@ -1,6 +1,8 @@
 import { motion } from "framer-motion";
 
-import { styled } from "../../stitches.config";
+import { styled } from "../../styles/styled";
 
-export const AnimatedBox = styled(motion.div, {});
-export const Box = styled("div", {});
+import { animatedBox, box } from "./Box.css";
+
+export const AnimatedBox = styled(motion.div, animatedBox);
+export const Box = styled("div", box);

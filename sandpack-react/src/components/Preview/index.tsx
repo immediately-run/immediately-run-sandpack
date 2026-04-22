@@ -9,12 +9,11 @@ import {
   useSandpackNavigation,
   useSandpackShell,
 } from "../../hooks";
-import { css, THEME_PREFIX } from "../../styles";
 import {
   buttonClassName,
   iconStandaloneClassName,
   roundedButtonClassName,
-} from "../../styles/shared";
+} from "../../styles/shared.css";
 import { useClassNames } from "../../utils/classNames";
 import { Navigator } from "../Navigator";
 import { ErrorOverlay } from "../common/ErrorOverlay";
@@ -24,6 +23,12 @@ import { RoundedButton } from "../common/RoundedButton";
 import { SandpackStack } from "../common/Stack";
 import { RefreshIcon, RestartIcon } from "../icons";
 import { SignOutIcon } from "../icons";
+
+import {
+  previewActionsClassName,
+  previewClassName,
+  previewIframe,
+} from "./Preview.css";
 
 export interface PreviewProps {
   style?: React.CSSProperties;
@@ -42,46 +47,6 @@ export interface PreviewProps {
   children?: JSX.Element;
   startRoute?: string;
 }
-
-const previewClassName = css({
-  flex: 1,
-  display: "flex",
-  flexDirection: "column",
-  background: "white",
-  overflow: "auto",
-  position: "relative",
-
-  [`.${THEME_PREFIX}-bridge-frame`]: {
-    border: 0,
-    position: "absolute",
-    left: "$space$2",
-    bottom: "$space$2",
-    zIndex: "$top",
-    height: 12,
-    width: "30%",
-    mixBlendMode: "multiply",
-    pointerEvents: "none",
-  },
-});
-
-const previewIframe = css({
-  border: "0",
-  outline: "0",
-  width: "100%",
-  height: "100%",
-  minHeight: "160px",
-  maxHeight: "2000px",
-  flex: 1,
-});
-
-const previewActionsClassName = css({
-  display: "flex",
-  position: "absolute",
-  bottom: "$space$2",
-  right: "$space$2",
-  zIndex: "$overlay",
-  gap: "$space$2",
-});
 
 export interface SandpackPreviewRef {
   /**

@@ -1,7 +1,6 @@
 import * as React from "react";
 
 import { useSandpack, useSandpackShell, useErrorMessage } from "../../hooks";
-import { css } from "../../styles";
 import {
   absoluteClassName,
   buttonClassName,
@@ -10,10 +9,12 @@ import {
   errorMessageClassName,
   iconStandaloneClassName,
   roundedButtonClassName,
-} from "../../styles/shared";
+} from "../../styles/shared.css";
 import { useClassNames } from "../../utils/classNames";
 import { SignInIcon } from "../icons";
 import { RestartIcon } from "../icons";
+
+import { errorTitleClassName } from "./LoadingOverlay.css";
 
 const mapBundlerErrors = (originalMessage: string): string => {
   const errorMessage = originalMessage.replace("[sandpack-client]: ", "");
@@ -73,11 +74,11 @@ export const ErrorOverlay: React.FC<ErrorOverlayProps> = (props) => {
         ])}
         {...props}
       >
-        <p className={classNames("error-message", [errorMessageClassName])}>
+        <p className={classNames("error-message", [errorMessageClassName()])}>
           <strong>Unable to fetch required dependency.</strong>
         </p>
 
-        <div className={classNames("error-message", [errorMessageClassName])}>
+        <div className={classNames("error-message", [errorMessageClassName()])}>
           <p>
             Authentication required. Please sign in to your account (make sure
             to allow pop-ups to this page) and try again. If the issue persists,
@@ -117,9 +118,9 @@ export const ErrorOverlay: React.FC<ErrorOverlayProps> = (props) => {
         ])}
         {...otherProps}
       >
-        <div className={classNames("error-message", [errorMessageClassName])}>
+        <div className={classNames("error-message", [errorMessageClassName()])}>
           <p
-            className={classNames("error-title", [css({ fontWeight: "bold" })])}
+            className={classNames("error-title", [errorTitleClassName])}
           >
             Couldn&apos;t connect to server
           </p>
@@ -159,7 +160,7 @@ export const ErrorOverlay: React.FC<ErrorOverlayProps> = (props) => {
       translate="no"
       {...otherProps}
     >
-      <p className={classNames("error-message", [errorMessageClassName])}>
+      <p className={classNames("error-message", [errorMessageClassName()])}>
         <strong>Something went wrong</strong>
       </p>
 

@@ -1,25 +1,14 @@
-import { createStitches } from "@stitches/core";
-
 import { defaultLight, defaultDark, SANDPACK_THEMES } from "../themes";
 import type { SandpackTheme, SandpackThemeProp } from "../types";
 import { isDarkColor } from "../utils/stringUtils";
 
-import { createStitchesMock } from "./stitches-mock";
+import { THEME_PREFIX } from "./constants";
+import { vars } from "./vars.css";
+import type { SandpackVarsContract } from "./vars.css";
 
-/**
- * @category Theme
- */
-export const THEME_PREFIX = "sp";
-
-/**
- * @category Theme
- */
-// prettier-ignore
-export const { createTheme, css, getCssText, keyframes } = process.env.SANDPACK_UNSTYLED_COMPONENTS === 'true'
-  ? createStitchesMock
-  : createStitches({
-      prefix: THEME_PREFIX,
-    });
+export { THEME_PREFIX };
+export { vars };
+export type { SandpackVarsContract };
 
 const defaultVariables = {
   space: new Array(11).fill(" ").reduce((acc, _, index) => {
@@ -36,27 +25,32 @@ const defaultVariables = {
 };
 
 /**
+ * Flatten a `SandpackTheme` into the same `{ colors, syntax, font, ... }`
+ * record shape that the Stitches integration historically produced.
+ *
+ * Kept exported (under its old name as well) for backwards compatibility with
+ * downstream snapshot tests and consumers that reach into this internal helper.
+ *
  * @category Theme
  */
-export const standardizeStitchesTheme = (
+export const standardizeThemeTokens = (
   theme: SandpackTheme,
 ): Record<string, Record<string, string>> => {
-  // Flat values
   const syntaxEntries = Object.entries(theme.syntax);
   const syntax = syntaxEntries.reduce((tokenAcc, [tokenName, tokenValue]) => {
-    // Single property
-    let newValues = { [`color-${tokenName}`]: tokenValue };
+    let newValues: Record<string, string> = {
+      [`color-${tokenName}`]: tokenValue as string,
+    };
 
-    // Multiples properties
     if (typeof tokenValue === "object") {
       newValues = Object.entries(tokenValue).reduce(
         (valueAcc, [styleProp, styleValue]) => {
           return {
             ...valueAcc,
-            [`${styleProp}-${tokenName}`]: styleValue,
+            [`${styleProp}-${tokenName}`]: styleValue as string,
           };
         },
-        {},
+        {} as Record<string, string>,
       );
     }
 
@@ -65,9 +59,69 @@ export const standardizeStitchesTheme = (
 
   return {
     ...defaultVariables,
-    colors: theme.colors,
-    font: theme.font,
+    colors: theme.colors as Record<string, string>,
+    font: theme.font as unknown as Record<string, string>,
     syntax,
+  };
+};
+
+/**
+ * @deprecated Use `standardizeThemeTokens` instead — kept for backwards
+ *   compatibility with consumers that imported the old Stitches-flavoured name.
+ */
+export const standardizeStitchesTheme = standardizeThemeTokens;
+
+/**
+ * Convert a flat token object produced by `standardizeThemeTokens` into the
+ * nested shape expected by `assignInlineVars(vars, ...)`.
+ *
+ * The two big differences vs. the flat record are:
+ * - syntax values are nested under `{ color, fontStyle }` to match the contract
+ *   in `vars.css.ts`;
+ * - missing optional values (e.g. `fontStyle` for syntax tokens that are plain
+ *   colour strings) are filled with empty strings so vanilla-extract is happy.
+ */
+export const themeVars = (
+  theme: SandpackTheme,
+): {
+  colors: Record<string, string>;
+  syntax: Record<string, { color: string; fontStyle: string }>;
+  font: Record<string, string>;
+  space: Record<string, string>;
+  border: { radius: string };
+  layout: { height: string; headerHeight: string };
+  transitions: { default: string };
+  zIndices: { base: string; overlay: string; top: string };
+} => {
+  const flat = standardizeThemeTokens(theme);
+
+  const syntaxNested: Record<string, { color: string; fontStyle: string }> = {};
+  Object.entries(flat.syntax).forEach(([key, value]) => {
+    const dashIndex = key.indexOf("-");
+    if (dashIndex === -1) return;
+    const prop = key.slice(0, dashIndex);
+    const token = key.slice(dashIndex + 1);
+    if (!syntaxNested[token]) {
+      syntaxNested[token] = { color: "", fontStyle: "" };
+    }
+    if (prop === "color" || prop === "fontStyle") {
+      syntaxNested[token][prop] = value;
+    }
+  });
+
+  return {
+    colors: flat.colors,
+    syntax: syntaxNested,
+    font: flat.font,
+    space: flat.space,
+    border: flat.border as { radius: string },
+    layout: flat.layout as { height: string; headerHeight: string },
+    transitions: flat.transitions as { default: string },
+    zIndices: flat.zIndices as {
+      base: string;
+      overlay: string;
+      top: string;
+    },
   };
 };
 
@@ -79,9 +133,6 @@ export const standardizeTheme = (
 ): { id: string; theme: SandpackTheme; mode: "dark" | "light" } => {
   const defaultLightThemeKey = "default";
 
-  /**
-   * Set a local theme: dark or light
-   */
   if (typeof inputTheme === "string") {
     const predefinedTheme = SANDPACK_THEMES[inputTheme];
     if (!predefinedTheme) {
@@ -97,19 +148,12 @@ export const standardizeTheme = (
     };
   }
 
-  /**
-   * Fullfill the colors key, in case it's missing any key
-   */
   const mode = isDarkColor(
     inputTheme?.colors?.surface1 ?? defaultLight.colors.surface1,
   )
     ? "dark"
     : "light";
 
-  /**
-   * Figure out what's the properly default colors it should be
-   * error, warning and success colors have different values between dark and light
-   */
   const baseTheme = mode === "dark" ? defaultDark : defaultLight;
   const colorsByMode = { ...baseTheme.colors, ...(inputTheme?.colors ?? {}) };
   const syntaxByMode = { ...baseTheme.syntax, ...(inputTheme?.syntax ?? {}) };
@@ -139,12 +183,3 @@ const simpleHashFunction = (str: string): number => {
   }
   return Math.abs(hash);
 };
-
-/**
- * The fake `css` function used to match the real `css` function usage
- * We use this for the unstyled bundle which do not need real class names
- * `css` is a factory which return a className generator, but also it be used in scenarios which `toString` will be invoked
- * so we also need to add the `toString` method to it.
- */
-export const fakeCss = () => "";
-fakeCss.toString = fakeCss;

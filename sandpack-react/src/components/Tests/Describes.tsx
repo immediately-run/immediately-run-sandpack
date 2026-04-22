@@ -1,8 +1,8 @@
 import * as React from "react";
 
-import { css } from "../../styles";
 import { useClassNames } from "../../utils/classNames";
 
+import { containerClassName, nameClassName } from "./Describes.css";
 import type { Test } from "./Tests";
 import { Tests } from "./Tests";
 import { isEmpty } from "./utils";
@@ -12,15 +12,6 @@ export interface Describe {
   tests: Record<string, Test>;
   describes: Record<string, Describe>;
 }
-
-const nameClassName = css({
-  color: "$colors$hover",
-  marginBottom: "$space$2",
-});
-
-const containerClassName = css({
-  marginLeft: "$space$4",
-});
 
 export const Describes: React.FC<{ describes: Describe[] }> = ({
   describes,

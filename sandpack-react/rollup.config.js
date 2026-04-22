@@ -2,22 +2,29 @@
 const commonjs = require("@rollup/plugin-commonjs");
 const replace = require("@rollup/plugin-replace");
 const typescript = require("@rollup/plugin-typescript");
+const { vanillaExtractPlugin } = require("@vanilla-extract/rollup-plugin");
 const filesize = require("rollup-plugin-filesize");
 
 const sandpackClientPkg = require("../sandpack-client/package.json");
 
 const pkg = require("./package.json");
 const generateUnstyledTypes = require("./scripts/rollup-generate-unstyled-types");
-const removeCss = require("./scripts/rollup-remove-css-transformer");
+const inlineCssText = require("./scripts/rollup-inline-css-text");
+const stubCss = require("./scripts/rollup-stub-css");
 
 const basePlugins = [commonjs({ requireReturnsDefault: "preferred" })];
 
-const external = [
+const externalPackages = [
   "react/jsx-runtime",
   ...Object.keys(pkg.dependencies),
   ...Object.keys(pkg.devDependencies),
   ...Object.keys(pkg.peerDependencies),
 ];
+
+const external = (id) => {
+  if (externalPackages.includes(id)) return true;
+  return externalPackages.some((pkgName) => id.startsWith(`${pkgName}/`));
+};
 
 const baseConfig = { input: "src/index.ts", external };
 
@@ -25,6 +32,9 @@ const configBase = [
   {
     ...baseConfig,
     plugins: basePlugins.concat(
+      vanillaExtractPlugin({
+        extract: { name: "styles.css" },
+      }),
       replace({
         preventAssignment: true,
         values: {
@@ -34,6 +44,7 @@ const configBase = [
         },
       }),
       typescript({ tsconfig: "./tsconfig.json" }),
+      inlineCssText({ cssFileName: "styles.css" }),
       filesize(),
     ),
     output: [
@@ -45,6 +56,7 @@ const configBase = [
         interop: "auto",
         banner: `"use client";\n`,
         preserveModules: false,
+        assetFileNames: "[name][extname]",
       },
       {
         dir: "dist",
@@ -55,6 +67,7 @@ const configBase = [
         inlineDynamicImports: true,
         banner: `"use client";\n`,
         preserveModules: false,
+        assetFileNames: "[name][extname]",
       },
     ],
   },
@@ -63,9 +76,9 @@ const configBase = [
     ...baseConfig,
     treeshake: {
       preset: "smallest",
-      manualPureFunctions: ["createStitches"],
     },
     plugins: basePlugins.concat(
+      stubCss(),
       replace({
         preventAssignment: true,
         values: {
@@ -77,7 +90,6 @@ const configBase = [
         tsconfig: "./tsconfig.json",
         compilerOptions: { outDir: "dist/unstyled/" },
       }),
-      removeCss(),
       generateUnstyledTypes(),
       filesize(),
     ),

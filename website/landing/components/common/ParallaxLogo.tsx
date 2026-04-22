@@ -1,31 +1,12 @@
 import { motion, useSpring } from "framer-motion";
 import type { MotionValue } from "framer-motion";
 
-import { styled } from "../../stitches.config";
+import { styled } from "../../styles/styled";
 
-const LogoWrapper = styled("div", {
-  $$halfHeight: "150px",
-  alignItems: "center",
-  display: "flex",
-  height: "$$halfHeight",
-  justifyContent: "center",
-  position: "relative",
-});
+import { logoHalfClassName, logoWrapperClassName } from "./ParallaxLogo.css";
 
-const LogoHalf = styled("div", {
-  $$borderWidth: "14px",
-  border: "$$borderWidth solid $$primaryTextColor",
-  height: "$$halfHeight",
-  width: "82px",
-
-  "&[data-position='left']": {
-    transform: "translateX(calc($$borderWidth / 2))",
-  },
-
-  "&[data-position='right']": {
-    transform: "translateX(calc(-1 * ($$borderWidth / 2)))",
-  },
-});
+const LogoWrapper = styled("div", logoWrapperClassName);
+const LogoHalf = styled("div", logoHalfClassName);
 
 const SPRING_OPTIONS = { stiffness: 200, damping: 20 };
 

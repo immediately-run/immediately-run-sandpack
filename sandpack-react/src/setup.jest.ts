@@ -1,6 +1,10 @@
 import crypto from "crypto";
 import { TextEncoder, TextDecoder } from "util";
 
+import "@vanilla-extract/css/disableRuntimeStyles";
+
+process.env.TEST_ENV = "true";
+
 Object.assign(global, { TextDecoder, TextEncoder });
 
 const subtle = {

@@ -1,10 +1,12 @@
 import React from "react";
 import { useInView } from "react-intersection-observer";
 
+import { classes } from "../../styles/styled";
 import { Box, Card, CardDescription, CardTitle } from "../common";
 import { useBreakpoint } from "../common/useBreakpoint";
 
 import { ExampleIllustration } from "./ExampleIllustration";
+import { innerClassName, outerClassName } from "./UsageExample.css";
 
 interface Example {
   title: string;
@@ -26,30 +28,13 @@ export const UsageExample: React.FC<UsageExampleProps> = ({
   });
 
   return (
-    <Box css={{ "@bp2": { height: "100vh", maxHeight: "1080px" } }}>
+    <Box className={classes(outerClassName)}>
       <Box
-        css={{
-          alignItems: "center",
-          display: "flex",
-          flexDirection: "column",
-          gap: "40px",
-          justifyContent: "center",
-          width: "100%",
-          height: "100%",
-
-          "@bp2": {
-            alignItems: "center",
-            flexDirection: exampleIndex % 2 === 0 ? "row-reverse" : "row",
-            "--gap": "240px",
-
-            scrollSnapAlign: "center",
-            width: "initial",
-          },
-
-          "@bp3": {
-            "--gap": "320px",
-          },
-        }}
+        className={classes(
+          innerClassName({
+            direction: exampleIndex % 2 === 0 ? "reverse" : "normal",
+          }),
+        )}
       >
         <Box ref={ref}>
           <ExampleIllustration

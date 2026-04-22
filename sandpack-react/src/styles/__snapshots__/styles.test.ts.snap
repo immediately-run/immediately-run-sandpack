@@ -1,6 +1,6 @@
 // Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
 
-exports[`standardizeStitchesTheme converts a theme to the stitches format 1`] = `
+exports[`standardizeThemeTokens converts a theme to the flat token format 1`] = `
 {
   "border": {
     "radius": "4px",

@@ -43,7 +43,7 @@ import {
   placeholderClassName,
   tokensClassName,
   readOnlyClassName,
-} from "./styles";
+} from "./styles.css";
 import { useSyntaxHighlight } from "./useSyntaxHighlight";
 import {
   getCodeMirrorLanguage,

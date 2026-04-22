@@ -2,17 +2,11 @@ import type { SandpackBundlerFiles } from "@codesandbox/sandpack-client";
 import * as React from "react";
 
 import { useSandpack } from "../../hooks/useSandpack";
-import { css } from "../../styles";
 import { useClassNames } from "../../utils/classNames";
 import { stackClassName } from "../common";
 
+import { fileExplorerClassName } from "./FileExplorer.css";
 import { ModuleList } from "./ModuleList";
-
-const fileExplorerClassName = css({
-  padding: "$space$3",
-  overflow: "auto",
-  height: "100%",
-});
 
 export interface SandpackFileExplorerProp {
   /**

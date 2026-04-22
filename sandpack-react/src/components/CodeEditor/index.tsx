@@ -13,7 +13,7 @@ import { SandpackStack } from "../common/Stack";
 
 import { CodeMirror } from "./CodeMirror";
 import type { CodeMirrorRef } from "./CodeMirror";
-import { editorClassName } from "./styles";
+import { editorClassName } from "./styles.css";
 export type CodeEditorRef = CodeMirrorRef;
 
 export interface CodeEditorProps {

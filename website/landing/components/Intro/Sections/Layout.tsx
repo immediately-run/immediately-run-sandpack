@@ -12,8 +12,13 @@ import { sandpackDark } from "@codesandbox/sandpack-themes";
 import { useEffect, useLayoutEffect } from "react";
 import { useInView } from "react-intersection-observer";
 
+import { classes } from "../../../styles/styled";
 import { CardTitle, CardDescription } from "../../common";
 
+import {
+  codeWrapperOverrideClassName,
+  mobileContainerOverrideClassName,
+} from "./Layout.css";
 import { useLayoutExampleContext } from "./LayoutContext";
 import {
   Row,
@@ -71,27 +76,7 @@ export const LayoutExample: React.FC = () => {
             own needs.
           </CardDescription>
 
-          <CodeWrapper
-            css={{
-              ".sp-wrapper": {
-                height: "420px",
-              },
-
-              ".sp-tabs": {
-                borderTopLeftRadius: "16px",
-                borderTopRightRadius: "16px",
-              },
-
-              ".sp-code-editor": {
-                borderRadius: 0,
-                borderBottomLeftRadius: "16px",
-                borderBottomRightRadius: "16px",
-              },
-              ".sp-cm": {
-                height: "380px",
-              },
-            }}
-          >
+          <CodeWrapper className={classes(codeWrapperOverrideClassName)}>
             <Caption>Code snippet</Caption>
             <SandpackThemeProvider theme={sandpackDark}>
               <SandpackCodeEditor showInlineErrors />
@@ -99,7 +84,9 @@ export const LayoutExample: React.FC = () => {
           </CodeWrapper>
         </Content>
 
-        <SandpackContainerMobile css={{ ".custom-layout": { height: "50vh" } }}>
+        <SandpackContainerMobile
+          className={classes(mobileContainerOverrideClassName)}
+        >
           <Caption>Sandpack preview</Caption>
           <SandpackProvider
             customSetup={{

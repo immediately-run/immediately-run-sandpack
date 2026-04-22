@@ -1,26 +1,10 @@
 import * as React from "react";
 
-import { css } from "../../styles";
-import { buttonClassName } from "../../styles/shared";
+import { buttonClassName } from "../../styles/shared.css";
 import { useClassNames } from "../../utils/classNames";
 import { DirectoryIconOpen, DirectoryIconClosed, FileIcon } from "../icons";
 
-const explorerClassName = css({
-  borderRadius: "0",
-  width: "100%",
-  padding: 0,
-  marginBottom: "$space$2",
-
-  span: {
-    textOverflow: "ellipsis",
-    whiteSpace: "nowrap",
-    overflow: "hidden",
-  },
-
-  svg: {
-    marginRight: "$space$1",
-  },
-});
+import { explorerClassName } from "./File.css";
 
 export interface Props {
   path: string;

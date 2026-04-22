@@ -1,8 +1,7 @@
 import type { TestError } from "@codesandbox/sandpack-client";
 import * as React from "react";
 
-import { css } from "../../styles";
-import { buttonClassName } from "../../styles/shared";
+import { buttonClassName } from "../../styles/shared.css";
 import { useClassNames } from "../../utils/classNames";
 
 import type { Describe } from "./Describes";
@@ -16,6 +15,16 @@ import {
   passBackgroundClassName,
   runBackgroundClassName,
 } from "./style";
+import {
+  failTestClassName,
+  fileContainer,
+  fileNameClassName,
+  filePathButtonClassName,
+  filePathClassName,
+  gapBottomClassName,
+  labelClassName,
+  specLabelClassName,
+} from "./Specs.css";
 import { getFailingTests, getSpecTestResults, isEmpty } from "./utils";
 
 export type Spec = { error?: TestError } & Describe;
@@ -27,51 +36,6 @@ interface Props {
   openSpec: (name: string) => void;
   hideTestsAndSupressLogs?: boolean;
 }
-
-const fileContainer = css({
-  display: "flex",
-  flexDirection: "row",
-  alignItems: "center",
-  marginBottom: "$space$2",
-});
-
-const gapBottomClassName = css({
-  marginBottom: "$space$2",
-});
-
-const failTestClassName = css({
-  fontWeight: "bold",
-});
-
-const labelClassName = css({
-  borderRadius: "calc($border$radius / 2)",
-});
-
-const specLabelClassName = css({
-  padding: "$space$1 $space$2",
-  fontFamily: "$font$mono",
-  textTransform: "uppercase",
-  marginRight: "$space$2",
-});
-
-const filePathButtonClassName = css({
-  fontFamily: "$font$mono",
-  cursor: "pointer",
-  display: "inline-block",
-});
-
-const filePathClassName = css({
-  color: "$colors$clickable",
-  textDecorationStyle: "dotted",
-  textDecorationLine: "underline",
-});
-
-const fileNameClassName = css({
-  color: "$colors$hover",
-  fontWeight: "bold",
-  textDecorationStyle: "dotted",
-  textDecorationLine: "underline",
-});
 
 export const Specs: React.FC<Props> = ({
   specs,

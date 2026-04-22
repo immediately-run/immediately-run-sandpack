@@ -25,7 +25,7 @@ We're excited to announce a major release of Sandpack! It includes many feature 
 
 ### SSR support
 
-Sandpack uses [stitches/core](https://stitches.dev/) under the hood to generate and dedupe theme variation, ensuring a consistent and lightweight CSS output. To retrieve its style values, use the following guide to get the output in the SSR:
+Sandpack ships its styles as a static stylesheet generated at build time with [vanilla-extract](https://vanilla-extract.style). For SSR you can either import the bundled stylesheet directly with `import "@codesandbox/sandpack-react/styles.css"`, or inline the CSS string returned by `getSandpackCssText()`:
 
 ```jsx
 import { getSandpackCssText } from "@codesandbox/sandpack-react";

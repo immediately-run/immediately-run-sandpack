@@ -2,10 +2,9 @@ import { motion, useTransform, useViewportScroll } from "framer-motion";
 import Image from "next/image";
 import { useLayoutEffect, useRef, useState } from "react";
 
-import { styled } from "../../stitches.config";
+import { classes } from "../../styles/styled";
 import content from "../../website.config.json";
 import {
-  Box,
   List,
   SectionWrapper,
   SectionContainer,
@@ -17,33 +16,26 @@ import {
 } from "../common";
 import { useBreakpoint } from "../common/useBreakpoint";
 
-const AnimatedListItem = styled(motion.li, {});
-const HighlightAnchor = styled("a", {});
+import {
+  animatedListItemClassName,
+  cardCenterClassName,
+  cardDescriptionCenterClassName,
+  cardTitleCenterClassName,
+  highlightAnchorClassName,
+  previewWrapperClassName,
+  sectionHeaderClassName,
+  sectionInnerClassName,
+  showcaseListClassName,
+} from "./Showcase.css";
 
 const HighlightPreview: React.FC<{ source: string; alt: string }> = ({
   source,
   alt,
 }) => {
   return (
-    <Box
-      css={{
-        alignItems: "center",
-        background: "$surface",
-        color: "white",
-        display: "flex",
-        justifyContent: "center",
-        margin: "0 auto",
-        width: "100%",
-
-        img: {
-          transition: "$default",
-          width: "100%",
-          height: "auto",
-        },
-      }}
-    >
+    <div className={previewWrapperClassName}>
       <Image alt={alt} height={1440} src={source} width={960} />
-    </Box>
+    </div>
   );
 };
 
@@ -82,59 +74,15 @@ export const Showcase: React.FC = () => {
   return (
     <SectionWrapper ref={sectionRef}>
       <SectionContainer>
-        <SectionHeader
-          css={{
-            "@bp2": { padding: "200px 0" },
-          }}
-        >
+        <SectionHeader className={classes(sectionHeaderClassName)}>
           <SectionTitle dangerouslySetInnerHTML={{ __html: showCase.title }} />
         </SectionHeader>
-        <Box css={{ "@bp2": { marginBottom: "200px", marginTop: "200px" } }}>
-          <List
-            css={{
-              alignItems: "center",
-              display: "flex",
-              flexDirection: "column",
-              gap: "100px",
-
-              "@bp2": {
-                display: "grid",
-                "--gap": "280px",
-                gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-              },
-            }}
-          >
+        <div className={sectionInnerClassName}>
+          <List className={classes(showcaseListClassName)}>
             {showCase.highlights.map((item, hIndex) => (
-              <AnimatedListItem
+              <motion.li
                 key={`showcase-highlight-${hIndex}`}
-                css={{
-                  "@bp1": {
-                    width: "384px",
-                  },
-                  "@bp2": {
-                    marginTop: "25%",
-                    position: "relative",
-                    width: "360px",
-
-                    "&:nth-of-type(odd)": {
-                      transform: "translateY(0)",
-                      justifySelf: "flex-end",
-                    },
-
-                    "&:nth-of-type(even)": {
-                      justifySelf: "flex-start",
-                      transform: "translateY(-25%)",
-                    },
-                  },
-
-                  "@bp3": {
-                    width: "480px",
-                  },
-
-                  "&:hover img": {
-                    transform: "scale(1.05)",
-                  },
-                }}
+                className={animatedListItemClassName}
                 style={{
                   translateY:
                     hIndex % 2 === 0 && shouldAnimate
@@ -142,13 +90,8 @@ export const Showcase: React.FC = () => {
                       : "0",
                 }}
               >
-                <HighlightAnchor
-                  css={{
-                    gap: "40px",
-                    alignItems: "center",
-                    display: "flex",
-                    flexDirection: "column",
-                  }}
+                <a
+                  className={highlightAnchorClassName}
                   href={item.url}
                   rel="noopener noreferrer"
                   target="_blank"
@@ -159,25 +102,25 @@ export const Showcase: React.FC = () => {
                       source={item.imageSource}
                     />
                   </div>
-                  <Card css={{ alignItems: "center" }}>
+                  <Card className={classes(cardCenterClassName)}>
                     <CardTitle
-                      css={{ "@bp2": { textAlign: "center" } }}
+                      className={classes(cardTitleCenterClassName)}
                       dangerouslySetInnerHTML={{
                         __html: item.title,
                       }}
                     />
                     <CardDescription
-                      css={{ textAlign: "center" }}
+                      className={classes(cardDescriptionCenterClassName)}
                       dangerouslySetInnerHTML={{
                         __html: item.description,
                       }}
                     />
                   </Card>
-                </HighlightAnchor>
-              </AnimatedListItem>
+                </a>
+              </motion.li>
             ))}
           </List>
-        </Box>
+        </div>
       </SectionContainer>
     </SectionWrapper>
   );

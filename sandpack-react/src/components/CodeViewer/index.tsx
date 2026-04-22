@@ -8,7 +8,7 @@ import { useSandpackId } from "../../utils/useAsyncSandpackId";
 import { CodeEditor } from "../CodeEditor";
 import type { CodeEditorRef } from "../CodeEditor";
 import type { Decorators } from "../CodeEditor/CodeMirror";
-import { editorClassName } from "../CodeEditor/styles";
+import { editorClassName } from "../CodeEditor/styles.css";
 import { FileTabs } from "../FileTabs";
 import { RunButton } from "../common/RunButton";
 import { SandpackStack } from "../common/Stack";

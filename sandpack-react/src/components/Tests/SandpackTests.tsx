@@ -1,13 +1,17 @@
 import * as React from "react";
 
 import { useSandpackTheme, useSandpackClient } from "../../hooks";
-import { css } from "../../styles";
 import { useClassNames } from "../../utils/classNames";
 import { SandpackStack } from "../common";
 import { Loading } from "../common/Loading";
 
 import { Header } from "./Header";
 import { RunButton } from "./RunButton";
+import {
+  containerClassName,
+  fileErrorContainerClassName,
+  previewActionsClassName,
+} from "./SandpackTests.css";
 import type { Spec } from "./Specs";
 import { Specs } from "./Specs";
 import { Summary } from "./Summary";
@@ -21,16 +25,6 @@ import {
   splitTail,
   set,
 } from "./utils";
-
-const previewActionsClassName = css({
-  display: "flex",
-  position: "absolute",
-  bottom: "$space$2",
-  right: "$space$2",
-  zIndex: "$overlay",
-
-  "> *": { marginLeft: "$space$2" },
-});
 
 export type Status = "initialising" | "idle" | "running" | "complete";
 
@@ -414,19 +408,19 @@ export const SandpackTests: React.FC<
       {state.status === "running" || state.status === "initialising" ? (
         <Loading showOpenInCodeSandbox={false} />
       ) : (
-        <div className={previewActionsClassName.toString()}>
+        <div className={previewActionsClassName}>
           {actionsChildren}
           <RunButton onClick={state.suiteOnly ? runSpec : runAllTests} />
         </div>
       )}
 
-      <div className={containerClassName.toString()}>
+      <div className={containerClassName}>
         {specs.length === 0 && state.status === "complete" ? (
-          <div className={fileErrorContainerClassName.toString()}>
+          <div className={fileErrorContainerClassName}>
             <p>No test files found.</p>
             <p>
               Test match:{" "}
-              <span className={failTextClassName.toString()}>
+              <span className={failTextClassName}>
                 {testFileRegex.toString()}
               </span>
             </p>
@@ -454,18 +448,3 @@ export const SandpackTests: React.FC<
     </SandpackStack>
   );
 };
-
-const containerClassName = css({
-  padding: "$space$4",
-  height: "100%",
-  overflow: "auto",
-  display: "flex",
-  flexDirection: "column",
-  position: "relative",
-  fontFamily: "$font$mono",
-});
-
-const fileErrorContainerClassName = css({
-  fontWeight: "bold",
-  color: "$colors$base",
-});

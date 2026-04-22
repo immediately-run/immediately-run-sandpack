@@ -6,12 +6,16 @@ import {
   useSandpackShell,
   useSandpackShellStdout,
 } from "../../hooks";
-import { css, THEME_PREFIX } from "../../styles";
 import { useClassNames } from "../../utils/classNames";
 import { SandpackStack, DependenciesProgress, RoundedButton } from "../common";
 import { CleanIcon, RestartIcon } from "../icons";
 
 import { ConsoleList } from "./ConsoleList";
+import {
+  consoleActionsClassName,
+  consoleListClassName,
+  consoleWrapperClassName,
+} from "./SandpackConsole.css";
 import { Header } from "./Header";
 import { StdoutList } from "./StdoutList";
 import { useSandpackConsole } from "./useSandpackConsole";
@@ -113,27 +117,7 @@ export const SandpackConsole = React.forwardRef<
 
     return (
       <SandpackStack
-        className={classNames("console", [
-          css({
-            height: "100%",
-            background: "$surface1",
-            iframe: { display: "none" },
-
-            [`.${THEME_PREFIX}-bridge-frame`]: {
-              display: "block",
-              border: 0,
-              position: "absolute",
-              left: "$space$2",
-              bottom: "$space$2",
-              zIndex: "$top",
-              height: 12,
-              width: "30%",
-              mixBlendMode: "multiply",
-              pointerEvents: "none",
-            },
-          }),
-          className,
-        ])}
+        className={classNames("console", [consoleWrapperClassName, className])}
         {...props}
       >
         {showHeader && isNodeEnvironment && (
@@ -146,9 +130,7 @@ export const SandpackConsole = React.forwardRef<
 
         <div
           ref={wrapperRef}
-          className={classNames("console-list", [
-            css({ overflow: "auto", scrollBehavior: "smooth" }),
-          ])}
+          className={classNames("console-list", [consoleListClassName])}
         >
           {isServerTab ? (
             <StdoutList data={stdoutData} />
@@ -158,15 +140,7 @@ export const SandpackConsole = React.forwardRef<
         </div>
 
         <div
-          className={classNames("console-actions", [
-            css({
-              position: "absolute",
-              bottom: "$space$2",
-              right: "$space$2",
-              display: "flex",
-              gap: "$space$2",
-            }),
-          ])}
+          className={classNames("console-actions", [consoleActionsClassName])}
         >
           {actionsChildren}
 

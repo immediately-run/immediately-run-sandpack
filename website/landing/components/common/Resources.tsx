@@ -1,57 +1,27 @@
-import { styled } from "../../stitches.config";
+import { classes } from "../../styles/styled";
 import content from "../../website.config.json";
 
-import { List, ListItem, Text } from ".";
-
-const ResourceLink = styled("a", {
-  color: "inherit",
-  transition: "color .2s ease",
-  willChange: "color",
-
-  "&:hover": {
-    color: "$primary",
-  },
-});
+import { listClassName, listItemClassName } from "./List.css";
+import {
+  resourceLinkClassName,
+  resourcesItemClassName,
+  resourcesListClassName,
+  resourcesTextClassName,
+} from "./Resources.css";
 
 export const Resources: React.FC = () => {
   return (
-    <List
-      css={{
-        display: "flex",
-      }}
-    >
+    <ul className={classes(listClassName, resourcesListClassName)}>
       {content.resources.map((r) => (
-        <ListItem
+        <li
           key={r.name}
-          css={{
-            margin: "0 1em",
-
-            "@bp1": {
-              margin: 0,
-              "&:not(:last-of-type)": {
-                marginRight: "2em",
-              },
-            },
-          }}
+          className={classes(listItemClassName, resourcesItemClassName)}
         >
-          <ResourceLink href={r.url}>
-            <Text
-              as="span"
-              css={{
-                fontFamily: "inherit",
-                fontWeight: "$semiBold",
-                letterSpacing: "-0.05em",
-
-                "@bp2": {
-                  fontSize: "2.4em",
-                },
-              }}
-            >
-              {r.name}
-            </Text>
-          </ResourceLink>
-        </ListItem>
+          <a className={resourceLinkClassName} href={r.url}>
+            <span className={resourcesTextClassName}>{r.name}</span>
+          </a>
+        </li>
       ))}
-    </List>
+    </ul>
   );
 };

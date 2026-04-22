@@ -6,7 +6,13 @@ import { Callout } from "nextra-theme-docs";
 
 # Server-side rendering
 
-The `getSandpackCssText` function, which is available in the main package, is responsible for getting the Sandpack CSS string and server-side render it. Furthermore, Sandpack uses [stitches/core](https://stitches.dev/) under the hood to generate and dedupe theme variation, ensuring a consistent and lightweight CSS output.
+Sandpack ships its styles as a static stylesheet generated at build time with [vanilla-extract](https://vanilla-extract.style). For most apps the easiest integration is to import the bundled stylesheet directly:
+
+```jsx
+import "@codesandbox/sandpack-react/styles.css";
+```
+
+If your framework needs to inline the CSS for SSR (or you prefer not to ship a separate stylesheet), the `getSandpackCssText` helper is still available and returns the same stylesheet as a string:
 
 ```jsx
 import { getSandpackCssText } from "@codesandbox/sandpack-react";

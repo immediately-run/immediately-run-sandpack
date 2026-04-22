@@ -10,10 +10,12 @@ import { sandpackDark } from "@codesandbox/sandpack-themes";
 import { useEffect, useRef } from "react";
 import { useInView } from "react-intersection-observer";
 
+import { classes } from "../../../styles/styled";
 import { SandpackPreview, CardTitle, CardDescription } from "../../common";
 import { useBreakpoint } from "../../common/useBreakpoint";
 import { useSandpackExample } from "../SandpackExample";
 
+import { codeWrapperOverrideClassName } from "./Custom.css";
 import {
   Row,
   Content,
@@ -114,17 +116,7 @@ export const CustomExample: React.FC = () => {
             prop to add dependencies or change the file structure.
           </CardDescription>
 
-          <CodeWrapper
-            css={{
-              ".sp-cm": {
-                height: "348px",
-
-                "@bp2": {
-                  height: "auto",
-                },
-              },
-            }}
-          >
+          <CodeWrapper className={classes(codeWrapperOverrideClassName)}>
             <Caption>Code snippet</Caption>
             <SandpackThemeProvider theme={sandpackDark}>
               <SandpackCodeEditor ref={codeEditorRef} showTabs={false} />

@@ -1,47 +1,11 @@
 import { Sandpack } from "@codesandbox/sandpack-react";
 import { sandpackDark } from "@codesandbox/sandpack-themes";
 
-import { styled } from "../../stitches.config";
+import { styled } from "../../styles/styled";
 
-export const SandpackContainer = styled("div", {
-  alignItems: "center",
-  display: "flex",
-  overflow: "hidden",
-  width: "100%",
+import { sandpackContainerClassName } from "./SandpackPreview.css";
 
-  ".custom-wrapper": {
-    width: "100%",
-  },
-
-  ".custom-layout": {
-    width: "100%",
-    height: "512px",
-    border: 0,
-
-    "@bp1": {
-      width: "384px",
-      height: "608px",
-      margin: "0 auto",
-    },
-
-    "@bp2": {
-      height: "448px",
-      width: "996px",
-    },
-
-    "@bp3": {
-      width: "1300px",
-      height: "50vh",
-    },
-  },
-
-  ".custom-stack": {
-    "@bp2": {
-      height: "100% !important",
-      width: "100% !important",
-    },
-  },
-});
+export const SandpackContainer = styled("div", sandpackContainerClassName);
 
 export const SandpackPreview: React.FC<{
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

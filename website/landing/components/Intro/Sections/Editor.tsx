@@ -10,10 +10,12 @@ import { sandpackDark } from "@codesandbox/sandpack-themes";
 import { useEffect, useState, useRef } from "react";
 import { useInView } from "react-intersection-observer";
 
+import { classes } from "../../../styles/styled";
 import { SandpackPreview, CardTitle, CardDescription } from "../../common";
 import { useBreakpoint } from "../../common/useBreakpoint";
 import { useSandpackExample } from "../SandpackExample";
 
+import { codeWrapperOverrideClassName } from "./Editor.css";
 import {
   CodeWrapper,
   Row,
@@ -116,17 +118,7 @@ export const EditorExample: React.FC = () => {
             prop. Quickly toggle the appearance of built-in components.
           </CardDescription>
 
-          <CodeWrapper
-            css={{
-              ".sp-cm": {
-                height: "208px",
-
-                "@bp2": {
-                  height: "auto",
-                },
-              },
-            }}
-          >
+          <CodeWrapper className={classes(codeWrapperOverrideClassName)}>
             <Caption>Code snippet</Caption>
             <SandpackThemeProvider theme={sandpackDark}>
               <SandpackCodeEditor ref={codeEditorRef} showTabs={false} />

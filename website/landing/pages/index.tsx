@@ -11,24 +11,16 @@ import { Intro } from "../components/Intro";
 import { Showcase } from "../components/Showcase";
 import { Users } from "../components/Users";
 import { ClipboardProvider } from "../components/common";
-import { styled } from "../stitches.config";
+import { styled } from "../styles/styled";
 import content from "../website.config.json";
+
+import { containerClassName, mainClassName } from "../styles/indexPage.css";
 
 const DEFAULT_HOST = "https://sandpack.codesandbox.io";
 
-const Container = styled("section", {
-  display: "flex",
-  flexDirection: "column",
-  height: "100%",
-  minHeight: "100vh",
-});
+const Container = styled("section", containerClassName);
 
-const Main = styled("main", {
-  alignItems: "center",
-  display: "flex",
-  flexDirection: "column",
-  flex: 1,
-});
+const Main = styled("main", mainClassName);
 
 interface HomeProps {
   host: string | undefined;

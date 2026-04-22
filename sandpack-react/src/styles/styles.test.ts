@@ -1,4 +1,4 @@
-import { standardizeTheme, standardizeStitchesTheme } from ".";
+import { standardizeTheme, standardizeThemeTokens } from ".";
 
 describe(standardizeTheme, () => {
   it("should return the default theme", () => {
@@ -57,8 +57,8 @@ describe(standardizeTheme, () => {
   });
 });
 
-describe(standardizeStitchesTheme, () => {
-  it("converts a theme to the stitches format", () => {
+describe(standardizeThemeTokens, () => {
+  it("converts a theme to the flat token format", () => {
     const { theme } = standardizeTheme({
       colors: {
         surface1: "red",
@@ -90,7 +90,7 @@ describe(standardizeStitchesTheme, () => {
         lineHeight: "1.4",
       },
     });
-    const input = standardizeStitchesTheme(theme);
+    const input = standardizeThemeTokens(theme);
 
     expect(input).toMatchSnapshot();
   });

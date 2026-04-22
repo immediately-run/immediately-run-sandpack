@@ -3,9 +3,9 @@ import { motion, useTransform, useViewportScroll } from "framer-motion";
 import { useMemo } from "react";
 import { useLayoutEffect, useRef, useState } from "react";
 
+import { classes } from "../../styles/styled";
 import config from "../../website.config.json";
 import {
-  Box,
   Card,
   CardDescription,
   CardTitle,
@@ -18,6 +18,13 @@ import {
 } from "../common";
 import { useBreakpoint } from "../common/useBreakpoint";
 
+import {
+  featureIconClassName,
+  featuresContainerClassName,
+  featuresHeaderClassName,
+  featuresListClassName,
+  featuresTitleClassName,
+} from "./Features.css";
 import { ICONS } from "./icons";
 
 interface FeatureFadeProps {
@@ -37,8 +44,8 @@ const FeatureFade: React.FC<FeatureFadeProps> = ({
   const shouldAnimate = useBreakpoint("bp2");
   const opacityRange = [shouldAnimate ? 0 : 1, 1];
   const scrollRange = [
-    parentTop - parentHeight / (2 * Math.pow(index + 1, 2)), // Stagger elements by their index.
-    parentTop + parentHeight / (index === 0 ? 6 : 4), // The title (index === 0) should have opacity 1 sooner than the list elements.
+    parentTop - parentHeight / (2 * Math.pow(index + 1, 2)),
+    parentTop + parentHeight / (index === 0 ? 6 : 4),
   ];
   const opacity = useTransform(scrollY, scrollRange, opacityRange);
 
@@ -75,43 +82,16 @@ export const Features: React.FC = () => {
 
   return (
     <SectionWrapper ref={sectionRef}>
-      <SectionContainer
-        css={{
-          "@bp2": {
-            maxWidth: "65%",
-          },
-        }}
-      >
+      <SectionContainer className={classes(featuresContainerClassName)}>
         <FeatureFade index={0} {...fadeProps}>
-          <SectionHeader css={{ "@bp2": { alignItems: "flex-start" } }}>
+          <SectionHeader className={classes(featuresHeaderClassName)}>
             <SectionTitle
-              css={{ "@bp2": { textAlign: "start" } }}
+              className={classes(featuresTitleClassName)}
               dangerouslySetInnerHTML={{ __html: content.title }}
             />
           </SectionHeader>
         </FeatureFade>
-        <List
-          css={{
-            alignItems: "center",
-            display: "flex",
-            flexDirection: "column",
-            gap: "48px",
-            justifyContent: "center",
-            transition: "opacity .5s cubic-bezier(0.770, 0.000, 0.175, 1.000)",
-
-            "@bp1": {
-              "--gap": "80px",
-            },
-
-            "@bp2": {
-              alignItems: "flex-start",
-              flexDirection: "row",
-              marginTop: "100px",
-              marginBottom: " 200px",
-              justifyContent: "space-between",
-            },
-          }}
-        >
+        <List className={classes(featuresListClassName)}>
           {content.highlights.map((highlight, highlightIndex) => {
             const icon = ICONS[highlight.iconKey as keyof typeof ICONS];
 
@@ -119,24 +99,7 @@ export const Features: React.FC = () => {
               <ListItem key={`content-highlight-${highlightIndex}`}>
                 <FeatureFade index={highlightIndex + 1} {...fadeProps}>
                   <Card size="small">
-                    <Box
-                      css={{
-                        alignItems: "center",
-                        color: "$lightTextPrimary",
-                        background: "$primary",
-                        borderRadius: "100%",
-                        display: "flex",
-                        flexShrink: "0",
-                        flexGrow: "0",
-                        height: "78px",
-                        justifyContent: "center",
-                        marginBottom: "20px",
-                        padding: "18px",
-                        width: "78px",
-                      }}
-                    >
-                      {icon}
-                    </Box>
+                    <div className={featureIconClassName}>{icon}</div>
                     <CardTitle size="small">{highlight.title}</CardTitle>
                     <CardDescription
                       dangerouslySetInnerHTML={{

@@ -1,92 +1,42 @@
 import {
-  Box,
   Clipboard,
   Resources,
   SandpackLogo,
   SandpackPreview,
-  Text,
 } from "../common";
+
+import {
+  heroLogoColumnClassName,
+  heroLogoSizerClassName,
+  heroPreviewWrapperClassName,
+  heroSectionClassName,
+  heroSubtitleClassName,
+  heroTitleClassName,
+  heroTitleColumnClassName,
+} from "./HeroMobile.css";
 
 export const HeroMobile: React.FC = () => {
   return (
-    <Box
-      as="section"
-      css={{
-        alignItems: "center",
-        display: "flex",
-        flexDirection: "column",
-        gap: "50px",
-        height: "100%",
-        minHeight: "100vh",
-        padding: "100px 16px 0",
-        overflow: "hidden",
-        width: "100%",
-
-        "@bp2": {
-          background: "$surface",
-        },
-      }}
-    >
-      <Box
-        css={{
-          alignItems: "center",
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "center",
-          gap: "40px",
-        }}
-      >
-        <Box css={{ width: "60px", "@bp1": { width: "100px" } }}>
+    <section className={heroSectionClassName}>
+      <div className={heroLogoColumnClassName}>
+        <div className={heroLogoSizerClassName}>
           <SandpackLogo theme="light" />
-        </Box>
-        <Box
-          css={{
-            alignItems: "center",
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "center",
-            gap: "20px",
-          }}
-        >
-          <Text
-            as="h1"
-            css={{
-              fontWeight: "$semiBold",
-              fontSize: "36px",
-              lineHeight: "100%",
-              textAlign: "center",
-              letterSpacing: "-0.05em",
-
-              "@bp1": {
-                fontSize: "72px",
-              },
-            }}
-          >
-            Sandpack
-          </Text>
-          <Text
-            css={{
-              color: "$darkTextSecondary",
-              fontSize: "16px",
-              fontWeight: "$normal",
-              lineHeight: "19px",
-              letterSpacing: "-0.0125em",
-              textAlign: "center",
-              maxWidth: "320px",
-            }}
-          >
+        </div>
+        <div className={heroTitleColumnClassName}>
+          <h1 className={heroTitleClassName}>Sandpack</h1>
+          <p className={heroSubtitleClassName}>
             Run any JavaScript and Node.js app
             <br /> in any browser,
             <br />
             powered by CodeSandbox.
-          </Text>
-        </Box>
-      </Box>
+          </p>
+        </div>
+      </div>
       <Clipboard />
       <Resources />
-      <Box css={{ display: "flex", justifyContent: "center", width: "100%" }}>
+      <div className={heroPreviewWrapperClassName}>
         <SandpackPreview />
-      </Box>
-    </Box>
+      </div>
+    </section>
   );
 };

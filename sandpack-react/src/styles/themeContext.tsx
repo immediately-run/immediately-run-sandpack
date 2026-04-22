@@ -1,36 +1,12 @@
+import { assignInlineVars } from "@vanilla-extract/dynamic";
 import * as React from "react";
 
 import { defaultLight } from "../themes";
 import type { SandpackTheme, SandpackThemeProp } from "../types";
 import { useClassNames } from "../utils/classNames";
 
-import { standardizeTheme } from ".";
-import { createTheme, css, standardizeStitchesTheme } from ".";
-
-const wrapperClassName = css({
-  all: "initial",
-  fontSize: "$font$size",
-  fontFamily: "$font$body",
-  display: "block",
-  boxSizing: "border-box",
-  textRendering: "optimizeLegibility",
-  WebkitTapHighlightColor: "transparent",
-  WebkitFontSmoothing: "subpixel-antialiased",
-
-  variants: {
-    variant: {
-      dark: { colorScheme: "dark" },
-      light: { colorScheme: "light" },
-    },
-  },
-
-  "@media screen and (min-resolution: 2dppx)": {
-    WebkitFontSmoothing: "antialiased",
-    MozOsxFontSmoothing: "grayscale",
-  },
-  "*": { boxSizing: "border-box" },
-  ".sp-wrapper:focus": { outline: "0" },
-});
+import { standardizeTheme, themeVars, vars } from ".";
+import { wrapperClassName } from "./themeContext.css";
 
 const SandpackThemeContext = React.createContext<{
   theme: SandpackTheme;
@@ -50,16 +26,24 @@ const SandpackThemeProvider: React.FC<
     theme?: SandpackThemeProp;
     children?: React.ReactNode;
   }
-> = ({ theme: themeFromProps, children, className, ...props }) => {
+> = ({
+  theme: themeFromProps,
+  children,
+  className,
+  style: styleFromProps,
+  ...props
+}) => {
   const [prefferedTheme, setPreferredTheme] = React.useState<
     SandpackThemeProp | undefined
   >(themeFromProps);
   const { theme, id, mode } = standardizeTheme(prefferedTheme);
   const classNames = useClassNames();
 
-  const themeClassName = React.useMemo(() => {
-    return createTheme(id, standardizeStitchesTheme(theme));
-  }, [theme, id]);
+  const themeStyle = React.useMemo(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    () => assignInlineVars(vars as any, themeVars(theme) as any),
+    [theme],
+  );
 
   React.useEffect(() => {
     if (themeFromProps !== "auto") {
@@ -86,10 +70,11 @@ const SandpackThemeProvider: React.FC<
     <SandpackThemeContext.Provider value={{ theme, id, mode }}>
       <div
         className={classNames("wrapper", [
-          themeClassName,
           wrapperClassName({ variant: mode }),
           className,
         ])}
+        data-sandpack-theme-id={id}
+        style={{ ...themeStyle, ...styleFromProps }}
         {...props}
       >
         {children}

@@ -7,22 +7,26 @@ import {
 } from "../../hooks/useLoadingOverlayState";
 import { useSandpackPreviewProgress } from "../../hooks/useSandpackPreviewProgress";
 import { useSandpackShellStdout } from "../../hooks/useSandpackShellStdout";
-import { css } from "../../styles";
 import {
   absoluteClassName,
   buttonClassName,
   errorBundlerClassName,
   errorClassName,
   errorMessageClassName,
-  fadeIn,
   iconStandaloneClassName,
   roundedButtonClassName,
-} from "../../styles/shared";
+} from "../../styles/shared.css";
 import { useClassNames } from "../../utils/classNames";
 import { StdoutList } from "../Console/StdoutList";
 import { RestartIcon } from "../icons";
 
 import { Loading } from "./Loading";
+import {
+  errorTitleClassName,
+  loadingClassName,
+  progressClassName,
+  stdoutPreview,
+} from "./LoadingOverlay.css";
 
 export interface LoadingOverlayProps {
   clientId?: string;
@@ -35,10 +39,6 @@ export interface LoadingOverlayProps {
 
   showOpenInCodeSandbox: boolean;
 }
-
-const loadingClassName = css({
-  backgroundColor: "$colors$surface1",
-});
 
 export const LoadingOverlay: React.FC<
   LoadingOverlayProps & React.HTMLAttributes<HTMLDivElement>
@@ -85,20 +85,20 @@ export const LoadingOverlay: React.FC<
         className={classNames("overlay", [
           classNames("error"),
           absoluteClassName,
-          errorClassName,
+          errorClassName(),
           errorBundlerClassName,
           className,
         ])}
         {...props}
       >
-        <div className={classNames("error-message", [errorMessageClassName])}>
+        <div className={classNames("error-message", [errorMessageClassName()])}>
           <p
-            className={classNames("error-title", [css({ fontWeight: "bold" })])}
+            className={classNames("error-title", [errorTitleClassName])}
           >
             Couldn&apos;t connect to server
           </p>
 
-          <div className={classNames("error-message", [errorMessageClassName])}>
+          <div className={classNames("error-message", [errorMessageClassName()])}>
             <p>
               This means sandpack cannot connect to the runtime or your network
               is having some issues. Please check the network tab in your
@@ -167,7 +167,7 @@ export const LoadingOverlay: React.FC<
         {...props}
       >
         {shouldShowStdout && (
-          <div className={stdoutPreview.toString()}>
+          <div className={stdoutPreview}>
             <StdoutList data={stdoutData} />
           </div>
         )}
@@ -175,38 +175,10 @@ export const LoadingOverlay: React.FC<
       </div>
 
       {progressMessage && (
-        <div className={progressClassName.toString()}>
+        <div className={progressClassName}>
           <p>{progressMessage}</p>
         </div>
       )}
     </>
   );
 };
-
-const stdoutPreview = css({
-  position: "absolute",
-  left: 0,
-  right: 0,
-  bottom: "$space$8",
-  overflow: "auto",
-  opacity: 0.5,
-  overflowX: "hidden",
-});
-
-const progressClassName = css({
-  position: "absolute",
-  left: "$space$5",
-  bottom: "$space$4",
-  zIndex: "$top",
-  color: "$colors$clickable",
-  animation: `${fadeIn} 150ms ease`,
-  fontFamily: "$font$mono",
-  fontSize: ".8em",
-  width: "75%",
-  p: {
-    whiteSpace: "nowrap",
-    margin: 0,
-    textOverflow: "ellipsis",
-    overflow: "hidden",
-  },
-});

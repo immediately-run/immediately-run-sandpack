@@ -1,6 +1,4 @@
-import { styled } from "@stitches/react";
-
-const LogoWrapper = styled("svg", {});
+import { sandpackLogoClassName } from "./SandpackLogo.css";
 
 interface SandpackLogoProps {
   theme?: "light" | "dark";
@@ -9,13 +7,8 @@ export const SandpackLogo: React.FC<SandpackLogoProps> = ({
   theme = "dark",
 }) => {
   return (
-    <LogoWrapper
-      css={{
-        color: {
-          light: "$darkTextPrimary",
-          dark: "$lightTextPrimary",
-        }[theme],
-      }}
+    <svg
+      className={sandpackLogoClassName({ theme })}
       fill="none"
       height="100%"
       viewBox="0 0 61 75"
@@ -33,6 +26,6 @@ export const SandpackLogo: React.FC<SandpackLogoProps> = ({
         fill="currentColor"
         fillRule="evenodd"
       />
-    </LogoWrapper>
+    </svg>
   );
 };

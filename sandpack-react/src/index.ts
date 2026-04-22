@@ -6,7 +6,7 @@ export * from "./hooks";
 export { useClassNames } from "./utils/classNames";
 
 // Contexts
-export { getCssText as getSandpackCssText } from "./styles";
+export { getSandpackCssText } from "./styles/getSandpackCssText";
 export * from "./styles/themeContext";
 export * from "./contexts/sandpackContext";
 

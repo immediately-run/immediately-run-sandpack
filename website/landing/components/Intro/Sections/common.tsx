@@ -6,9 +6,21 @@ import { useRef } from "react";
 import { useLayoutEffect } from "react";
 import { forwardRef } from "react";
 
-import { styled } from "../../../stitches.config";
-import { Box } from "../../common";
+import { styled } from "../../../styles/styled";
 import { useBreakpoint } from "../../common/useBreakpoint";
+
+import {
+  captionClassName,
+  codeWrapperClassName,
+  contentClassName,
+  refreshButtonClassName,
+  rowInnerClassName,
+  rowOuterClassName,
+  sandpackContainerMobileClassName,
+  sandpackContainerPlaceholderClassName,
+  snippetButtonClassName,
+  tooltipClassName,
+} from "./common.css";
 
 export const THRESHOLD_VIEW = 0.5;
 
@@ -16,80 +28,24 @@ export const THRESHOLD_VIEW = 0.5;
 export const Row = forwardRef<unknown, { children: React.ReactNode }>(
   ({ children }, ref) => {
     return (
-      <Box
-        ref={ref as any}
-        css={{
-          width: "100%",
-          "@bp2": {
-            width: "initial",
-            height: "80vh",
-            maxHeight: "1080px",
-          },
-        }}
-      >
-        <Box
-          css={{
-            alignItems: "center",
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "center",
-            height: "100%",
-
-            gap: "40px",
-
-            "@bp2": {
-              "--gap": "240px",
-              alignItems: "center",
-              flexDirection: "row",
-              scrollSnapAlign: "center",
-            },
-
-            "@bp3": {
-              "--gap": "320px",
-            },
-          }}
-        >
-          {children}
-        </Box>
-      </Box>
+      <div ref={ref as any} className={rowOuterClassName}>
+        <div className={rowInnerClassName}>{children}</div>
+      </div>
     );
   }
 );
 
-export const Content = styled("div", {
-  alignItems: "center",
-  display: "flex",
-  flexDirection: "column",
-  gap: "10px",
-  width: "100%",
+export const Content = styled("div", contentClassName);
 
-  "@bp1": {
-    width: "384px",
-  },
+export const SandpackContainerPlaceholder = styled(
+  "div",
+  sandpackContainerPlaceholderClassName,
+);
 
-  "@bp2": {
-    alignItems: "flex-start",
-    width: "28%",
-  },
-});
-
-export const SandpackContainerPlaceholder = styled("div", {
-  width: "500px",
-  "@bp2": { width: "28%" },
-  // "@bp3": { width: "560px" },
-});
-
-export const SandpackContainerMobile = styled("div", {
-  width: "100%",
-
-  "@bp1": {
-    width: "auto",
-  },
-
-  "@bp2": {
-    display: "none",
-  },
-});
+export const SandpackContainerMobile = styled(
+  "div",
+  sandpackContainerMobileClassName,
+);
 
 export const getRelativeCoordinates = (
   event: any,
@@ -119,57 +75,11 @@ export const getRelativeCoordinates = (
   };
 };
 
-export const ToolTip = styled(motion.div, {
-  alignItems: "center",
-  background: "$primary",
-  borderRadius: "24px",
-  color: "$lightTextPrimary",
-  fontWeight: "$normal",
-  fontSize: "inherit",
-  lineHeight: "inherit",
-  letterSpacing: "inherit",
-  padding: "4px 12px",
-  display: "inline-block",
-});
+export const ToolTip = styled(motion.div, tooltipClassName);
 
-export const SnippetButton = styled("button", {
-  background: "none",
-  border: "none",
-  maxWidth: "100%",
-  padding: 0,
+export const SnippetButton = styled("button", snippetButtonClassName);
 
-  ".sp-wrapper": {
-    cursor: "pointer",
-    userSelect: "none",
-  },
-});
-
-export const RefreshButton = styled("button", {
-  background: "rgba(136, 136, 136, 0.2)",
-  border: "none",
-  color: "rgba(255,255,255, .5)",
-  borderRadius: "100%",
-  width: "24px",
-  height: "24px",
-  display: "flex",
-  padding: 0,
-  cursor: "pointer",
-
-  position: "absolute",
-  bottom: "12px",
-  right: "10px",
-
-  transition: "$default",
-
-  "&:hover": {
-    color: "rgba(255,255,255, 1)",
-  },
-
-  svg: {
-    padding: "1px",
-    margin: "auto",
-  },
-});
+export const RefreshButton = styled("button", refreshButtonClassName);
 
 export const FadeAnimation: React.FC<{ children?: React.ReactNode }> = ({
   children,
@@ -221,20 +131,6 @@ export const FadeAnimation: React.FC<{ children?: React.ReactNode }> = ({
 
 FadeAnimation.toString = (): string => `.fade-animation`;
 
-export const CodeWrapper = styled("div", {
-  position: "relative",
-  width: "100%",
-  paddingTop: "30px !important",
+export const CodeWrapper = styled("div", codeWrapperClassName);
 
-  "pre:not(.sp-pre-placeholder)": { padding: 0 },
-
-  ".sp-code-editor": {
-    borderRadius: "16px",
-  },
-});
-
-export const Caption = styled("p", {
-  "@bp1": {
-    display: "none",
-  },
-});
+export const Caption = styled("p", captionClassName);

@@ -1,41 +1,25 @@
+import { classes } from "../../styles/styled";
 import content from "../../website.config.json";
-import { Box, SectionHeader, CodeBlock, Text } from "../common";
+import { SectionHeader, CodeBlock } from "../common";
+
+import {
+  codeWrapperClassName,
+  headerClassName,
+  titleClassName,
+} from "./Header.css";
 
 export const Header: React.FC = () => {
   const { commands, intro } = content;
 
   return (
-    <SectionHeader
-      css={{
-        gap: "40px",
-      }}
-    >
-      <Text
-        as="h2"
-        css={{
-          fontSize: "36px",
-          fontWeight: "$semiBold",
-          letterSpacing: "-0.05em",
-          lineHeight: "1",
-          textAlign: "center",
-
-          "@bp1": {
-            fontSize: "72px",
-          },
-
-          "@bp2": {
-            fontSize: "96px",
-          },
-
-          "@bp3": {
-            fontSize: "144px",
-          },
-        }}
+    <SectionHeader className={classes(headerClassName)}>
+      <h2
+        className={titleClassName}
         dangerouslySetInnerHTML={{ __html: intro.title }}
       />
-      <Box css={{ maxWidth: "100%" }}>
+      <div className={codeWrapperClassName}>
         <CodeBlock>{commands.import}</CodeBlock>
-      </Box>
+      </div>
     </SectionHeader>
   );
 };

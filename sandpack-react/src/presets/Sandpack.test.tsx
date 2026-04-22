@@ -7,7 +7,7 @@ import React from "react";
 import { renderToString } from "react-dom/server";
 
 import { Sandpack } from "../";
-import { editorClassName } from "../components/CodeEditor/styles";
+import { editorClassName } from "../components/CodeEditor/styles.css";
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
@@ -26,7 +26,7 @@ describe("getSandpackCssText", () => {
     let sandpackModule = null;
     let renderToString = null;
 
-    const componentClassName = editorClassName().className;
+    const componentClassName = editorClassName;
 
     jest.isolateModules(() => {
       sandpackModule = require("../");
@@ -57,7 +57,7 @@ describe("getSandpackCssText", () => {
     const { SandpackProvider, SandpackCodeEditor, getSandpackCssText } =
       sandpackModule;
 
-    const componentClassName = editorClassName().className;
+    const componentClassName = editorClassName;
 
     renderToString(
       <SandpackProvider>
@@ -77,7 +77,7 @@ describe("getSandpackCssText", () => {
       renderToString = require("react-dom/server").renderToString;
     });
 
-    const componentClassName = editorClassName().className;
+    const componentClassName = editorClassName;
     const { SandpackProvider, SandpackCodeEditor, getSandpackCssText } =
       sandpackModule;
 

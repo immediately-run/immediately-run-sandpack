@@ -1,6 +1,7 @@
 import { useTransform, useViewportScroll } from "framer-motion";
 import { useLayoutEffect, useRef, useState } from "react";
 
+import { classes } from "../../styles/styled";
 import content from "../../website.config.json";
 import {
   Resources,
@@ -11,6 +12,8 @@ import {
 import { Clipboard } from "../common";
 import { ParallaxLogo } from "../common/ParallaxLogo";
 import { useBreakpoint } from "../common/useBreakpoint";
+
+import { bannerContainerClassName } from "./Banner.css";
 
 export const Banner: React.FC = () => {
   const { banner } = content;
@@ -49,19 +52,7 @@ export const Banner: React.FC = () => {
 
   return (
     <SectionWrapper ref={section}>
-      <SectionContainer
-        css={{
-          alignItems: "center",
-          display: "flex",
-          flexDirection: "column",
-          gap: "50px",
-          overflow: "visible",
-
-          "@bp3": {
-            "--gap": "100px",
-          },
-        }}
-      >
+      <SectionContainer className={classes(bannerContainerClassName)}>
         <ParallaxLogo leftRange={leftRange} rightRange={rightRange} />
         <SectionTitle dangerouslySetInnerHTML={{ __html: banner.title }} />
         <Clipboard />

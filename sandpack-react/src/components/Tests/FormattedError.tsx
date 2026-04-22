@@ -1,9 +1,9 @@
 import type { TestError } from "@codesandbox/sandpack-client";
 import * as React from "react";
 
-import { css } from "../../styles";
 import { useClassNames } from "../../utils/classNames";
 
+import { containerClassName } from "./FormattedError.css";
 import {
   failTextClassName,
   passTextClassName,
@@ -14,13 +14,6 @@ interface Props {
   error: TestError;
   path: string;
 }
-
-const containerClassName = css({
-  color: "$colors$hover",
-  fontSize: "$font$size",
-  padding: "$space$2",
-  whiteSpace: "pre-wrap",
-});
 
 export const FormattedError: React.FC<Props> = ({ error, path }) => {
   const classNames = useClassNames();

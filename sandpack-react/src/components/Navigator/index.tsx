@@ -1,47 +1,16 @@
 import * as React from "react";
 
 import { useSandpack } from "../../hooks/useSandpack";
-import { css } from "../../styles";
-import { buttonClassName, iconClassName } from "../../styles/shared";
+import { buttonClassName, iconClassName } from "../../styles/shared.css";
 import { useClassNames } from "../../utils/classNames";
 import { BackwardIcon, ForwardIcon, RefreshIcon } from "../icons";
 
+import {
+  inputClassName,
+  navigatorButtonClassName,
+  navigatorClassName,
+} from "./Navigator.css";
 import { splitUrl } from "./utils";
-
-const navigatorClassName = css({
-  display: "flex",
-  alignItems: "center",
-  height: "$layout$headerHeight",
-  borderBottom: "1px solid $colors$surface2",
-  padding: "$space$3 $space$2",
-  background: "$colors$surface1",
-});
-
-const inputClassName = css({
-  backgroundColor: "$colors$surface2",
-  color: "$colors$clickable",
-  padding: "$space$1 $space$3",
-  borderRadius: "99999px",
-  border: "1px solid $colors$surface2",
-  height: "24px",
-  lineHeight: "24px",
-  fontSize: "inherit",
-  outline: "none",
-  flex: 1,
-  marginLeft: "$space$4",
-  width: "0",
-  transition: "background $transitions$default",
-
-  "&:hover": {
-    backgroundColor: "$colors$surface3",
-  },
-
-  "&:focus": {
-    backgroundColor: "$surface1",
-    border: "1px solid $colors$accent",
-    color: "$colors$base",
-  },
-});
 
 export interface NavigatorProps {
   clientId: string;
@@ -122,10 +91,7 @@ export const Navigator = ({
     classNames("icon"),
     buttonClassName,
     iconClassName,
-    css({
-      minWidth: "$space$6",
-      justifyContent: "center",
-    }),
+    navigatorButtonClassName,
   ]);
 
   return (

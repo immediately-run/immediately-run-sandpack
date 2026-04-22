@@ -11,8 +11,15 @@ import { SandpackLayout } from "../components/common/Layout";
 import { RoundedButton } from "../components/common/RoundedButton";
 import { ConsoleIcon } from "../components/icons";
 import { SandpackProvider } from "../contexts/sandpackContext";
-import { css, THEME_PREFIX } from "../styles";
+import { THEME_PREFIX } from "../styles";
 import { SANDBOX_TEMPLATES } from "../templates";
+
+import {
+  buttonCounter,
+  consoleWrapper,
+  dragHandler,
+  rtlLayoutClassName,
+} from "./Sandpack.css";
 import type {
   SandpackInternal,
   SandpackInternalOptions,
@@ -303,73 +310,14 @@ export const Sandpack: SandpackInternal = ({
   );
 };
 
-const dragHandler = css({
-  position: "absolute",
-  zIndex: "$top",
-
-  variants: {
-    direction: {
-      vertical: {
-        right: 0,
-        left: 0,
-        height: 10,
-        cursor: "ns-resize",
-      },
-      horizontal: {
-        top: 0,
-        bottom: 0,
-        width: 10,
-        cursor: "ew-resize",
-      },
-    },
-  },
-
-  "@media screen and (max-width: 768px)": {
-    display: "none",
-  },
-});
-
 const ConsoleCounterButton: React.FC<{
   onClick: () => void;
   counter: number;
 }> = ({ onClick, counter }) => {
   return (
-    <RoundedButton className={buttonCounter.toString()} onClick={onClick}>
+    <RoundedButton className={buttonCounter} onClick={onClick}>
       <ConsoleIcon />
       {counter > 0 && <strong>{counter}</strong>}
     </RoundedButton>
   );
 };
-
-const buttonCounter = css({
-  position: "relative",
-
-  strong: {
-    background: "$colors$clickable",
-    color: "$colors$surface1",
-    minWidth: 12,
-    height: 12,
-    padding: "0 2px",
-    borderRadius: 12,
-    fontSize: 8,
-    lineHeight: "12px",
-    position: "absolute",
-    top: 0,
-    right: 0,
-    fontWeight: "normal",
-  },
-});
-
-const consoleWrapper = css({
-  width: "100%",
-  overflow: "hidden",
-});
-
-const rtlLayoutClassName = css({
-  flexDirection: "row-reverse",
-
-  "@media screen and (max-width: 768px)": {
-    flexFlow: "wrap-reverse !important",
-    flexDirection: "initial",
-  },
-});

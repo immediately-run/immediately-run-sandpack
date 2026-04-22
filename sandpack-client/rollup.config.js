@@ -1,3 +1,5 @@
+import os from "os";
+
 import commonjs from "@rollup/plugin-commonjs";
 import { nodeResolve } from "@rollup/plugin-node-resolve";
 import replace from "@rollup/plugin-replace";
@@ -6,6 +8,12 @@ import typescript from "@rollup/plugin-typescript";
 import { string } from "rollup-plugin-string";
 
 import pkg from "./package.json";
+
+// @rollup/plugin-terser falls back to `os.cpus().length` when maxWorkers is
+// unset. In restricted environments (sandboxes, some CI runners) that can
+// return 0, which causes the worker pool to never spawn a worker and the
+// build to hang with "Unexpected early exit. (terser) renderChunk".
+const TERSER_MAX_WORKERS = Math.max(os.cpus().length || 0, 1);
 
 const configs = [
   {
@@ -26,7 +34,7 @@ const configs = [
       }),
       commonjs(),
       nodeResolve(),
-      terser({ compress: { passes: 2 } }),
+      terser({ compress: { passes: 2 }, maxWorkers: TERSER_MAX_WORKERS }),
     ],
     external: [],
   },

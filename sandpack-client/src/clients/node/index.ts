@@ -1,9 +1,5 @@
 import { PREVIEW_LOADED_MESSAGE_TYPE, Nodebox } from "@codesandbox/nodebox";
-import type {
-  FilesMap,
-  ShellProcess,
-  FSWatchEvent,
-} from "@codesandbox/nodebox";
+import type { ShellProcess, FSWatchEvent } from "@codesandbox/nodebox";
 import type { ShellCommandOptions } from "@codesandbox/nodebox/build/modules/shell";
 
 import type {
@@ -18,11 +14,8 @@ import { SandpackClient } from "../base";
 import { EventEmitter } from "../event-emitter";
 
 import {
-  fromBundlerFilesToFS,
-  readBuffer,
   findStartScriptPackageJson,
   getMessageFromError,
-  writeBuffer,
   generateRandomId,
 } from "./client.utils";
 import { loadPreviewIframe, setPreviewIframeProperties } from "./iframe.utils";
@@ -39,7 +32,6 @@ export class SandpackNode extends SandpackClient {
   private emulatorShellProcess: ShellProcess | undefined;
   private emulatorCommand: [string, string[], ShellCommandOptions] | undefined;
   private iframePreviewUrl: string | undefined;
-  private _modulesCache = new Map();
   private messageChannelId = generateRandomId();
 
   // Public
@@ -73,33 +65,29 @@ export class SandpackNode extends SandpackClient {
   }
 
   // Initialize nodebox, should only ever be called once
-  private async _init(files: FilesMap): Promise<void> {
+  private async _init(): Promise<void> {
     await this.emulator.connect();
 
-    // 2. Setup
-    await this.emulator.fs.init(files);
-
-    // 2.1 Other dependencies
     await this.globalListeners();
   }
 
   /**
    * It initializes the emulator and provide it with files, template and script to run
    */
-  private async compile(files: FilesMap): Promise<void> {
+  private async compile(): Promise<void> {
     try {
       // 1. Init
       this.status = "initializing";
       this.dispatch({ type: "start", firstLoad: true });
       if (!this._initPromise) {
-        this._initPromise = this._init(files);
+        this._initPromise = this._init();
       }
       await this._initPromise;
 
       this.dispatch({ type: "connected" });
 
       // 3. Create, run task and assign preview
-      const { id: shellId } = await this.createShellProcessFromTask(files);
+      const { id: shellId } = await this.createShellProcessFromTask();
 
       // 4. Launch Preview
       await this.createPreviewURLFromId(shellId);
@@ -122,10 +110,9 @@ export class SandpackNode extends SandpackClient {
   /**
    * It creates a new shell and run the starting task
    */
-  private async createShellProcessFromTask(
-    files: FilesMap,
-  ): Promise<{ id: string }> {
-    const packageJsonContent = readBuffer(files["/package.json"]);
+  private async createShellProcessFromTask(): Promise<{ id: string }> {
+    const packageJsonContent =
+      await this.sandboxSetup.files.readFile("/package.json");
 
     this.emulatorCommand = findStartScriptPackageJson(packageJsonContent);
     this.emulatorShellProcess = this.emulator.shell.create();
@@ -307,8 +294,6 @@ export class SandpackNode extends SandpackClient {
                 content: content,
               });
 
-              this._modulesCache.set(event.path, writeBuffer(content));
-
               break;
             }
             case "remove":
@@ -317,8 +302,6 @@ export class SandpackNode extends SandpackClient {
                 path: event.path,
               });
 
-              this._modulesCache.delete(event.path);
-
               break;
 
             case "rename": {
@@ -326,8 +309,6 @@ export class SandpackNode extends SandpackClient {
                 type: "fs/remove",
                 path: event.oldPath,
               });
-
-              this._modulesCache.delete(event.oldPath);
 
               const newContent = await this.emulator.fs.readFile(
                 event.newPath,
@@ -338,8 +319,6 @@ export class SandpackNode extends SandpackClient {
                 path: event.newPath,
                 content: newContent,
               });
-
-              this._modulesCache.set(event.newPath, writeBuffer(newContent));
 
               break;
             }
@@ -378,54 +357,34 @@ export class SandpackNode extends SandpackClient {
       });
 
       // 3 Run command again
-      await this.compile(Object.fromEntries(this._modulesCache));
+      await this.compile();
     }
   }
 
   public updateSandbox(setup: SandboxSetup): void {
-    const modules = fromBundlerFilesToFS(setup.files);
+    this.sandboxSetup = { ...this.sandboxSetup, ...setup };
+    void this.updateSandboxAsync(setup);
+  }
 
-    /**
-     * Update file changes
-     */
-
+  private async updateSandboxAsync(setup: SandboxSetup): Promise<void> {
+    // With native zenfs support in the Nodebox runtime, file content reaches
+    // the emulator through the shared filesystem rather than the compile
+    // message. Skip re-dispatching once the shell is already running.
     if (this.emulatorShellProcess?.state === "running") {
-      Object.entries(modules).forEach(([key, value]) => {
-        if (
-          !this._modulesCache.get(key) ||
-          readBuffer(value) !== readBuffer(this._modulesCache.get(key))
-        ) {
-          this.emulator.fs.writeFile(key, value, { recursive: true });
-        }
-      });
-
       return;
     }
 
-    /**
-     * Pass init files to the bundler
-     */
     this.dispatch({
       codesandbox: true,
-      modules,
       template: setup.template,
       type: "compile",
-    });
-
-    /**
-     * Add modules to cache, this will ensure uniqueness changes
-     *
-     * Keep it after the compile action, in order to update the cache at the right moment
-     */
-    Object.entries(modules).forEach(([key, value]) => {
-      this._modulesCache.set(key, writeBuffer(value));
     });
   }
 
   public async dispatch(message: SandpackNodeMessage): Promise<void> {
     switch (message.type) {
       case "compile":
-        this.compile(message.modules);
+        this.compile();
         break;
 
       case "refresh":

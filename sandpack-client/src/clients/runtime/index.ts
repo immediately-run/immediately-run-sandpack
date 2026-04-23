@@ -3,14 +3,12 @@ import { dequal as deepEqual } from "dequal";
 import type { SandpackMessage } from "../..";
 import { nullthrows } from "../..";
 import { createError } from "../..";
+import type { SandpackFS } from "../../fs/SandpackFS";
 import type {
   BundlerState,
   ClientOptions,
   ListenerFunction,
-  Modules,
   SandboxSetup,
-  SandpackBundlerFile,
-  SandpackBundlerFiles,
   SandpackError,
   UnsubscribeFunction,
 } from "../../types";
@@ -50,6 +48,7 @@ export class SandpackRuntime extends SandpackClient {
 
   unsubscribeGlobalListener: UnsubscribeFunction;
   unsubscribeChannelListener: UnsubscribeFunction;
+  unsubscribeFsWatcher?: () => void;
   iframeProtocol: IFrameProtocol;
 
   constructor(
@@ -102,21 +101,23 @@ export class SandpackRuntime extends SandpackClient {
 
         this.iframeProtocol.register();
 
-        if (this.options.fileResolver) {
-          this.fileResolverProtocol = new Protocol(
-            "fs",
-            async (data) => {
-              if (data.method === "isFile") {
-                return this.options.fileResolver!.isFile(data.params[0]);
-              } else if (data.method === "readFile") {
-                return this.options.fileResolver!.readFile(data.params[0]);
-              } else {
-                throw new Error("Method not supported");
-              }
-            },
-            this.iframeProtocol,
-          );
-        }
+        /**
+         * Lazy file resolution over the iframe protocol, backed by the
+         * {@link SandpackFS} passed on construction.
+         */
+        this.fileResolverProtocol = new Protocol(
+          "fs",
+          async (data) => {
+            if (data.method === "isFile") {
+              return this.sandboxSetup.files.exists(data.params[0]);
+            } else if (data.method === "readFile") {
+              return this.sandboxSetup.files.readFile(data.params[0]);
+            } else {
+              throw new Error("Method not supported");
+            }
+          },
+          this.iframeProtocol,
+        );
 
         this.updateSandbox(this.sandboxSetup, true);
       },
@@ -247,23 +248,23 @@ export class SandpackRuntime extends SandpackClient {
 
       const headers: Record<string, string> = {};
 
-      const files = this.getFiles();
-      let file = files[filepath];
-
-      if (!file) {
+      let body: string | undefined;
+      if (await this.sandboxSetup.files.exists(filepath)) {
+        body = await this.sandboxSetup.files.readFile(filepath);
+      } else {
         const modulesFromManager = await this.getTranspiledFiles();
-
-        file = modulesFromManager.find((item) =>
+        const match = modulesFromManager.find((item) =>
           item.path.endsWith(filepath),
-        ) as SandpackBundlerFile;
-
-        if (!file) {
-          notFound();
-          return;
+        );
+        if (match) {
+          body = match.code;
         }
       }
 
-      const body = file.code;
+      if (body === undefined) {
+        notFound();
+        return;
+      }
 
       if (!headers["Content-Type"]) {
         const extension = getExtension(filepath);
@@ -301,6 +302,7 @@ export class SandpackRuntime extends SandpackClient {
   destroy(): void {
     this.unsubscribeChannelListener();
     this.unsubscribeGlobalListener();
+    this.unsubscribeFsWatcher?.();
     this.iframeProtocol.cleanup();
   }
 
@@ -320,18 +322,24 @@ export class SandpackRuntime extends SandpackClient {
       ...sandboxSetup,
     };
 
-    const files = this.getFiles();
+    void this.dispatchCompile(isInitializationCompile);
+  }
 
-    const modules: Modules = Object.keys(files).reduce(
-      (prev, next) => ({
-        ...prev,
-        [next]: {
-          code: files[next].code,
-          path: next,
-        },
-      }),
-      {},
-    );
+  private async dispatchCompile(
+    isInitializationCompile?: boolean,
+  ): Promise<void> {
+    const fs = this.sandboxSetup.files;
+
+    await addPackageJSONIfNeeded(
+      fs,
+      this.sandboxSetup.dependencies,
+      this.sandboxSetup.devDependencies,
+      this.sandboxSetup.entry,
+    ).catch(() => {
+      // addPackageJSONIfNeeded throws when it can't infer a package.json. At
+      // this point we've already accepted whatever the user provided, so we
+      // log and move on.
+    });
 
     let packageJSON = JSON.parse(
       createPackageJSON(
@@ -341,7 +349,9 @@ export class SandpackRuntime extends SandpackClient {
       ),
     );
     try {
-      packageJSON = JSON.parse(files["/package.json"].code);
+      if (await fs.exists("/package.json")) {
+        packageJSON = JSON.parse(await fs.readFile("/package.json"));
+      }
     } catch (e) {
       console.error(
         createError(
@@ -350,16 +360,11 @@ export class SandpackRuntime extends SandpackClient {
       );
     }
 
-    // TODO move this to a common format
-    const normalizedModules = Object.keys(files).reduce(
-      (prev, next) => ({
-        ...prev,
-        [next]: {
-          content: files[next].code,
-          path: next,
-        },
-      }),
-      {},
+    // getTemplate only reads Object.keys(modules) to match on file paths, so
+    // a file-name -> true map is all it needs.
+    const fileNames = await fs.list();
+    const fileNameMap = Object.fromEntries(
+      fileNames.map((p) => [p, true] as const),
     );
 
     this.dispatch({
@@ -368,17 +373,15 @@ export class SandpackRuntime extends SandpackClient {
       codesandbox: true,
       version: 3,
       isInitializationCompile,
-      modules,
       reactDevTools: this.options.reactDevTools,
       externalResources: this.options.externalResources || [],
-      hasFileResolver: Boolean(this.options.fileResolver),
+      hasFileResolver: true,
       disableDependencyPreprocessing:
         this.sandboxSetup.disableDependencyPreprocessing,
       experimental_enableServiceWorker:
         this.options.experimental_enableServiceWorker,
       template:
-        this.sandboxSetup.template ||
-        getTemplate(packageJSON, normalizedModules),
+        this.sandboxSetup.template || getTemplate(packageJSON, fileNameMap),
       showOpenInCodeSandbox: this.options.showOpenInCodeSandbox ?? true,
       showErrorScreen: this.options.showErrorScreen ?? true,
       showLoadingScreen: this.options.showLoadingScreen ?? false,
@@ -416,38 +419,44 @@ export class SandpackRuntime extends SandpackClient {
   /**
    * Get the URL of the contents of the current sandbox
    */
-  public getCodeSandboxURL(): Promise<{
+  public async getCodeSandboxURL(): Promise<{
     sandboxId: string;
     editorUrl: string;
     embedUrl: string;
   }> {
-    const files = this.getFiles();
+    const snapshot = await snapshotFS(this.sandboxSetup.files);
 
-    const paramFiles = Object.keys(files).reduce(
+    const paramFiles = Object.keys(snapshot).reduce(
       (prev, next) => ({
         ...prev,
         [next.replace("/", "")]: {
-          content: files[next].code,
+          content: snapshot[next],
           isBinary: false,
         },
       }),
       {},
     );
 
-    return fetch("https://codesandbox.io/api/v1/sandboxes/define?json=1", {
-      method: "POST",
-      body: JSON.stringify({ files: paramFiles }),
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json",
+    const res = await fetch(
+      "https://codesandbox.io/api/v1/sandboxes/define?json=1",
+      {
+        method: "POST",
+        body: JSON.stringify({ files: paramFiles }),
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
       },
-    })
-      .then((x) => x.json())
-      .then((res: { sandbox_id: string }) => ({
-        sandboxId: res.sandbox_id,
-        editorUrl: `https://codesandbox.io/s/${res.sandbox_id}`,
-        embedUrl: `https://codesandbox.io/embed/${res.sandbox_id}`,
-      }));
+    );
+
+    const { sandbox_id: sandboxId } = (await res.json()) as {
+      sandbox_id: string;
+    };
+    return {
+      sandboxId,
+      editorUrl: `https://codesandbox.io/s/${sandboxId}`,
+      embedUrl: `https://codesandbox.io/embed/${sandboxId}`,
+    };
   }
 
   public getTranspilerContext = (): Promise<
@@ -481,21 +490,6 @@ export class SandpackRuntime extends SandpackClient {
     });
   };
 
-  private getFiles(): SandpackBundlerFiles {
-    const { sandboxSetup } = this;
-
-    if (sandboxSetup.files["/package.json"] === undefined) {
-      return addPackageJSONIfNeeded(
-        sandboxSetup.files,
-        sandboxSetup.dependencies,
-        sandboxSetup.devDependencies,
-        sandboxSetup.entry,
-      );
-    }
-
-    return this.sandboxSetup.files;
-  }
-
   private initializeElement(): void {
     this.iframe.style.border = "0";
     this.iframe.style.width = this.options.width || "100%";
@@ -509,4 +503,20 @@ export class SandpackRuntime extends SandpackClient {
 
     this.element.parentNode!.replaceChild(this.iframe, this.element);
   }
+}
+
+/**
+ * Read every tracked file from the filesystem into a plain `{ path: code }`
+ * snapshot. Used wherever the bundler protocol still expects a flat module
+ * map (the iframe `compile` payload, Open-in-CodeSandbox, etc.).
+ */
+async function snapshotFS(fs: SandpackFS): Promise<Record<string, string>> {
+  const paths = await fs.list();
+  const out: Record<string, string> = {};
+  await Promise.all(
+    paths.map(async (path) => {
+      out[path] = await fs.readFile(path);
+    }),
+  );
+  return out;
 }

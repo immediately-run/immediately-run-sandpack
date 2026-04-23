@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
-import type { FilesMap } from "@codesandbox/nodebox";
 import type { FileContent } from "static-browser-server";
 import { PreviewController } from "static-browser-server";
 
@@ -14,15 +13,28 @@ import type {
 import consoleHook from "../../inject-scripts/dist/consoleHook.js";
 import { SandpackClient } from "../base";
 import { EventEmitter } from "../event-emitter";
-import { fromBundlerFilesToFS, generateRandomId } from "../node/client.utils";
+import { generateRandomId } from "../node/client.utils";
 import type { SandpackNodeMessage } from "../node/types";
 
 import { insertHtmlAfterRegex, readBuffer, validateHtml } from "./utils";
 
+/**
+ * Options accepted by `PreviewController` once zenfs-native serving lands.
+ * The bundled `static-browser-server` types still describe the older
+ * `getFileContent`-based API, so we type-assert the constructor args against
+ * this local shape.
+ */
+interface ZenFSPreviewControllerOptions {
+  baseUrl: string;
+  transformResponse?: (args: {
+    filepath: string;
+    content: FileContent;
+  }) => string;
+}
+
 export class SandpackStatic extends SandpackClient {
   private emitter: EventEmitter;
   private previewController: PreviewController;
-  private files: Map<string, string | Uint8Array> = new Map();
 
   public iframe!: HTMLIFrameElement;
   public selector!: string;
@@ -38,35 +50,34 @@ export class SandpackStatic extends SandpackClient {
     this.status = "initializing";
 
     this.emitter = new EventEmitter();
-    this.previewController = new PreviewController({
+    const previewOptions: ZenFSPreviewControllerOptions = {
       baseUrl:
         options.bundlerURL ??
         "https://preview.sandpack-static-server.codesandbox.io",
-      // filepath is always normalized to start with / and not end with a slash
-      getFileContent: (filepath) => {
-        let content = this.files.get(filepath);
-        if (!content) {
-          throw new Error("File not found");
+      transformResponse: ({ filepath, content }): string => {
+        if (!filepath.endsWith(".html") && !filepath.endsWith(".htm")) {
+          return readBuffer(content);
         }
-        if (filepath.endsWith(".html") || filepath.endsWith(".htm")) {
-          try {
-            content = validateHtml(content);
-            content = this.injectProtocolScript(content);
-            content = this.injectExternalResources(
-              content,
-              options.externalResources,
-            );
-            content = this.injectScriptIntoHead(content, {
-              script: consoleHook,
-              scope: { channelId: generateRandomId() },
-            });
-          } catch (err) {
-            console.error("Runtime injection failed", err);
-          }
+        try {
+          let out: FileContent = validateHtml(content);
+          out = this.injectProtocolScript(out);
+          out = this.injectExternalResources(out, options.externalResources);
+          out = this.injectScriptIntoHead(out, {
+            script: consoleHook,
+            scope: { channelId: generateRandomId() },
+          });
+          return readBuffer(out);
+        } catch (err) {
+          console.error("Runtime injection failed", err);
+          return readBuffer(content);
         }
-        return content;
       },
-    });
+    };
+    this.previewController = new PreviewController(
+      previewOptions as unknown as ConstructorParameters<
+        typeof PreviewController
+      >[0],
+    );
 
     if (typeof selector === "string") {
       this.selector = selector;
@@ -175,22 +186,21 @@ export class SandpackStatic extends SandpackClient {
     setup = this.sandboxSetup,
     _isInitializationCompile?: boolean,
   ): void {
-    const modules = fromBundlerFilesToFS(setup.files);
+    this.sandboxSetup = { ...this.sandboxSetup, ...setup };
+    void this.updateSandboxAsync(setup);
+  }
 
-    /**
-     * Pass init files to the bundler
-     */
+  private async updateSandboxAsync(setup: SandboxSetup): Promise<void> {
+    // File content is served straight from zenfs by the static preview
+    // runtime, so the compile message no longer needs to carry files.
     this.dispatch({
       codesandbox: true,
-      modules,
       template: setup.template,
       type: "compile",
     });
   }
 
-  private async compile(files: FilesMap): Promise<void> {
-    this.files = new Map(Object.entries(files));
-
+  private async compile(): Promise<void> {
     const previewUrl = await this.previewController.initPreview();
     this.iframe.setAttribute("src", previewUrl);
 
@@ -225,7 +235,7 @@ export class SandpackStatic extends SandpackClient {
   public dispatch(message: SandpackNodeMessage): void {
     switch (message.type) {
       case "compile":
-        this.compile(message.modules);
+        this.compile();
         break;
 
       default:

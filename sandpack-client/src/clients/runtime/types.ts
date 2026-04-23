@@ -2,7 +2,6 @@ import type {
   BaseSandpackMessage,
   BundlerState,
   ClientStatus,
-  Modules,
   NpmRegistry,
   ReactDevToolsMode,
   SandboxTestMessage,
@@ -64,7 +63,6 @@ export type SandpackRuntimeMessage = BaseSandpackMessage &
         type: "compile";
         version: number;
         isInitializationCompile?: boolean;
-        modules: Modules;
         externalResources: string[];
         hasFileResolver: boolean;
         disableDependencyPreprocessing?: boolean;

@@ -1,4 +1,4 @@
-import type { FilesMap, WorkerStatusUpdate } from "@codesandbox/nodebox";
+import type { WorkerStatusUpdate } from "@codesandbox/nodebox";
 
 import type {
   BaseSandpackMessage,
@@ -19,7 +19,6 @@ type SandpackStandartMessages =
 type SandpackBundlerMessages =
   | {
       type: "compile";
-      modules: FilesMap;
       template?: string;
       logLevel?: SandpackLogLevel;
     }

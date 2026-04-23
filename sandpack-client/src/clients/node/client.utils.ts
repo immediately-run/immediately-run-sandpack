@@ -1,7 +1,6 @@
 import type { ShellCommandOptions } from "@codesandbox/nodebox/build/modules/shell";
 import { invariant } from "outvariant";
 
-import type { SandpackBundlerFiles } from "../..";
 import { createError } from "../..";
 
 import { tokenize, TokenType } from "./taskManager";
@@ -14,35 +13,6 @@ export function generateRandomId() {
   const count = (counter += 1);
   return (+`${now}${randomNumber}${count}`).toString(16);
 }
-
-export const writeBuffer = (content: string | Uint8Array): Uint8Array => {
-  if (typeof content === "string") {
-    return new TextEncoder().encode(content);
-  } else {
-    return content;
-  }
-};
-
-export const readBuffer = (content: string | Uint8Array): string => {
-  if (typeof content === "string") {
-    return content;
-  } else {
-    return new TextDecoder().decode(content);
-  }
-};
-
-export const fromBundlerFilesToFS = (
-  files: SandpackBundlerFiles,
-): Record<string, Uint8Array> => {
-  return Object.entries(files).reduce<Record<string, Uint8Array>>(
-    (acc, [key, value]) => {
-      acc[key] = writeBuffer(value.code);
-
-      return acc;
-    },
-    {},
-  );
-};
 
 /**
  * Figure out which script it must run to start a server

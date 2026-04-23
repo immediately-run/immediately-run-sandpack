@@ -16,7 +16,11 @@ export const SandpackProvider: React.FC<SandpackProviderProps> = (props) => {
   const [fileState, fileOperations] = useFiles(props);
   const [clientState, { dispatchMessage, addListener, ...clientOperations }] =
     useClient(props, fileState);
-  const appState = useAppState(props, fileState.files);
+  const appState = useAppState(
+    props,
+    fileState.isLoading ? null : fileState.fs,
+    fileState.fileList,
+  );
   React.useEffect(() => {
     clientOperations.initializeSandpackIframe();
   }, []);

@@ -52,7 +52,7 @@ const ReadOnlyEditor = () => {
         Toggle read only ({isReadOnly ? "true" : "false"})
       </button>
       <SandpackCodeEditor readOnly={isReadOnly} />
-      <pre>{JSON.stringify(sandpack.files, null, 2)}</pre>
+      <pre>{JSON.stringify(sandpack.fileList, null, 2)}</pre>
     </>
   );
 };

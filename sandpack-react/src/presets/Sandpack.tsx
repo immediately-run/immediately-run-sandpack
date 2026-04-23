@@ -73,7 +73,6 @@ export const Sandpack: SandpackInternal = ({
     bundlerURL: options.bundlerURL,
     startRoute: options.startRoute,
     skipEval: options.skipEval,
-    fileResolver: options.fileResolver,
     initMode: options.initMode,
     initModeObserverOptions: options.initModeObserverOptions,
     externalResources: options.externalResources,

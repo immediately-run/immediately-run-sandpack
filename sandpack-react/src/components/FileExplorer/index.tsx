@@ -1,4 +1,3 @@
-import type { SandpackBundlerFiles } from "@codesandbox/sandpack-client";
 import * as React from "react";
 
 import { useSandpack } from "../../hooks/useSandpack";
@@ -33,7 +32,8 @@ export const SandpackFileExplorer = ({
       updateFile,
       deleteFile,
       activeFile,
-      files,
+      fileList,
+      fileMeta,
       openFile,
       visibleFilesFromProps,
     },
@@ -47,25 +47,23 @@ export const SandpackFileExplorer = ({
 
       const unsubscribe = listen((message) => {
         if (message.type === "fs/change") {
-          updateFile(message.path, message.content, false);
+          void updateFile(message.path, message.content, false);
         }
 
         if (message.type === "fs/remove") {
-          deleteFile(message.path, false);
+          void deleteFile(message.path, false);
         }
       });
 
       return unsubscribe;
     },
-    [status],
+    [status], // eslint-disable-line react-hooks/exhaustive-deps
   );
 
-  const orderedFiles = Object.keys(files)
-    .sort()
-    .reduce<SandpackBundlerFiles>((obj, key) => {
-      obj[key] = files[key];
-      return obj;
-    }, {});
+  const orderedFileList = React.useMemo(
+    () => [...fileList].sort(),
+    [fileList],
+  );
 
   return (
     <div
@@ -78,7 +76,8 @@ export const SandpackFileExplorer = ({
         <ModuleList
           activeFile={activeFile}
           autoHiddenFiles={autoHiddenFiles}
-          files={orderedFiles}
+          fileList={orderedFileList}
+          fileMeta={fileMeta}
           initialCollapsedFolder={initialCollapsedFolder}
           prefixedPath="/"
           selectFile={openFile}

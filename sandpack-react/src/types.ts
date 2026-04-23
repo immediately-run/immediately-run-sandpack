@@ -3,11 +3,13 @@
 import type { LanguageSupport } from "@codemirror/language";
 import type {
   BundlerState,
+  FileMetaMap,
   ListenerFunction,
   ReactDevToolsMode,
-  SandpackBundlerFiles,
   SandpackClient,
   SandpackError,
+  SandpackFS,
+  SandpackFilesInput,
   SandpackMessage,
   UnsubscribeFunction,
   SandpackLogLevel,
@@ -170,7 +172,6 @@ export interface SandpackOptions {
   bundlerURL?: string;
   startRoute?: string;
   skipEval?: boolean;
-  fileResolver?: FileResolver;
   externalResources?: string[];
 }
 
@@ -445,6 +446,13 @@ interface SandpackRootProps<
   TemplateName extends SandpackPredefinedTemplate,
 > {
   files?: Files;
+  /**
+   * Bring your own filesystem. When provided, Sandpack will use this
+   * {@link SandpackFS} instance as the source of truth instead of
+   * materializing `files` into a fresh one. Lets you persist files across
+   * tabs/sessions by backing it with a zenfs adapter like IndexedDB.
+   */
+  fs?: SandpackFS;
   template?: TemplateName;
   customSetup?: SandpackSetup;
   theme?: SandpackThemeProp;
@@ -477,7 +485,6 @@ export interface SandpackInternalOptions<
   bundlerTimeOut?: number;
   startRoute?: string;
   skipEval?: boolean;
-  fileResolver?: FileResolver;
   externalResources?: string[];
   classes?: Record<string, string>;
   experimental_enableServiceWorker?: boolean;
@@ -585,9 +592,29 @@ export interface SandpackState {
   teamId?: string;
   exportOptions?: SandpackExportOptions;
   error: SandpackError | null;
-  files: SandpackBundlerFiles;
+  /**
+   * The filesystem backing all files rendered inside Sandpack. Use this for
+   * async `readFile`/`writeFile`/`list` access.
+   */
+  fs: SandpackFS;
+  /**
+   * Snapshot of every file path known to {@link fs}, updated whenever the
+   * filesystem mutates.
+   */
+  fileList: string[];
+  /**
+   * Snapshot of the per-file UI metadata (`hidden`, `active`, `readOnly`)
+   * stored in the filesystem sidecar, updated whenever metadata changes.
+   */
+  fileMeta: FileMetaMap;
   environment?: SandboxEnvironment;
   status: SandpackStatus;
+  /**
+   * True while the async initialization of the filesystem is in flight.
+   * Consumers should treat `fs`, `fileList`, and `fileMeta` as not yet
+   * available while this is `true`.
+   */
+  isLoading: boolean;
   initMode: SandpackInitMode;
   clients: Record<string, InstanceType<typeof SandpackClient>>;
 
@@ -602,19 +629,22 @@ export interface SandpackState {
     pathOrFiles: string | SandpackFiles,
     code?: string,
     shouldUpdatePreview?: boolean,
-  ) => void;
+  ) => Promise<void>;
   addFile: (
     pathOrFiles: string | SandpackFiles,
     code?: string,
     shouldUpdatePreview?: boolean,
-  ) => void;
-  updateCurrentFile: (newCode: string, shouldUpdatePreview?: boolean) => void;
+  ) => Promise<void>;
+  updateCurrentFile: (
+    newCode: string,
+    shouldUpdatePreview?: boolean,
+  ) => Promise<void>;
   openFile: (path: string) => void;
   closeFile: (path: string) => void;
-  deleteFile: (path: string, shouldUpdatePreview?: boolean) => void;
+  deleteFile: (path: string, shouldUpdatePreview?: boolean) => Promise<void>;
   setActiveFile: (path: string) => void;
-  resetFile: (path: string) => void;
-  resetAllFiles: () => void;
+  resetFile: (path: string) => Promise<void>;
+  resetAllFiles: () => Promise<void>;
   registerReactDevTools: (value: ReactDevToolsMode) => void;
   /**
    * Element refs
@@ -641,7 +671,7 @@ export type SandpackStatus =
 export type EditorState = "pristine" | "dirty";
 
 export interface SandboxTemplate {
-  files: SandpackBundlerFiles;
+  files: SandpackFilesInput;
   dependencies: Record<string, string>;
   devDependencies?: Record<string, string>;
   entry?: string;
@@ -678,13 +708,10 @@ export type DeepPartial<Type> = {
   [Property in keyof Type]?: DeepPartial<Type[Property]>;
 };
 
-export interface FileResolver {
-  isFile: (path: string) => Promise<boolean>;
-  readFile: (path: string) => Promise<string>;
-}
-
 export interface SandpackProviderState {
-  files: SandpackBundlerFiles;
+  fs: SandpackFS;
+  fileList: string[];
+  fileMeta: FileMetaMap;
   environment?: SandboxEnvironment;
   visibleFiles: Array<TemplateFiles<SandpackPredefinedTemplate> | string>;
   visibleFilesFromProps: Array<

@@ -36,7 +36,7 @@
   "scripts": {
     "clean": "rm -rf dist",
     "prebuild": "yarn run clean",
-    "test": "TEST_ENV=true jest . --transformIgnorePatterns \"node_modules/(?!@codemirror)/\" --modulePathIgnorePatterns \"e2e\"",
+    "test": "TZ=UTC TEST_ENV=true jest . --transformIgnorePatterns \"node_modules/(?!(@codemirror|@zenfs))/\" --modulePathIgnorePatterns \"e2e\"",
     "lint": "eslint '**/*.ts?(x)' --fix",
     "build": "rollup -c",
     "build:publish": "yarn build",
@@ -61,6 +61,7 @@
     "@codemirror/view": "^6.35.3",
     "@codesandbox/sandpack-client": "^2.19.8",
     "@lezer/highlight": "^1.2.1",
+    "@zenfs/core": "~2.3.11",
     "@react-hook/intersection-observer": "^3.1.2",
     "@vanilla-extract/dynamic": "^2.1.5",
     "@vanilla-extract/recipes": "^0.5.7",

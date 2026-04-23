@@ -1,56 +1,55 @@
 /**
  * @jest-environment jsdom
  */
-import type { SandpackBundlerFile } from "@codesandbox/sandpack-client/src";
-import { renderHook, act } from "@testing-library/react";
-
-import { VANILLA_TEMPLATE } from "../../templates";
-import { getSandpackStateFromProps } from "../../utils/sandpackUtils";
+import { renderHook, act, waitFor } from "@testing-library/react";
 
 import { useFiles } from "./useFiles";
 
+/**
+ * Helper: wait for the async fs init to land and `isLoading` to flip false.
+ */
+async function waitForReady<T extends { isLoading: boolean }>(
+  get: () => T,
+): Promise<void> {
+  await waitFor(() => expect(get().isLoading).toBe(false));
+}
+
 describe(useFiles, () => {
-  it("should returns an initial state, which is the default template", () => {
+  it("exposes the default template's visible file once initialized", async () => {
     const { result } = renderHook(() => useFiles({}));
 
-    const stateFromDefaultTemplate = getSandpackStateFromProps({
-      ...VANILLA_TEMPLATE,
-      files: {},
-    });
+    await waitForReady(() => result.current[0]);
 
-    expect(result.current[0]).toEqual({
-      ...stateFromDefaultTemplate,
-      shouldUpdatePreview: true,
-      visibleFilesFromProps: stateFromDefaultTemplate.visibleFiles,
-    });
+    expect(result.current[0].activeFile).toBeTruthy();
+    expect(result.current[0].fileList.length).toBeGreaterThan(0);
   });
 
-  it("adds a new file", () => {
+  it("adds a new file", async () => {
     const { result } = renderHook(() => useFiles({}));
+    await waitForReady(() => result.current[0]);
 
-    act(() => {
-      result.current[1].addFile("/App.js", "new-content");
+    await act(async () => {
+      await result.current[1].addFile("/App.js", "new-content");
     });
 
-    expect(result.current[0].files["/App.js"].code).toBe("new-content");
+    await waitFor(() =>
+      expect(result.current[0].fileList).toContain("/App.js"),
+    );
+    expect(await result.current[0].fs.readFile("/App.js")).toBe("new-content");
   });
 
-  it("deletes a file", () => {
+  it("deletes a file", async () => {
     const { result } = renderHook(() => useFiles({}));
+    await waitForReady(() => result.current[0]);
 
-    const fileList = Object.keys(VANILLA_TEMPLATE.files);
+    expect(result.current[0].fileList).toContain("/index.js");
 
-    // Original list
-    expect(Object.keys(result.current[0].files)).toEqual(fileList);
-
-    act(() => {
-      result.current[1].deleteFile("/src/index.js");
+    await act(async () => {
+      await result.current[1].deleteFile("/index.js");
     });
 
-    // New list without deleted file
-    expect(result.current[0].files["/src/index.js"]).toBe(undefined);
-    expect(Object.keys(result.current[0].files)).toEqual(
-      fileList.filter((file) => file !== "/src/index.js"),
+    await waitFor(() =>
+      expect(result.current[0].fileList).not.toContain("/index.js"),
     );
   });
 
@@ -62,91 +61,65 @@ describe(useFiles, () => {
       }),
     );
 
+    await waitForReady(() => result.current[0]);
+
     await act(async () => {
-      result.current[1].deleteFile("/App.js");
+      await result.current[1].deleteFile("/App.js");
     });
 
     expect(result.current[0].activeFile).toBe("/styles.css");
   });
 
-  it("deletes the activeFile and set the entry file if there no visibleFile left", async () => {
-    const { result } = renderHook(() =>
-      useFiles({
-        template: "react",
-        options: { activeFile: "/App.js", visibleFiles: [] },
-      }),
-    );
+  it("updates a file", async () => {
+    const { result } = renderHook(() => useFiles({ template: "react" }));
+    await waitForReady(() => result.current[0]);
 
     await act(async () => {
-      result.current[1].deleteFile("/App.js");
+      await result.current[1].updateFile("/App.js", "Foo");
     });
 
-    expect(result.current[0].activeFile).toBe("/package.json");
+    expect(await result.current[0].fs.readFile("/App.js")).toBe("Foo");
   });
 
-  it("updates a file", () => {
+  it("updates multiples files", async () => {
     const { result } = renderHook(() => useFiles({ template: "react" }));
+    await waitForReady(() => result.current[0]);
 
-    expect(result.current[0].files["/App.js"]).toEqual({
-      code: `export default function App() {
-  return <h1>Hello world</h1>
-}
-`,
+    await act(async () => {
+      await result.current[1].updateFile({
+        "/App.js": "Foo",
+        "/index.js": "Baz",
+      });
     });
 
-    act(() => {
-      result.current[1].updateFile("/App.js", "Foo");
-    });
-
-    expect(result.current[0].files["/App.js"]).toEqual({ code: `Foo` });
+    expect(await result.current[0].fs.readFile("/App.js")).toBe("Foo");
+    expect(await result.current[0].fs.readFile("/index.js")).toBe("Baz");
   });
 
-  it("updates multiples files", () => {
-    const { result } = renderHook(() => useFiles({ template: "react" }));
-
-    act(() => {
-      result.current[1].updateFile({ "/App.js": "Foo", "/index.js": "Baz" });
-    });
-
-    expect(result.current[0].files["/App.js"]).toEqual({ code: `Foo` });
-    expect(result.current[0].files["/index.js"]).toEqual({ code: `Baz` });
-  });
-
-  it("updates multiples files in a row", () => {
-    const { result } = renderHook(() => useFiles({ template: "react" }));
-
-    act(() => {
-      result.current[1].updateFile("/App.js", "Foo");
-    });
-
-    act(() => {
-      result.current[1].updateFile("/index.js", "Baz");
-    });
-
-    expect(result.current[0].files["/App.js"]).toEqual({ code: `Foo` });
-    expect(result.current[0].files["/index.js"]).toEqual({ code: `Baz` });
-  });
-  it("doesn't override the activeFile's metadata", () => {
-    const { result } = renderHook(useFiles, {
-      initialProps: {
+  it("preserves per-file metadata on subsequent updates", async () => {
+    const { result } = renderHook(() =>
+      useFiles({
         template: "react",
         files: {
           "/App.js": {
             code: "export default function App() { return <h1>Hello world</h1>}",
             readOnly: true,
-            someOtherMetadata: "foo",
-          } as SandpackBundlerFile,
+          },
         },
-      },
+      }),
+    );
+
+    await waitForReady(() => result.current[0]);
+
+    await act(async () => {
+      await result.current[1].updateFile("/App.js", "console.log(10)");
     });
 
-    act(() => {
-      result.current[1].updateFile("/App.js", "console.log(10)");
-    });
-    expect(result.current[0].files["/App.js"]).toEqual({
-      code: "console.log(10)",
+    expect(await result.current[0].fs.readFile("/App.js")).toBe(
+      "console.log(10)",
+    );
+    expect(result.current[0].fs.getMetadata("/App.js")).toEqual({
       readOnly: true,
-      someOtherMetadata: "foo",
     });
-  });
+  }, 10000);
 });

@@ -1,4 +1,4 @@
-import type { SandpackBundlerFiles } from "@codesandbox/sandpack-client";
+import type { SandpackFS } from "@codesandbox/sandpack-client";
 import LZString from "lz-string";
 import * as React from "react";
 
@@ -14,33 +14,28 @@ const getParameters = (parameters: Record<string, any>): string =>
 
 const CSB_URL = "https://codesandbox.io/api/v1/sandboxes/define";
 
-const getFileParameters = (
-  files: SandpackBundlerFiles,
+/**
+ * Read the current filesystem contents into the flat shape expected by the
+ * CodeSandbox `/define` endpoint.
+ */
+async function getFileParameters(
+  fs: SandpackFS,
+  fileList: string[],
   environment?: SandboxEnvironment,
-): string => {
-  type NormalizedFiles = Record<
-    string,
-    {
-      content: string;
-      isBinary: boolean;
-    }
-  >;
-
-  const normalizedFiles = Object.keys(files).reduce((prev, next) => {
-    const fileName = next.replace("/", "");
-    const value = {
-      content: files[next].code,
-      isBinary: false,
-    };
-
-    return { ...prev, [fileName]: value };
-  }, {} as NormalizedFiles);
+): Promise<string> {
+  const entries = await Promise.all(
+    fileList.map(async (path) => {
+      const fileName = path.replace(/^\//, "");
+      const code = await fs.readFile(path);
+      return [fileName, { content: code, isBinary: false }] as const;
+    }),
+  );
 
   return getParameters({
-    files: normalizedFiles,
+    files: Object.fromEntries(entries),
     ...(environment ? { template: environment } : null),
   });
-};
+}
 
 export const UnstyledOpenInCodeSandboxButton: React.FC<
   React.HtmlHTMLAttributes<unknown>
@@ -62,10 +57,13 @@ export const ExportToWorkspaceButton: React.FC<
       throw new Error("Missing `apiToken` property");
     }
 
-    const normalizedFiles = Object.keys(state.files).reduce((prev, next) => {
-      const fileName = next.replace("/", "");
-      return { ...prev, [fileName]: state.files[next] };
-    }, {});
+    const files = await Promise.all(
+      state.fileList.map(async (path) => {
+        const fileName = path.replace(/^\//, "");
+        return [fileName, { code: await state.fs.readFile(path) }] as const;
+      }),
+    );
+    const normalizedFiles = Object.fromEntries(files);
 
     const response = await fetch("https://api.codesandbox.io/sandbox", {
       method: "POST",
@@ -109,8 +107,16 @@ const RegularExportButton: React.FC<
 
   React.useEffect(
     function debounce() {
-      const timer = setTimeout(() => {
-        const params = getFileParameters(state.files, state.environment);
+      let cancelled = false;
+
+      const timer = setTimeout(async () => {
+        const params = await getFileParameters(
+          state.fs,
+          state.fileList,
+          state.environment,
+        );
+
+        if (cancelled) return;
 
         const searchParams = new URLSearchParams({
           parameters: params,
@@ -124,10 +130,11 @@ const RegularExportButton: React.FC<
       }, 600);
 
       return (): void => {
+        cancelled = true;
         clearTimeout(timer);
       };
     },
-    [state.activeFile, state.environment, state.files],
+    [state.activeFile, state.environment, state.fs, state.fileList],
   );
 
   /**

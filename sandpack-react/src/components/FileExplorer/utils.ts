@@ -1,25 +1,29 @@
-import type { SandpackBundlerFiles } from "@codesandbox/sandpack-client";
+import type { FileMetaMap } from "@codesandbox/sandpack-client";
 
+/**
+ * Build the `{directories, modules}` split used by the file explorer. Takes
+ * the flat list of paths from `SandpackFS.list()` plus the metadata sidecar
+ * so we can honor `hidden` without round-tripping to the bundler.
+ */
 export const fromPropsToModules = ({
   autoHiddenFiles,
   visibleFiles,
-  files,
+  fileList,
+  fileMeta,
   prefixedPath,
 }: {
   prefixedPath: string;
-  files: SandpackBundlerFiles;
+  fileList: string[];
+  fileMeta: FileMetaMap;
   autoHiddenFiles?: boolean;
   visibleFiles: string[];
 }): { directories: string[]; modules: string[] } => {
   const hasVisibleFilesOption = visibleFiles.length > 0;
 
-  /**
-   * When visibleFiles or activeFile are set, the hidden and active flags on the files prop are ignored.
-   */
   const filterByHiddenProperty = autoHiddenFiles && !hasVisibleFilesOption;
   const filterByVisibleFilesOption = autoHiddenFiles && !!hasVisibleFilesOption;
 
-  const fileListWithoutPrefix = Object.keys(files)
+  const fileListWithoutPrefix = fileList
     .filter((filePath) => {
       const isValidatedPath = filePath.startsWith(prefixedPath);
       if (filterByVisibleFilesOption) {
@@ -27,7 +31,7 @@ export const fromPropsToModules = ({
       }
 
       if (filterByHiddenProperty) {
-        return isValidatedPath && !files[filePath]?.hidden;
+        return isValidatedPath && !fileMeta[filePath]?.hidden;
       }
 
       return isValidatedPath;

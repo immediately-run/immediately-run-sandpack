@@ -4,10 +4,20 @@
 
 import { renderHook, act } from "@testing-library/react";
 
-import { getSandpackStateFromProps } from "../../utils/sandpackUtils";
-
+import { createTestFilesState } from "./testHelpers";
 import { useClient } from "./useClient";
 import type { UseClientOperations } from "./useClient";
+import type { FilesState } from "./useFiles";
+
+let filesState: FilesState & { visibleFilesFromProps: string[] };
+
+beforeEach(async () => {
+  filesState = await createTestFilesState();
+});
+
+afterEach(() => {
+  filesState.fs.dispose();
+});
 
 const getAmountOfListener = (
   instance: UseClientOperations,
@@ -25,7 +35,7 @@ describe(useClient, () => {
   describe("listeners", () => {
     it("sets a listener, but the client hasn't been created yet - no global listener", async () => {
       const { result } = renderHook(() =>
-        useClient({}, getSandpackStateFromProps({})),
+        useClient({}, filesState),
       );
 
       const operations = result.current[1];
@@ -64,7 +74,7 @@ describe(useClient, () => {
 
     it("sets a listener, but the client hasn't been created yet - global listener", async () => {
       const { result } = renderHook(() =>
-        useClient({}, getSandpackStateFromProps({})),
+        useClient({}, filesState),
       );
 
       const operations = result.current[1];
@@ -102,7 +112,7 @@ describe(useClient, () => {
 
     it("set a listener, but the client has already been created - no global listener", async () => {
       const { result } = renderHook(() =>
-        useClient({}, getSandpackStateFromProps({})),
+        useClient({}, filesState),
       );
       const operations = result.current[1];
 
@@ -151,7 +161,7 @@ describe(useClient, () => {
 
     it("set a listener, but the client has already been created - global listener", async () => {
       const { result } = renderHook(() =>
-        useClient({}, getSandpackStateFromProps({})),
+        useClient({}, filesState),
       );
       const operations = result.current[1];
 
@@ -201,7 +211,7 @@ describe(useClient, () => {
 
     it("sets a new listener, and then create one more client", async () => {
       const { result } = renderHook(() =>
-        useClient({}, getSandpackStateFromProps({})),
+        useClient({}, filesState),
       );
       const operations = result.current[1];
 
@@ -252,7 +262,7 @@ describe(useClient, () => {
 
     it("unsubscribes only from the assigned client id", async () => {
       const { result } = renderHook(() =>
-        useClient({}, getSandpackStateFromProps({})),
+        useClient({}, filesState),
       );
       const operations = result.current[1];
 
@@ -293,7 +303,7 @@ describe(useClient, () => {
 
     it("doesn't trigger global unsubscribe", async () => {
       const { result } = renderHook(() =>
-        useClient({}, getSandpackStateFromProps({})),
+        useClient({}, filesState),
       );
       const operations = result.current[1];
 
@@ -327,7 +337,7 @@ describe(useClient, () => {
 
     it("unsubscribe all the listeners from a specific client when it unmonts", async () => {
       const { result } = renderHook(() =>
-        useClient({}, getSandpackStateFromProps({})),
+        useClient({}, filesState),
       );
       const operations = result.current[1];
 
@@ -363,7 +373,7 @@ describe(useClient, () => {
   describe("status", () => {
     it("returns the initial state", () => {
       const { result } = renderHook(() =>
-        useClient({}, getSandpackStateFromProps({})),
+        useClient({}, filesState),
       );
       const state = result.current[0];
 
@@ -372,7 +382,7 @@ describe(useClient, () => {
 
     it("returns the initial state, after register a bundler", async () => {
       const { result } = renderHook(() =>
-        useClient({}, getSandpackStateFromProps({})),
+        useClient({}, filesState),
       );
 
       const operations = result.current[1];
@@ -389,7 +399,7 @@ describe(useClient, () => {
 
     it("returns the running state, after init client", async () => {
       const { result } = renderHook(() =>
-        useClient({}, getSandpackStateFromProps({})),
+        useClient({}, filesState),
       );
       const operations = result.current[1];
 
@@ -407,7 +417,7 @@ describe(useClient, () => {
 
     it("returns the idle state, after unmounting client", async () => {
       const { result } = renderHook(() =>
-        useClient({}, getSandpackStateFromProps({})),
+        useClient({}, filesState),
       );
       const operations = result.current[1];
 
@@ -431,7 +441,7 @@ describe(useClient, () => {
 
     it("keeps running if it unmounts a client and there's still another one running", async () => {
       const { result } = renderHook(() =>
-        useClient({}, getSandpackStateFromProps({})),
+        useClient({}, filesState),
       );
       const operations = result.current[1];
 

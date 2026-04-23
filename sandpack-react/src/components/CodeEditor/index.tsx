@@ -92,7 +92,7 @@ export const SandpackCodeEditor = forwardRef<CodeMirrorRef, CodeEditorProps>(
       newCode: string,
       shouldUpdatePreview = true,
     ): void => {
-      updateCode(newCode, shouldUpdatePreview);
+      void updateCode(newCode, shouldUpdatePreview);
     };
 
     const activeFileUniqueId = useSandpackId();

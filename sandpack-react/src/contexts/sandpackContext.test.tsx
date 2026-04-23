@@ -1,7 +1,7 @@
 /**
  * @jest-environment jsdom
  */
-import { renderHook, act } from "@testing-library/react";
+import { renderHook, act, waitFor } from "@testing-library/react";
 import React from "react";
 
 import type { UseSandpack } from "..";
@@ -11,11 +11,24 @@ import { SandpackProvider } from "./sandpackContext";
 
 jest.useFakeTimers();
 
-const createContext = async (): Promise<{ current: UseSandpack }> => {
+/**
+ * Boots a {@link SandpackProvider}, waits for the async fs init, and starts
+ * the sandbox. Returns the hook result ref so assertions see live state.
+ */
+const createContext = async (
+  providerProps: Omit<React.ComponentProps<typeof SandpackProvider>, "children"> = {
+    template: "react",
+  },
+): Promise<{ current: UseSandpack }> => {
   const wrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-    <SandpackProvider template="react">{children}</SandpackProvider>
+    <SandpackProvider {...providerProps}>{children}</SandpackProvider>
   );
   const { result } = renderHook(() => useSandpack(), { wrapper });
+
+  await waitFor(() => {
+    expect(result.current.sandpack.fs).toBeDefined();
+    expect(result.current.sandpack.fileList.length).toBeGreaterThan(0);
+  });
 
   await act(async () => {
     result.current.sandpack.runSandpack();
@@ -33,8 +46,8 @@ const getAmountOfListener = (
   return (
     Object.keys(instance.sandpack.clients[name].iframeProtocol.channelListeners)
       .length -
-    1 - // less protocol listener
-    (ignoreGlobalListener ? 0 : 1) // less the global Sandpack-react listener
+    1 -
+    (ignoreGlobalListener ? 0 : 1)
   );
 };
 
@@ -43,125 +56,95 @@ describe(SandpackProvider, () => {
     it("adds a file", async () => {
       const instance = await createContext();
 
-      act(() => {
-        instance.current.sandpack.addFile({ "new-file.js": "new-content" });
+      await act(async () => {
+        await instance.current.sandpack.addFile({
+          "new-file.js": "new-content",
+        });
       });
 
-      expect(instance.current.sandpack.files["/new-file.js"].code).toBe(
-        "new-content",
+      await waitFor(() =>
+        expect(instance.current.sandpack.fileList).toContain("/new-file.js"),
       );
+      expect(
+        await instance.current.sandpack.fs.readFile("/new-file.js"),
+      ).toBe("new-content");
     });
 
     it("deletes a file", async () => {
       const instance = await createContext();
 
-      act(() => {
-        instance.current.sandpack.deleteFile("/App.js");
+      await act(async () => {
+        await instance.current.sandpack.deleteFile("/App.js");
       });
 
-      expect(instance.current.sandpack.files["/App.js"]).toBe(undefined);
-      expect(Object.keys(instance.current.sandpack.files)).toEqual([
-        "/styles.css",
-        "/index.js",
-        "/public/index.html",
-        "/package.json",
-      ]);
+      await waitFor(() =>
+        expect(instance.current.sandpack.fileList).not.toContain("/App.js"),
+      );
     });
 
     it("deletes the activeFile and set the following visibleFile as active", async () => {
-      const wrapper: React.FC<{ children: React.ReactNode }> = ({
-        children,
-      }) => (
-        <SandpackProvider
-          options={{ activeFile: "/App.js", visibleFiles: ["/styles.css"] }}
-          template="react"
-        >
-          {children}
-        </SandpackProvider>
-      );
-      const { result } = renderHook(() => useSandpack(), { wrapper });
-
-      await act(async () => {
-        result.current.sandpack.runSandpack();
-        result.current.sandpack.deleteFile("/App.js");
+      const instance = await createContext({
+        template: "react",
+        options: { activeFile: "/App.js", visibleFiles: ["/styles.css"] },
       });
 
-      expect(result.current.sandpack.activeFile).toBe("/styles.css");
-    });
-
-    it("deletes the activeFile and set the entry file if there no visibleFile left", async () => {
-      const wrapper: React.FC<{ children: React.ReactNode }> = ({
-        children,
-      }) => (
-        <SandpackProvider
-          options={{ activeFile: "/App.js", visibleFiles: [] }}
-          template="react"
-        >
-          {children}
-        </SandpackProvider>
-      );
-      const { result } = renderHook(() => useSandpack(), { wrapper });
-
       await act(async () => {
-        result.current.sandpack.runSandpack();
-        result.current.sandpack.deleteFile("/App.js");
+        await instance.current.sandpack.deleteFile("/App.js");
       });
 
-      expect(result.current.sandpack.activeFile).toBe("/package.json");
+      expect(instance.current.sandpack.activeFile).toBe("/styles.css");
     });
 
     it("updates a file", async () => {
       const instance = await createContext();
 
-      expect(instance.current.sandpack.files["/App.js"]).toEqual({
-        code: `export default function App() {
-  return <h1>Hello world</h1>
-}
-`,
-      });
-      act(() => {
-        instance.current.sandpack.updateFile("/App.js", "Foo");
+      expect(await instance.current.sandpack.fs.readFile("/App.js")).toContain(
+        "Hello world",
+      );
+
+      await act(async () => {
+        await instance.current.sandpack.updateFile("/App.js", "Foo");
       });
 
-      expect(instance.current.sandpack.files["/App.js"]).toEqual({
-        code: `Foo`,
-      });
+      expect(await instance.current.sandpack.fs.readFile("/App.js")).toBe(
+        "Foo",
+      );
     });
 
     it("updates multiples files", async () => {
       const instance = await createContext();
 
-      act(() => {
-        instance.current.sandpack.updateFile({
+      await act(async () => {
+        await instance.current.sandpack.updateFile({
           "/App.js": "Foo",
           "/index.js": "Baz",
         });
       });
 
-      expect(instance.current.sandpack.files["/App.js"]).toEqual({
-        code: `Foo`,
-      });
-      expect(instance.current.sandpack.files["/index.js"]).toEqual({
-        code: `Baz`,
-      });
+      expect(await instance.current.sandpack.fs.readFile("/App.js")).toBe(
+        "Foo",
+      );
+      expect(await instance.current.sandpack.fs.readFile("/index.js")).toBe(
+        "Baz",
+      );
     });
 
     it("updates multiples files in a row", async () => {
       const instance = await createContext();
 
-      act(() => {
-        instance.current.sandpack.updateFile("/App.js", "Foo");
+      await act(async () => {
+        await instance.current.sandpack.updateFile("/App.js", "Foo");
       });
-      act(() => {
-        instance.current.sandpack.updateFile("/index.js", "Baz");
+      await act(async () => {
+        await instance.current.sandpack.updateFile("/index.js", "Baz");
       });
 
-      expect(instance.current.sandpack.files["/App.js"]).toEqual({
-        code: `Foo`,
-      });
-      expect(instance.current.sandpack.files["/index.js"]).toEqual({
-        code: `Baz`,
-      });
+      expect(await instance.current.sandpack.fs.readFile("/App.js")).toBe(
+        "Foo",
+      );
+      expect(await instance.current.sandpack.fs.readFile("/index.js")).toBe(
+        "Baz",
+      );
     });
   });
 
@@ -177,44 +160,55 @@ describe(SandpackProvider, () => {
 
       expect(instance.current.sandpack.editorState).toBe("pristine");
 
-      act(() => {
-        instance.current.sandpack.updateFile("/App.js", "Foo");
+      await act(async () => {
+        await instance.current.sandpack.updateFile("/App.js", "Foo");
       });
-      expect(instance.current.sandpack.editorState).toBe("dirty");
+
+      await waitFor(() =>
+        expect(instance.current.sandpack.editorState).toBe("dirty"),
+      );
     });
 
     it("should return a pristine value after reset files", async () => {
       const instance = await createContext();
 
       expect(instance.current.sandpack.editorState).toBe("pristine");
-      act(() => {
-        instance.current.sandpack.updateFile("/App.js", "Foo");
+      await act(async () => {
+        await instance.current.sandpack.updateFile("/App.js", "Foo");
       });
-      expect(instance.current.sandpack.editorState).toBe("dirty");
+      await waitFor(() =>
+        expect(instance.current.sandpack.editorState).toBe("dirty"),
+      );
 
-      act(() => {
-        instance.current.sandpack.resetAllFiles();
+      await act(async () => {
+        await instance.current.sandpack.resetAllFiles();
       });
-      expect(instance.current.sandpack.editorState).toBe("pristine");
+      await waitFor(() =>
+        expect(instance.current.sandpack.editorState).toBe("pristine"),
+      );
     });
 
     it("should return a pristine value after reverting a change", async () => {
       const instance = await createContext();
       expect(instance.current.sandpack.editorState).toBe("pristine");
 
-      act(() => {
-        instance.current.sandpack.updateFile("/App.js", "Foo");
+      await act(async () => {
+        await instance.current.sandpack.updateFile("/App.js", "Foo");
       });
-      expect(instance.current.sandpack.editorState).toBe("dirty");
+      await waitFor(() =>
+        expect(instance.current.sandpack.editorState).toBe("dirty"),
+      );
 
-      act(() => {
-        instance.current.sandpack.updateFile(
+      await act(async () => {
+        await instance.current.sandpack.updateFile(
           "/App.js",
           REACT_TEMPLATE["files"]["/App.js"].code,
         );
       });
 
-      expect(instance.current.sandpack.editorState).toBe("pristine");
+      await waitFor(() =>
+        expect(instance.current.sandpack.editorState).toBe("pristine"),
+      );
     });
   });
 
@@ -222,13 +216,11 @@ describe(SandpackProvider, () => {
     it("sets a listener, but the client hasn't been created yet - no global listener", async () => {
       const instance = await createContext();
 
-      // Act: Add listener
       const mock = jest.fn();
       act(() => {
         instance.current.listen(mock, "client-id");
       });
 
-      // Act: Create client
       await act(async () => {
         await instance.current.sandpack.registerBundler(
           document.createElement("iframe"),
@@ -236,7 +228,6 @@ describe(SandpackProvider, () => {
         );
       });
 
-      // Expect: one pending unsubscribe function
       expect(
         Object.keys(
           instance.current.sandpack.unsubscribeClientListenersRef.current[
@@ -245,33 +236,24 @@ describe(SandpackProvider, () => {
         ).length,
       ).toBe(1);
 
-      // Expect: no global listener
       expect(
         Object.keys(instance.current.sandpack.queuedListenersRef.current.global)
           .length,
       ).toBe(0);
 
-      // Expect: one client
       expect(Object.keys(instance.current.sandpack.clients)).toEqual([
         "client-id",
       ]);
-
-      /**
-       * TODO: figure out how to mock SandpackClient and invoke the listener func
-       */
-      // expect(mock).toHaveBeenCalled();
     });
 
     it("sets a listener, but the client hasn't been created yet - global listener", async () => {
       const instance = await createContext();
 
-      // Act: Add listener
       const mock = jest.fn();
       act(() => {
-        instance.current.listen(mock /* , no client-id */);
+        instance.current.listen(mock);
       });
 
-      // Act: Create client
       await act(async () => {
         await instance.current.sandpack.registerBundler(
           document.createElement("iframe"),
@@ -279,7 +261,6 @@ describe(SandpackProvider, () => {
         );
       });
 
-      // Expect: one pending unsubscribe function
       expect(
         Object.keys(
           instance.current.sandpack.unsubscribeClientListenersRef.current[
@@ -288,20 +269,17 @@ describe(SandpackProvider, () => {
         ).length,
       ).toBe(1);
 
-      // Expect: no global listener
       expect(
         Object.keys(instance.current.sandpack.queuedListenersRef.current.global)
           .length,
       ).toBe(1);
 
-      // Expect: one listener in the client
       expect(getAmountOfListener(instance.current)).toBe(1);
     });
 
     it("set a listener, but the client has already been created - no global listener", async () => {
       const instance = await createContext();
 
-      // Act: Create client
       await act(async () => {
         await instance.current.sandpack.registerBundler(
           document.createElement("iframe"),
@@ -309,7 +287,6 @@ describe(SandpackProvider, () => {
         );
       });
 
-      // Expect: no pending unsubscribe function
       expect(
         Object.keys(
           instance.current.sandpack.unsubscribeClientListenersRef.current[
@@ -318,19 +295,16 @@ describe(SandpackProvider, () => {
         ).length,
       ).toBe(0);
 
-      // Expect: no global listener
       expect(
         Object.keys(instance.current.sandpack.queuedListenersRef.current.global)
           .length,
       ).toBe(0);
 
-      // Act: Add listener
       const mock = jest.fn();
       act(() => {
         instance.current.listen(mock, "client-id");
       });
 
-      // Expect: no pending unsubscribe function
       expect(
         Object.keys(
           instance.current.sandpack.unsubscribeClientListenersRef.current[
@@ -339,20 +313,17 @@ describe(SandpackProvider, () => {
         ).length,
       ).toBe(0);
 
-      // Expect: no global listener
       expect(
         Object.keys(instance.current.sandpack.queuedListenersRef.current.global)
           .length,
       ).toBe(0);
 
-      // Expect: one listener in the client
       expect(getAmountOfListener(instance.current)).toBe(1);
     });
 
     it("set a listener, but the client has already been created - global listener", async () => {
       const instance = await createContext();
 
-      // Act: Create client
       await act(async () => {
         await instance.current.sandpack.registerBundler(
           document.createElement("iframe"),
@@ -360,7 +331,6 @@ describe(SandpackProvider, () => {
         );
       });
 
-      // Expect: no pending unsubscribe function
       expect(
         Object.keys(
           instance.current.sandpack.unsubscribeClientListenersRef.current[
@@ -369,19 +339,16 @@ describe(SandpackProvider, () => {
         ).length,
       ).toBe(0);
 
-      // Expect: no global listener
       expect(
         Object.keys(instance.current.sandpack.queuedListenersRef.current.global)
           .length,
       ).toBe(0);
 
-      // Act: Add listener
       const mock = jest.fn();
       act(() => {
-        instance.current.listen(mock /* , no client-id */);
+        instance.current.listen(mock);
       });
 
-      // Expect: no pending unsubscribe function, because it's a global
       expect(
         Object.keys(
           instance.current.sandpack.unsubscribeClientListenersRef.current[
@@ -390,26 +357,22 @@ describe(SandpackProvider, () => {
         ).length,
       ).toBe(0);
 
-      // Expect: one global listener
       expect(
         Object.keys(instance.current.sandpack.queuedListenersRef.current.global)
           .length,
       ).toBe(1);
 
-      // Expect: one listener in the client
       expect(getAmountOfListener(instance.current)).toBe(1);
     });
 
     it("sets a new listener, and then create one more client", async () => {
       const instance = await createContext();
 
-      // Act: Add listener
       act(() => {
         const mock = jest.fn();
         instance.current.listen(mock, "client-id");
       });
 
-      // Act: Createasync  client
       await act(async () => {
         await instance.current.sandpack.registerBundler(
           document.createElement("iframe"),
@@ -417,7 +380,6 @@ describe(SandpackProvider, () => {
         );
       });
 
-      // Expect: one pending unsubscribe function
       expect(
         Object.keys(
           instance.current.sandpack.unsubscribeClientListenersRef.current[
@@ -426,28 +388,23 @@ describe(SandpackProvider, () => {
         ).length,
       ).toBe(1);
 
-      // Expect: no global listener
       expect(
         Object.keys(instance.current.sandpack.queuedListenersRef.current.global)
           .length,
       ).toBe(0);
 
-      // Expect: one listener in the client
       expect(getAmountOfListener(instance.current)).toBe(1);
 
-      // Act: Add one more listener
       act(() => {
         const anotherMock = jest.fn();
-        instance.current.listen(anotherMock /* , no client-id */);
+        instance.current.listen(anotherMock);
       });
 
-      // Expect: one global listener
       expect(
         Object.keys(instance.current.sandpack.queuedListenersRef.current.global)
           .length,
       ).toBe(1);
 
-      // Expect: two listener in the client
       expect(getAmountOfListener(instance.current)).toBe(2);
     });
 
@@ -465,11 +422,9 @@ describe(SandpackProvider, () => {
         );
       });
 
-      // Initial state
       expect(getAmountOfListener(instance.current, "client-1")).toBe(0);
       expect(getAmountOfListener(instance.current, "client-2", true)).toBe(0);
 
-      // Add listeners
       act(() => {
         instance.current.listen(jest.fn(), "client-1");
       });

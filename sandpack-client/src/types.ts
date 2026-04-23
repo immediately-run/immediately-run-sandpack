@@ -1,5 +1,6 @@
 import type { SandpackNodeMessage } from "./clients/node/types";
 import type { SandpackRuntimeMessage } from "./clients/runtime/types";
+import type { SandpackFS } from "./fs/SandpackFS";
 
 export interface ClientOptions {
   /**
@@ -43,15 +44,6 @@ export interface ClientOptions {
    */
   clearConsoleOnFirstCompile?: boolean;
 
-  /**
-   * You can pass a custom file resolver that is responsible for resolving files.
-   * We will use this to get all files from the file system.
-   */
-  fileResolver?: {
-    isFile: (path: string) => Promise<boolean>;
-    readFile: (path: string) => Promise<string>;
-  };
-
   reactDevTools?: ReactDevToolsMode;
 
   /**
@@ -79,7 +71,12 @@ export interface ClientOptions {
 }
 
 export interface SandboxSetup {
-  files: SandpackBundlerFiles;
+  /**
+   * The Sandpack filesystem used as the source of truth for file contents and
+   * UI metadata. Create one via {@link SandpackFS.fromFiles} or
+   * {@link SandpackFS.fromFileSystem}.
+   */
+  files: SandpackFS;
   dependencies?: Dependencies;
   devDependencies?: Dependencies;
   entry?: string;
@@ -96,6 +93,11 @@ export interface SandboxSetup {
   disableDependencyPreprocessing?: boolean;
 }
 
+/**
+ * @deprecated Sandpack now stores file contents inside a {@link SandpackFS}.
+ * This shape is kept only for interop with callers that materialize a flat
+ * snapshot (e.g. the bundler iframe's `compile` payload).
+ */
 export interface SandpackBundlerFile {
   code: string;
   hidden?: boolean;
@@ -103,6 +105,11 @@ export interface SandpackBundlerFile {
   readOnly?: boolean;
 }
 
+/**
+ * @deprecated Use {@link SandpackFS} instead. Still produced internally when
+ * a flat snapshot is needed (e.g. when serializing for the bundler iframe
+ * protocol or for Open-in-CodeSandbox).
+ */
 export type SandpackBundlerFiles = Record<string, SandpackBundlerFile>;
 
 export interface Module {

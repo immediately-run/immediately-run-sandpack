@@ -8,6 +8,13 @@ module.exports = {
     "\\.css\\.ts$": "@vanilla-extract/jest-transform",
     "^.+\\.[jt]sx?$": "babel-jest",
   },
+  moduleNameMapper: {
+    // Resolve the workspace package to source so Jest can transform the
+    // ESM-only `@zenfs/core` dependency via babel-jest instead of hitting
+    // the CJS dist build.
+    "^@codesandbox/sandpack-client$":
+      "<rootDir>/../sandpack-client/src/index.ts",
+  },
   globals: {
     "process.env.TEST_ENV": "true",
   },

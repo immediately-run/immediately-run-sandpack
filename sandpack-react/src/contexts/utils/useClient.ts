@@ -117,7 +117,10 @@ export const useClient: UseClient = (
   const debounceHook = useRef<number | undefined>(undefined);
   const prevEnvironment = useRef(filesState.environment);
 
-  const asyncSandpackId = useAsyncSandpackId(filesState.files);
+  const asyncSandpackId = useAsyncSandpackId(
+    filesState.fileList,
+    filesState.fs,
+  );
 
   /**
    * Callbacks
@@ -176,14 +179,13 @@ export const useClient: UseClient = (
       const client = await loadSandpackClient(
         iframe,
         {
-          files: filesState.files,
+          files: filesState.fs,
           template: filesState.environment,
         },
         {
           externalResources: options.externalResources,
           bundlerURL: options.bundlerURL,
           startRoute: clientPropsOverride?.startRoute ?? options.startRoute,
-          fileResolver: options.fileResolver,
           skipEval: options.skipEval ?? false,
           logLevel: options.logLevel,
           showOpenInCodeSandbox: false,
@@ -238,7 +240,7 @@ export const useClient: UseClient = (
 
       clients.current[clientId] = client;
     },
-    [filesState.environment, filesState.files, state.reactDevTools],
+    [filesState.environment, filesState.fs, state.reactDevTools],
   );
 
   const unregisterAllClients = useCallback((): void => {
@@ -512,6 +514,8 @@ export const useClient: UseClient = (
         return;
       }
 
+      const fs = filesState.fs;
+
       /**
        * When the environment changes, Sandpack needs to make sure
        * to create a new client and the proper bundler
@@ -524,45 +528,43 @@ export const useClient: UseClient = (
         });
       }
 
-      if (recompileMode === "immediate") {
+      const recompile = () => {
         Object.values(clients.current).forEach((client) => {
           /**
            * Avoid concurrency
            */
           if (client.status === "done") {
             client.updateSandbox({
-              files: filesState.files,
+              files: fs,
               template: filesState.environment,
             });
           }
         });
-      }
+      };
 
-      if (recompileMode === "delayed") {
-        if (typeof window === "undefined") return;
+      /**
+       * Subscribe to the filesystem directly so we re-bundle on every
+       * mutation, debounced or immediate as configured.
+       */
+      const unsub = fs.watch(() => {
+        if (recompileMode === "immediate") {
+          recompile();
+          return;
+        }
 
-        window.clearTimeout(debounceHook.current);
-        debounceHook.current = window.setTimeout(() => {
-          Object.values(clients.current).forEach((client) => {
-            /**
-             * Avoid concurrency
-             */
-            if (client.status === "done") {
-              client.updateSandbox({
-                files: filesState.files,
-                template: filesState.environment,
-              });
-            }
-          });
-        }, recompileDelay);
-      }
+        if (recompileMode === "delayed" && typeof window !== "undefined") {
+          window.clearTimeout(debounceHook.current);
+          debounceHook.current = window.setTimeout(recompile, recompileDelay);
+        }
+      });
 
       return () => {
+        unsub();
         window.clearTimeout(debounceHook.current);
       };
     },
     [
-      filesState.files,
+      filesState.fs,
       filesState.environment,
       filesState.shouldUpdatePreview,
       recompileDelay,

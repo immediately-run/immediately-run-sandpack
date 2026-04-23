@@ -1,100 +1,63 @@
 /**
  * @jest-environment jsdom
  */
-import { renderHook } from "@testing-library/react";
+import { SandpackFS } from "@codesandbox/sandpack-client";
+import { act, renderHook, waitFor } from "@testing-library/react";
 
 import { VANILLA_TEMPLATE } from "../../templates";
-import { getSandpackStateFromProps } from "../../utils/sandpackUtils";
 
 import { useAppState } from "./useAppState";
 
 describe(useAppState, () => {
-  it("should return the same initial state", () => {
-    const props = { files: {} };
-    const internalState = getSandpackStateFromProps(props);
+  let fs: SandpackFS;
 
+  beforeEach(async () => {
+    fs = await SandpackFS.fromFiles(VANILLA_TEMPLATE.files);
+  });
+
+  afterEach(() => {
+    fs.dispose();
+  });
+
+  it("starts pristine with a fresh filesystem", async () => {
     const { result } = renderHook(() =>
-      useAppState(props, internalState.files),
+      useAppState({}, fs, Object.keys(VANILLA_TEMPLATE.files)),
     );
 
-    expect(result.current.editorState).toBe("pristine");
+    await waitFor(() => expect(result.current.editorState).toBe("pristine"));
   });
 
-  it("should return a dirty value after updating a file", () => {
-    const props = { files: {} };
-    const internalState = getSandpackStateFromProps(props);
-
-    const { result, rerender } = renderHook(
-      (initialInternalState) => useAppState(props, initialInternalState.files),
-      { initialProps: internalState },
+  it("flips to dirty when the filesystem is mutated", async () => {
+    const { result } = renderHook(() =>
+      useAppState({}, fs, Object.keys(VANILLA_TEMPLATE.files)),
     );
-    expect(result.current.editorState).toBe("pristine");
 
-    // Update internal state
-    const newInternalState = getSandpackStateFromProps({
-      ...internalState,
-      files: { ...internalState.files, "/src/index.js": { code: "UPDATED" } },
+    await waitFor(() => expect(result.current.editorState).toBe("pristine"));
+
+    await act(async () => {
+      await fs.writeFile("/index.js", "UPDATED");
     });
-    rerender(newInternalState);
 
-    expect(result.current.editorState).toBe("dirty");
+    await waitFor(() => expect(result.current.editorState).toBe("dirty"));
   });
 
-  it("should return a pristine value after reseting files", () => {
-    const props = { files: {} };
-    const internalState = getSandpackStateFromProps(props);
-
-    const { result, rerender } = renderHook(
-      (initialInternalState) => useAppState(props, initialInternalState.files),
-      { initialProps: internalState },
+  it("returns to pristine after reverting a change", async () => {
+    const { result } = renderHook(() =>
+      useAppState({}, fs, Object.keys(VANILLA_TEMPLATE.files)),
     );
-    expect(result.current.editorState).toBe("pristine");
 
-    // Update internal state
-    const newInternalState = getSandpackStateFromProps({
-      ...internalState,
-      files: { ...internalState.files, "/src/index.js": { code: "UPDATED" } },
+    await waitFor(() => expect(result.current.editorState).toBe("pristine"));
+
+    const original = VANILLA_TEMPLATE["files"]["/index.js"].code;
+
+    await act(async () => {
+      await fs.writeFile("/index.js", "UPDATED");
     });
-    rerender(newInternalState);
+    await waitFor(() => expect(result.current.editorState).toBe("dirty"));
 
-    expect(result.current.editorState).toBe("dirty");
-
-    // Update to initial state
-    rerender(internalState);
-    expect(result.current.editorState).toBe("pristine");
-  });
-
-  it("should return a pristine value after reverting a change", () => {
-    const props = { files: {} };
-    const internalState = getSandpackStateFromProps(props);
-
-    const { result, rerender } = renderHook(
-      (initialInternalState) => useAppState(props, initialInternalState.files),
-      { initialProps: internalState },
-    );
-    expect(result.current.editorState).toBe("pristine");
-
-    // Update internal state
-    const newInternalState = getSandpackStateFromProps({
-      ...internalState,
-      files: { ...internalState.files, "/index.js": { code: "UPDATED" } },
+    await act(async () => {
+      await fs.writeFile("/index.js", original);
     });
-    rerender(newInternalState);
-
-    expect(result.current.editorState).toBe("dirty");
-
-    // Update to initial state
-    rerender(
-      getSandpackStateFromProps({
-        ...internalState,
-        files: {
-          ...internalState.files,
-          "/index.js": {
-            code: VANILLA_TEMPLATE["files"]["/index.js"].code,
-          },
-        },
-      }),
-    );
-    expect(result.current.editorState).toBe("pristine");
+    await waitFor(() => expect(result.current.editorState).toBe("pristine"));
   });
 });

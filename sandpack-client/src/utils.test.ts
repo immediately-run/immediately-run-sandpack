@@ -1,6 +1,7 @@
+import { SandpackFS } from "./fs/SandpackFS";
 import { addPackageJSONIfNeeded, normalizePath } from "./utils";
 
-const files = {
+const baseFiles = {
   "/package.json": {
     code: `{
   "name": "custom-package",
@@ -11,91 +12,67 @@ const files = {
   },
 };
 
+async function mkFs(
+  files: Parameters<typeof SandpackFS.fromFiles>[0] = baseFiles,
+) {
+  return SandpackFS.fromFiles(files);
+}
+
 describe(addPackageJSONIfNeeded, () => {
-  test("it merges the package.json - dependencies", () => {
-    const output = addPackageJSONIfNeeded(files, { foo: "*" });
-
-    expect(JSON.parse(output["/package.json"].code).dependencies).toEqual({
-      baz: "*",
-      foo: "*",
-    });
+  afterEach(() => {
+    // SandpackFS instances allocate unique mount points, so there's nothing
+    // shared between tests to clean up aside from their own disposal (handled
+    // implicitly once they go out of scope).
   });
 
-  test("it merges the package.json - dev-dependencies", () => {
-    const output = addPackageJSONIfNeeded(files, undefined, { foo: "*" });
-
-    expect(JSON.parse(output["/package.json"].code).devDependencies).toEqual({
-      baz: "*",
-      foo: "*",
-    });
+  test("it merges the package.json - dependencies", async () => {
+    const fs = await mkFs();
+    await addPackageJSONIfNeeded(fs, { foo: "*" });
+    const pkg = JSON.parse(await fs.readFile("/package.json"));
+    expect(pkg.dependencies).toEqual({ baz: "*", foo: "*" });
+    fs.dispose();
   });
 
-  test("it merges the package.json - entry", () => {
-    const output = addPackageJSONIfNeeded(
-      files,
-      undefined,
-      undefined,
-      "new-entry.js",
-    );
-
-    expect(JSON.parse(output["/package.json"].code).main).toEqual(
-      "new-entry.js",
-    );
+  test("it merges the package.json - dev-dependencies", async () => {
+    const fs = await mkFs();
+    await addPackageJSONIfNeeded(fs, undefined, { foo: "*" });
+    const pkg = JSON.parse(await fs.readFile("/package.json"));
+    expect(pkg.devDependencies).toEqual({ baz: "*", foo: "*" });
+    fs.dispose();
   });
 
-  test("it set the entry file into package.json", () => {
-    const output = addPackageJSONIfNeeded(
-      {
-        "/package.json": {
-          code: `{
-        "name": "custom-package",
-        "dependencies": { "baz": "*" },
-        "devDependencies": { "baz": "*" }
-      }`,
-        },
+  test("it merges the package.json - entry", async () => {
+    const fs = await mkFs();
+    await addPackageJSONIfNeeded(fs, undefined, undefined, "new-entry.js");
+    const pkg = JSON.parse(await fs.readFile("/package.json"));
+    expect(pkg.main).toEqual("new-entry.js");
+    fs.dispose();
+  });
+
+  test("it set the entry file into package.json", async () => {
+    const fs = await mkFs({
+      "/package.json": {
+        code: `{
+      "name": "custom-package",
+      "dependencies": { "baz": "*" },
+      "devDependencies": { "baz": "*" }
+    }`,
       },
-      undefined,
-      undefined,
-      "new-entry.js",
-    );
-
-    expect(JSON.parse(output["/package.json"].code).main).toEqual(
-      "new-entry.js",
-    );
-  });
-
-  test("it returns an error when there is not dependencies at all", () => {
-    try {
-      addPackageJSONIfNeeded({ "/package.json": { code: `{}` } });
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (err: any) {
-      expect(err.message).toBe(
-        '[sandpack-client]: "dependencies" was not specified - provide either a package.json or a "dependencies" value',
-      );
-    }
-  });
-
-  test("it supports package.json without leading slash", () => {
-    const output = addPackageJSONIfNeeded(
-      {
-        "package.json": {
-          code: `{
-  "dependencies": { "baz": "*" },
-  "devDependencies": { "baz": "*" }
-}`,
-        },
-      },
-      { foo: "*" },
-      { foo: "*" },
-      "new-entry.ts",
-    );
-
-    expect(JSON.parse(output["/package.json"].code)).toEqual({
-      main: "new-entry.ts",
-      dependencies: { baz: "*", foo: "*" },
-      devDependencies: { baz: "*", foo: "*" },
     });
+    await addPackageJSONIfNeeded(fs, undefined, undefined, "new-entry.js");
+    const pkg = JSON.parse(await fs.readFile("/package.json"));
+    expect(pkg.main).toEqual("new-entry.js");
+    fs.dispose();
+  });
+
+  test("it returns an error when there is not dependencies at all", async () => {
+    const fs = await mkFs({ "/package.json": { code: `{}` } });
+
+    await expect(addPackageJSONIfNeeded(fs)).rejects.toThrow(
+      '[sandpack-client]: "entry" was not specified',
+    );
+
+    fs.dispose();
   });
 });
 

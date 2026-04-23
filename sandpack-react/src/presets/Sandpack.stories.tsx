@@ -258,45 +258,20 @@ export default function App() {
 }`,
 };
 
-export const FileResolver = (): JSX.Element => {
-  return (
-    <>
-      <Sandpack
-        customSetup={{
-          environment: "create-react-app",
-          entry: "/index.js",
-        }}
-        files={defaultFiles}
-        options={{
-          bundlerURL: "https://sandpack-bundler.codesandbox.io",
-          fileResolver: {
-            isFile: async (fileName): Promise<boolean> =>
-              new Promise((resolve) => resolve(!!filesA[fileName])),
-            readFile: async (fileName): Promise<string> =>
-              new Promise((resolve) => resolve(filesA[fileName])),
-          },
-        }}
-      />
-
-      <Sandpack
-        customSetup={{
-          environment: "create-react-app",
-          entry: "/index.js",
-        }}
-        files={defaultFiles}
-        options={{
-          bundlerURL: "https://sandpack-bundler.codesandbox.io",
-          fileResolver: {
-            isFile: async (fileName): Promise<boolean> =>
-              new Promise((resolve) => resolve(!!filesB[fileName])),
-            readFile: async (fileName): Promise<string> =>
-              new Promise((resolve) => resolve(filesB[fileName])),
-          },
-        }}
-      />
-    </>
-  );
-};
+/**
+ * Previously this story demonstrated the `options.fileResolver` escape
+ * hatch. That hook is gone: Sandpack now owns the files through a
+ * {@link SandpackFS}. Any external file providers should either seed the
+ * filesystem via the `files` prop or mount a custom ZenFS backend and
+ * hand the result in via `fs={...}`.
+ */
+export const FileResolver = (): JSX.Element => (
+  <Sandpack
+    customSetup={{ environment: "create-react-app", entry: "/index.js" }}
+    files={{ ...defaultFiles, ...filesA, ...filesB }}
+    options={{ bundlerURL: "https://sandpack-bundler.codesandbox.io" }}
+  />
+);
 
 export const ShowConsoleButton: React.FC = () => (
   <div style={{ width: 800 }}>

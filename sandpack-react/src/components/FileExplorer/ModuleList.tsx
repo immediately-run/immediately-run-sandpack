@@ -1,4 +1,4 @@
-import type { SandpackBundlerFiles } from "@codesandbox/sandpack-client";
+import type { FileMetaMap } from "@codesandbox/sandpack-client";
 import * as React from "react";
 
 import type { SandpackOptions } from "../../types";
@@ -10,7 +10,8 @@ import type { SandpackFileExplorerProp } from ".";
 
 export interface ModuleListProps extends SandpackFileExplorerProp {
   prefixedPath: string;
-  files: SandpackBundlerFiles;
+  fileList: string[];
+  fileMeta: FileMetaMap;
   selectFile: (path: string) => void;
   activeFile: NonNullable<SandpackOptions["activeFile"]>;
   depth?: number;
@@ -19,7 +20,8 @@ export interface ModuleListProps extends SandpackFileExplorerProp {
 
 export interface DirectoryProps extends SandpackFileExplorerProp {
   prefixedPath: string;
-  files: SandpackBundlerFiles;
+  fileList: string[];
+  fileMeta: FileMetaMap;
   selectFile: (path: string) => void;
   activeFile: NonNullable<SandpackOptions["activeFile"]>;
   depth: number;
@@ -28,7 +30,8 @@ export interface DirectoryProps extends SandpackFileExplorerProp {
 
 export const Directory: React.FC<DirectoryProps> = ({
   prefixedPath,
-  files,
+  fileList,
+  fileMeta,
   selectFile,
   activeFile,
   depth,
@@ -56,7 +59,8 @@ export const Directory: React.FC<DirectoryProps> = ({
           activeFile={activeFile}
           autoHiddenFiles={autoHiddenFiles}
           depth={depth + 1}
-          files={files}
+          fileList={fileList}
+          fileMeta={fileMeta}
           initialCollapsedFolder={initialCollapsedFolder}
           prefixedPath={prefixedPath}
           selectFile={selectFile}
@@ -72,7 +76,8 @@ export const ModuleList: React.FC<ModuleListProps> = ({
   activeFile,
   selectFile,
   prefixedPath,
-  files,
+  fileList,
+  fileMeta,
   autoHiddenFiles,
   visibleFiles,
   initialCollapsedFolder,
@@ -81,7 +86,8 @@ export const ModuleList: React.FC<ModuleListProps> = ({
     visibleFiles,
     autoHiddenFiles,
     prefixedPath,
-    files,
+    fileList,
+    fileMeta,
   });
 
   return (
@@ -92,7 +98,8 @@ export const ModuleList: React.FC<ModuleListProps> = ({
           activeFile={activeFile}
           autoHiddenFiles={autoHiddenFiles}
           depth={depth}
-          files={files}
+          fileList={fileList}
+          fileMeta={fileMeta}
           initialCollapsedFolder={initialCollapsedFolder}
           prefixedPath={dir}
           selectFile={selectFile}

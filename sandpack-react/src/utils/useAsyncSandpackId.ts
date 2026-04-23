@@ -1,4 +1,4 @@
-import type { SandpackBundlerFiles } from "@codesandbox/sandpack-client";
+import type { SandpackFS } from "@codesandbox/sandpack-client";
 import { useId as useReactId } from "react";
 
 import { generateRandomId } from "./stringUtils";
@@ -21,14 +21,20 @@ const MAX_ID_LENGTH = 9;
 
 const sandpackClientVersion = process.env.SANDPACK_CLIENT_VERSION;
 
-export const useAsyncSandpackId = (files: SandpackBundlerFiles) => {
+/**
+ * Produces a stable id derived from the current filesystem contents. The
+ * snapshot is only materialized when the returned thunk is called, so we
+ * don't pay for the read unless a stable service-worker id is requested.
+ */
+export const useAsyncSandpackId = (fileList: string[], fs: SandpackFS) => {
   if (typeof useReactId === "function") {
     /* eslint-disable-next-line react-hooks/rules-of-hooks */
     const reactDomId = useReactId();
     return async () => {
-      const allCode = Object.entries(files)
-        .map((path, code) => path + "|" + code)
-        .join("|||");
+      const entries = await Promise.all(
+        fileList.map(async (path) => `${path}|${await fs.readFile(path)}`),
+      );
+      const allCode = entries.join("|||");
       const sha = await generateShortId(
         allCode + reactDomId + sandpackClientVersion,
       );

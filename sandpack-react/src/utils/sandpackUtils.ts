@@ -1,9 +1,7 @@
-import type {
-  SandpackBundlerFile,
-  SandpackBundlerFiles,
-} from "@codesandbox/sandpack-client";
+import type { SandpackFilesInput } from "@codesandbox/sandpack-client";
 import {
-  addPackageJSONIfNeeded,
+  SandpackFS,
+  addPackageJSONIfNeededToMap,
   normalizePath,
 } from "@codesandbox/sandpack-client";
 
@@ -17,106 +15,102 @@ import type {
   SandboxEnvironment,
 } from "../types";
 
-export interface SandpackContextInfo {
-  activeFile: string;
+export interface SandpackPlannedState {
+  /**
+   * Normalized file map with every entry in `{code, ...meta}` form. This is
+   * the planning view - synchronous and free of I/O - which can be handed
+   * to {@link materializeSandpackFS} to produce the live filesystem.
+   */
+  files: SandpackFilesInput;
   visibleFiles: string[];
-  files: Record<string, SandpackBundlerFile>;
+  activeFile: string;
   environment: SandboxEnvironment;
-  shouldUpdatePreview: true;
+  entry?: string;
 }
 
 /**
- * Creates a standard sandpack state given the setup,
- * options, and files props. Using this function is
- * the reliable way to ensure a consistent and predictable
- * sandpack-content throughout application
+ * Pure, synchronous planner that resolves the final file layout
+ * (template + user overrides), the active file, and the visible subset from
+ * {@link SandpackProviderProps}. No filesystem mutations are performed here -
+ * use {@link materializeSandpackFS} or adopt `props.fs` to obtain a live
+ * {@link SandpackFS}.
  */
 export const getSandpackStateFromProps = (
   props: SandpackProviderProps,
-): SandpackContextInfo => {
-  const normalizedFilesPath = normalizePath(props.files);
-
-  // Merge predefined template with custom setup
+): SandpackPlannedState => {
+  const normalizedFilesPath = normalizePath(props.files) ?? {};
   const projectSetup = combineTemplateFilesToSetup({
     template: props.template,
     customSetup: props.customSetup,
     files: normalizedFilesPath,
   });
 
-  // visibleFiles and activeFile override the setup flags
   let visibleFiles: string[] = normalizePath(props.options?.visibleFiles ?? []);
   let activeFile = props.options?.activeFile
-    ? resolveFile(props.options?.activeFile, projectSetup.files)
+    ? resolveFileInMap(props.options?.activeFile, projectSetup.files)
     : undefined;
 
   if (visibleFiles.length === 0 && normalizedFilesPath) {
-    // extract open and active files from the custom input files
     Object.keys(normalizedFilesPath).forEach((filePath) => {
       const file = normalizedFilesPath[filePath];
       if (typeof file === "string") {
         visibleFiles.push(filePath);
         return;
       }
-
       if (!activeFile && file.active) {
         activeFile = filePath;
-        if (file.hidden === true) {
-          // active file needs to be available even if someone sets it as hidden by accident
-          visibleFiles.push(filePath);
-        }
+        if (file.hidden === true) visibleFiles.push(filePath);
       }
-
-      if (!file.hidden) {
-        visibleFiles.push(filePath);
-      }
+      if (!file.hidden) visibleFiles.push(filePath);
     });
   }
 
-  if (visibleFiles.length === 0) {
-    // If no files are received, use the project setup / template
-    visibleFiles = [projectSetup.main];
-  }
+  if (visibleFiles.length === 0) visibleFiles = [projectSetup.main];
 
-  // Make sure it resolves the entry file
   if (projectSetup.entry && !projectSetup.files[projectSetup.entry]) {
-    /* eslint-disable */
-    // @ts-ignore
-    projectSetup.entry = resolveFile(projectSetup.entry, projectSetup.files);
-    /* eslint-enable */
+    projectSetup.entry =
+      resolveFileInMap(projectSetup.entry, projectSetup.files) ?? undefined;
   }
 
-  if (!activeFile && projectSetup.main) {
-    activeFile = projectSetup.main;
-  }
-
-  // If no activeFile is specified, use the first open file
+  if (!activeFile && projectSetup.main) activeFile = projectSetup.main;
   if (!activeFile || !projectSetup.files[activeFile]) {
     activeFile = visibleFiles[0];
   }
+  if (!visibleFiles.includes(activeFile)) visibleFiles.push(activeFile);
 
-  // If for whatever reason the active path was not set as open, set it
-  if (!visibleFiles.includes(activeFile)) {
-    visibleFiles.push(activeFile);
-  }
-
-  const files = addPackageJSONIfNeeded(
+  /**
+   * Seed a `/package.json` if the caller didn't supply one. We used to do
+   * this inside the runtime client; keeping it here means the planning
+   * view already reflects the final dependency map, and consumers that
+   * render metadata (tests, storybook) don't have to materialize a fs
+   * just to read deps.
+   */
+  const files = addPackageJSONIfNeededToMap(
     projectSetup.files,
     projectSetup.dependencies ?? {},
     projectSetup.devDependencies ?? {},
     projectSetup.entry,
   );
 
-  const existOpenPath = visibleFiles.filter((path) => files[path]);
+  const existOpenPath = visibleFiles.filter((p) => files[p]);
 
   return {
-    visibleFiles: existOpenPath,
-
-    activeFile: activeFile!,
     files,
+    visibleFiles: existOpenPath,
+    activeFile: activeFile!,
     environment: projectSetup.environment,
-    shouldUpdatePreview: true,
+    entry: projectSetup.entry,
   };
 };
+
+/**
+ * Materialize a plan into a live {@link SandpackFS}. Separating this from
+ * {@link getSandpackStateFromProps} keeps planning testable and lets React
+ * hooks own the async lifecycle of the filesystem.
+ */
+export const materializeSandpackFS = (
+  files: SandpackFilesInput,
+): Promise<SandpackFS> => SandpackFS.fromFiles(files);
 
 /**
  * Given a file tree and a file, it uses a couple of rules
@@ -129,19 +123,19 @@ export const getSandpackStateFromProps = (
 export const resolveFile = (
   path: string,
   files: SandpackFiles,
-): string | null => {
+): string | null => resolveFileInMap(path, files);
+
+function resolveFileInMap(
+  path: string,
+  files: SandpackFiles | SandpackFilesInput,
+): string | null {
   const normalizedFilesPath = normalizePath(files);
   const normalizedPath = normalizePath(path);
 
-  if (normalizedPath in normalizedFilesPath) {
-    return normalizedPath;
-  }
+  if (normalizedPath in normalizedFilesPath) return normalizedPath;
+  if (!path) return null;
 
-  if (!path) {
-    return null;
-  }
-
-  let resolvedPath = null;
+  let resolvedPath: string | null = null;
   let index = 0;
   const strategies = [".js", ".jsx", ".ts", ".tsx"];
 
@@ -157,13 +151,8 @@ export const resolveFile = (
   }
 
   return resolvedPath;
-};
+}
 
-/**
- * The template is predefined (eg: react, vue, vanilla)
- * The setup can overwrite anything from the template
- * (eg: files, dependencies, environment, etc.)
- */
 const combineTemplateFilesToSetup = ({
   files,
   template,
@@ -174,7 +163,6 @@ const combineTemplateFilesToSetup = ({
   customSetup?: SandpackSetup;
 }): SandboxTemplate => {
   if (!template) {
-    // If not input, default to vanilla
     if (!customSetup) {
       const defaultTemplate =
         SANDBOX_TEMPLATES.vanilla as unknown as SandboxTemplate;
@@ -194,7 +182,6 @@ const combineTemplateFilesToSetup = ({
       );
     }
 
-    // If not template specified, use the setup entirely
     return {
       ...customSetup,
       files: convertedFilesToBundlerFiles(files),
@@ -210,22 +197,10 @@ const combineTemplateFilesToSetup = ({
     );
   }
 
-  // If no setup and not files, the template is used entirely
-  if (!customSetup && !files) {
-    return baseTemplate;
-  }
+  if (!customSetup && !files) return baseTemplate;
 
-  // Merge the setup on top of the template
   return {
-    /**
-     * The input setup might have files in the simple form Record<string, string>
-     * so we convert them to the sandbox template format
-     */
     files: convertedFilesToBundlerFiles({ ...baseTemplate.files, ...files }),
-    /**
-     * Merge template dependencies and user custom dependencies.
-     * As a rule, the custom dependencies must overwrite the template ones.
-     */
     dependencies: {
       ...baseTemplate.dependencies,
       ...customSetup?.dependencies,
@@ -241,24 +216,26 @@ const combineTemplateFilesToSetup = ({
 };
 
 /**
- * Transform an regular object, which contain files to
- * an object that sandpack-client can understand
- *
- * From: Record<string, string>
- * To: Record<string, { code: string }>
+ * Normalize a mixed `SandpackFiles` (strings or objects) into the
+ * `{code, ...meta}` shape consumed by {@link SandpackFS.fromFiles}.
  */
 export const convertedFilesToBundlerFiles = (
   files?: SandpackFiles,
-): SandpackBundlerFiles => {
+): SandpackFilesInput => {
   if (!files) return {};
 
-  return Object.keys(files).reduce((acc: SandpackBundlerFiles, key) => {
-    if (typeof files[key] === "string") {
-      acc[key] = { code: files[key] as string };
+  return Object.keys(files).reduce<SandpackFilesInput>((acc, key) => {
+    const entry = files[key];
+    if (typeof entry === "string") {
+      acc[key] = { code: entry };
     } else {
-      acc[key] = files[key] as SandpackBundlerFile;
+      acc[key] = {
+        code: entry.code,
+        ...(entry.hidden !== undefined ? { hidden: entry.hidden } : {}),
+        ...(entry.active !== undefined ? { active: entry.active } : {}),
+        ...(entry.readOnly !== undefined ? { readOnly: entry.readOnly } : {}),
+      };
     }
-
     return acc;
   }, {});
 };

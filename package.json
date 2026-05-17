@@ -6,8 +6,7 @@
   "workspaces": [
     "sandpack-client",
     "sandpack-react",
-    "sandpack-themes",
-    "website/*"
+    "sandpack-themes"
   ],
   "nohoist": [
     "website/docs/**",

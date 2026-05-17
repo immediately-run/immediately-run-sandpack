@@ -12,7 +12,6 @@ import { RoundedButton } from "../components/common/RoundedButton";
 import { ConsoleIcon } from "../components/icons";
 import { SandpackProvider } from "../contexts/sandpackContext";
 import { THEME_PREFIX } from "../styles";
-import { SANDBOX_TEMPLATES } from "../templates";
 
 import {
   buttonCounter,
@@ -23,17 +22,12 @@ import {
 import type {
   SandpackInternal,
   SandpackInternalOptions,
-  TemplateFiles,
-  SandpackFiles,
-  SandpackPredefinedTemplate,
 } from "../types";
 import { useClassNames } from "../utils/classNames";
 
 export const Sandpack: SandpackInternal = ({
   options,
-  template,
-  customSetup,
-  files,
+  fs,
   theme,
   ...props
 }) => {
@@ -57,15 +51,9 @@ export const Sandpack: SandpackInternal = ({
     additionalLanguages: options.codeEditor?.additionalLanguages,
   };
 
-  const providerOptions: SandpackInternalOptions<
-    SandpackFiles,
-    SandpackPredefinedTemplate
-  > = {
-    /**
-     * TS-why: Type 'string | number | symbol' is not assignable to type 'string'
-     */
-    activeFile: options.activeFile as unknown as string,
-    visibleFiles: options.visibleFiles as unknown as string[],
+  const providerOptions: SandpackInternalOptions = {
+    activeFile: options.activeFile,
+    visibleFiles: options.visibleFiles,
     recompileMode: options.recompileMode,
     recompileDelay: options.recompileDelay,
     autorun: options.autorun,
@@ -84,6 +72,14 @@ export const Sandpack: SandpackInternal = ({
   };
 
   /**
+   * Derive the display mode from the FS sidecar or options.
+   * Templates that set mode="tests" (test-ts) or mode="console" (none currently)
+   * in createSandpackFS will have that stored on the FS.
+   */
+  const fsMode = fs.getMode() as typeof options.layout | undefined;
+  const mode = options?.layout ?? fsMode ?? "preview";
+
+  /**
    * Console
    */
   const [consoleVisibility, setConsoleVisibility] = React.useState(
@@ -91,15 +87,6 @@ export const Sandpack: SandpackInternal = ({
   );
   const [counter, setCounter] = React.useState(0);
   const hasRightColumn = options.showConsole || options.showConsoleButton;
-
-  const templateFiles = SANDBOX_TEMPLATES[template!] ?? {};
-  const mode = (
-    options?.layout
-      ? options?.layout
-      : "mode" in templateFiles
-        ? templateFiles.mode
-        : "preview"
-  ) as typeof options.layout;
 
   const actionsChildren = options.showConsoleButton ? (
     <ConsoleCounterButton
@@ -206,11 +193,8 @@ export const Sandpack: SandpackInternal = ({
 
   return (
     <SandpackProvider
-      key={template}
-      customSetup={customSetup}
-      files={files as TemplateFiles<SandpackPredefinedTemplate>}
+      fs={fs}
       options={providerOptions}
-      template={template}
       theme={theme}
       {...props}
     >

@@ -6,6 +6,7 @@ import * as React from "react";
 
 import { SandpackProvider } from "../../contexts/sandpackContext";
 import { useSandpack } from "../../hooks";
+import { useSandpackFS } from "../../utils/storyHelpers";
 
 import * as mocks from "./languages-mocks";
 
@@ -14,28 +15,35 @@ import { CodeEditor, SandpackCodeEditor } from "./index";
 const stories = storiesOf("components/CodeMirror", module);
 
 Object.entries(mocks).forEach(([languageName, mockFile]) =>
-  stories.add(languageName, () => (
-    <SandpackProvider>
-      <CodeEditor
-        code={mockFile}
-        fileType={languageName}
-        initMode="immediate"
-        showLineNumbers={false}
-      />
-    </SandpackProvider>
-  )),
+  stories.add(languageName, () => {
+    const fs = useSandpackFS();
+    if (!fs) return null;
+    return (
+      <SandpackProvider fs={fs}>
+        <CodeEditor
+          code={mockFile}
+          fileType={languageName}
+          initMode="immediate"
+          showLineNumbers={false}
+        />
+      </SandpackProvider>
+    );
+  }),
 );
 
 stories.add("Ready only", () => {
+  const fs = useSandpackFS({
+    customSetup: { entry: "/index.js" },
+    files: {
+      "/index.js": {
+        code: 'const title = "This is a simple code editor"',
+      },
+    },
+  });
+  if (!fs) return null;
   return (
     <>
-      <SandpackProvider
-        files={{
-          "/index.js": {
-            code: 'const title = "This is a simple code editor"',
-          },
-        }}
-      >
+      <SandpackProvider fs={fs}>
         <ReadOnlyEditor />
       </SandpackProvider>
     </>
@@ -57,46 +65,57 @@ const ReadOnlyEditor = () => {
   );
 };
 
-stories.add("CustomLanguageShell", () => (
-  <SandpackProvider>
-    <CodeEditor
-      additionalLanguages={[
-        {
-          name: "shell",
-          extensions: ["sh"],
-          language: new LanguageSupport(StreamLanguage.define(shell)),
-        },
-      ]}
-      code={mocks.shell}
-      filePath="example.sh"
-      initMode="immediate"
-      showLineNumbers={false}
-    />
-  </SandpackProvider>
-));
+stories.add("CustomLanguageShell", () => {
+  const fs = useSandpackFS();
+  if (!fs) return null;
+  return (
+    <SandpackProvider fs={fs}>
+      <CodeEditor
+        additionalLanguages={[
+          {
+            name: "shell",
+            extensions: ["sh"],
+            language: new LanguageSupport(StreamLanguage.define(shell)),
+          },
+        ]}
+        code={mocks.shell}
+        filePath="example.sh"
+        initMode="immediate"
+        showLineNumbers={false}
+      />
+    </SandpackProvider>
+  );
+});
 
-stories.add("CustomLanguagePython", () => (
-  <SandpackProvider>
-    <CodeEditor
-      additionalLanguages={[
-        {
-          name: "python",
-          extensions: ["py"],
-          language: python(),
-        },
-      ]}
-      code={mocks.python}
-      fileType="python"
-      initMode="immediate"
-      showLineNumbers={false}
-    />
-  </SandpackProvider>
-));
+stories.add("CustomLanguagePython", () => {
+  const fs = useSandpackFS();
+  if (!fs) return null;
+  return (
+    <SandpackProvider fs={fs}>
+      <CodeEditor
+        additionalLanguages={[
+          {
+            name: "python",
+            extensions: ["py"],
+            language: python(),
+          },
+        ]}
+        code={mocks.python}
+        fileType="python"
+        initMode="immediate"
+        showLineNumbers={false}
+      />
+    </SandpackProvider>
+  );
+});
 
-stories.add("ShowLineNumber", () => (
-  <SandpackProvider>
-    <CodeEditor
-      code={`
+stories.add("ShowLineNumber", () => {
+  const fs = useSandpackFS();
+  if (!fs) return null;
+  return (
+    <SandpackProvider fs={fs}>
+      <CodeEditor
+        code={`
 @width: 10px;
 @height: @width + 10px;
 
@@ -105,33 +124,41 @@ stories.add("ShowLineNumber", () => (
   height: @height;
 }
 `}
-      fileType="less"
-      initMode="immediate"
-      showLineNumbers
-    />
-  </SandpackProvider>
-));
+        fileType="less"
+        initMode="immediate"
+        showLineNumbers
+      />
+    </SandpackProvider>
+  );
+});
 
-stories.add("WrapContent", () => (
-  <SandpackProvider>
-    <CodeEditor
-      code={Array(20).fill("Lorem ipsum").join("")}
-      initMode="immediate"
-      showLineNumbers
-      wrapContent
-    />
-  </SandpackProvider>
-));
+stories.add("WrapContent", () => {
+  const fs = useSandpackFS();
+  if (!fs) return null;
+  return (
+    <SandpackProvider fs={fs}>
+      <CodeEditor
+        code={Array(20).fill("Lorem ipsum").join("")}
+        initMode="immediate"
+        showLineNumbers
+        wrapContent
+      />
+    </SandpackProvider>
+  );
+});
 
-stories.add("Decorators", () => (
-  <SandpackProvider>
-    <style>
-      {`.highlight, .widget {
+stories.add("Decorators", () => {
+  const fs = useSandpackFS();
+  if (!fs) return null;
+  return (
+    <SandpackProvider fs={fs}>
+      <style>
+        {`.highlight, .widget {
         background: red;
       }`}
-    </style>
-    <CodeEditor
-      code={`const people = [{
+      </style>
+      <CodeEditor
+        code={`const people = [{
   id: 0,
   name: 'Creola Katherine Johnson',
   profession: 'mathematician',
@@ -148,34 +175,36 @@ export default function List() {
   );
   return <ul>{listItems}</ul>;
 }`}
-      readOnly
-      decorators={[
-        { className: "highlight", line: 1 },
-        { className: "highlight", line: 9 },
-        {
-          className: "widget",
-          elementAttributes: { "data-id": "2" },
-          line: 13,
-          startColumn: 8,
-          endColumn: 17,
-        },
-        {
-          className: "widget",
-          elementAttributes: { "data-id": "1" },
-          line: 12,
-          startColumn: 26,
-          endColumn: 38,
-        },
-      ]}
-      fileType="jsx"
-      initMode="immediate"
-    />
-  </SandpackProvider>
-));
+        readOnly
+        decorators={[
+          { className: "highlight", line: 1 },
+          { className: "highlight", line: 9 },
+          {
+            className: "widget",
+            elementAttributes: { "data-id": "2" },
+            line: 13,
+            startColumn: 8,
+            endColumn: 17,
+          },
+          {
+            className: "widget",
+            elementAttributes: { "data-id": "1" },
+            line: 12,
+            startColumn: 26,
+            endColumn: 38,
+          },
+        ]}
+        fileType="jsx"
+        initMode="immediate"
+      />
+    </SandpackProvider>
+  );
+});
 
 type Decorators = Array<{ className: string; line: number }>;
 
 stories.add("DecoratorsDynamic", () => {
+  const fs = useSandpackFS();
   const [decorators, setDecorators] = React.useState<Decorators>([]);
   const [file, setFile] = React.useState(`const people = [{
   id: 0,
@@ -206,8 +235,10 @@ export default function List() {
     ]);
   }, [file]);
 
+  if (!fs) return null;
+
   return (
-    <SandpackProvider>
+    <SandpackProvider fs={fs}>
       <style>
         {`.highlight, .widget {
         background: red;

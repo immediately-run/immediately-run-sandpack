@@ -19,6 +19,13 @@ export interface FileMeta {
 
 export type FileMetaMap = Record<string, FileMeta>;
 
+/** Shape of the sidecar JSON stored at {@link META_PATH}. */
+interface MetaSidecar {
+  files: FileMetaMap;
+  environment?: string;
+  mode?: string;
+}
+
 /**
  * Path (within the SandpackFS) of the sidecar metadata file. Anything below
  * `/.sandpack/` is treated as internal and excluded from {@link SandpackFS.list}.
@@ -55,8 +62,9 @@ export class SandpackFS {
   /** Virtual mount point inside the global ZenFS tree, e.g. `/sandpack-42`. */
   private readonly prefix: string;
   private readonly listeners = new Set<SandpackFSListener>();
-  private readonly watcherCleanups: Array<() => void> = [];
   private metaCache: FileMetaMap = {};
+  private sidecarEnvironment: string | undefined = undefined;
+  private sidecarMode: string | undefined = undefined;
   private disposed = false;
 
   private constructor(prefix: string) {
@@ -67,7 +75,10 @@ export class SandpackFS {
    * Create a new filesystem backed by an InMemory store and seed it with the
    * given files.
    */
-  static async fromFiles(files: SandpackFilesInput = {}): Promise<SandpackFS> {
+  static async fromFiles(
+    files: SandpackFilesInput = {},
+    options: { environment?: string; mode?: string } = {},
+  ): Promise<SandpackFS> {
     const id = ++mountCounter;
     const prefix = `/__sandpack_${id}`;
 
@@ -75,8 +86,13 @@ export class SandpackFS {
     mount(prefix, backend);
 
     const instance = new SandpackFS(prefix);
+    if (options.environment !== undefined) {
+      instance.sidecarEnvironment = options.environment;
+    }
+    if (options.mode !== undefined) {
+      instance.sidecarMode = options.mode;
+    }
     await instance.writeInitial(files);
-    instance.startWatcher();
 
     return instance;
   }
@@ -97,7 +113,6 @@ export class SandpackFS {
     const instance = new SandpackFS(prefix);
     await instance.ensureMetaDir();
     await instance.refreshMetaCache();
-    instance.startWatcher();
 
     return instance;
   }
@@ -181,6 +196,24 @@ export class SandpackFS {
     this.notify();
   }
 
+  getEnvironment(): string | undefined {
+    return this.sidecarEnvironment;
+  }
+
+  async setEnvironment(environment: string): Promise<void> {
+    this.sidecarEnvironment = environment;
+    await this.persistMeta();
+  }
+
+  getMode(): string | undefined {
+    return this.sidecarMode;
+  }
+
+  async setMode(mode: string): Promise<void> {
+    this.sidecarMode = mode;
+    await this.persistMeta();
+  }
+
   // ------------------------------------------------------------------
   // Change detection
   // ------------------------------------------------------------------
@@ -200,15 +233,6 @@ export class SandpackFS {
   dispose(): void {
     if (this.disposed) return;
     this.disposed = true;
-
-    for (const cleanup of this.watcherCleanups) {
-      try {
-        cleanup();
-      } catch {
-        // ignore watcher teardown errors
-      }
-    }
-    this.watcherCleanups.length = 0;
 
     try {
       umount(this.prefix);
@@ -314,9 +338,16 @@ export class SandpackFS {
 
   private async persistMeta(): Promise<void> {
     await this.ensureMetaDir();
+    const sidecar: MetaSidecar = { files: this.metaCache };
+    if (this.sidecarEnvironment !== undefined) {
+      sidecar.environment = this.sidecarEnvironment;
+    }
+    if (this.sidecarMode !== undefined) {
+      sidecar.mode = this.sidecarMode;
+    }
     await zenFs.promises.writeFile(
       this.toAbs(META_PATH),
-      JSON.stringify(this.metaCache),
+      JSON.stringify(sidecar),
     );
   }
 
@@ -326,21 +357,17 @@ export class SandpackFS {
         this.toAbs(META_PATH),
         "utf8",
       )) as string;
-      this.metaCache = JSON.parse(raw) as FileMetaMap;
+      const parsed = JSON.parse(raw) as MetaSidecar | FileMetaMap;
+      if ("files" in parsed && typeof parsed.files === "object") {
+        this.metaCache = parsed.files;
+        this.sidecarEnvironment = parsed.environment;
+        this.sidecarMode = parsed.mode;
+      } else {
+        // Legacy format: plain FileMetaMap
+        this.metaCache = parsed as FileMetaMap;
+      }
     } catch {
       this.metaCache = {};
-    }
-  }
-
-  private startWatcher(): void {
-    // ZenFS supports fs.watch, but coverage varies by backend. We already emit
-    // notifications from our own mutating helpers; the native watcher is best
-    // effort for external writes.
-    try {
-      const watcher = zenFs.watch(this.prefix, () => this.notify());
-      this.watcherCleanups.push(() => watcher.close());
-    } catch {
-      // backend without watcher support - listeners still fire from mutators
     }
   }
 }

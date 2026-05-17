@@ -8,6 +8,7 @@ import { Sandpack } from "../../";
 import { SandpackProvider } from "../../contexts/sandpackContext";
 import { SandpackThemeProvider } from "../../styles/themeContext";
 import { SandpackPreview } from "../Preview";
+import { useSandpackFS } from "../../utils/storyHelpers";
 
 import type { CodeEditorProps } from "./";
 import { SandpackCodeEditor } from "./";
@@ -17,74 +18,88 @@ export default {
   component: SandpackCodeEditor,
 };
 
-export const Component: Story<CodeEditorProps> = (args) => (
-  <SandpackProvider
-    customSetup={{
-      entry: "/index.js",
-    }}
-    files={{
+export const Component: Story<CodeEditorProps> = (args) => {
+  const fs = useSandpackFS({
+    customSetup: { entry: "/index.js" },
+    files: {
       "/index.js": {
         code: 'const title = "This is a simple code editor"',
       },
-    }}
-  >
-    <SandpackThemeProvider>
-      <SandpackCodeEditor {...args} />
-    </SandpackThemeProvider>
-  </SandpackProvider>
-);
+    },
+  });
+  if (!fs) return null;
+  return (
+    <SandpackProvider fs={fs}>
+      <SandpackThemeProvider>
+        <SandpackCodeEditor {...args} />
+      </SandpackThemeProvider>
+    </SandpackProvider>
+  );
+};
 
-export const ShowTabs: Story<CodeEditorProps> = (args) => (
-  <SandpackProvider
-    customSetup={{
-      entry: "/index.js",
-    }}
-    files={{
+export const ShowTabs: Story<CodeEditorProps> = (args) => {
+  const fs = useSandpackFS({
+    customSetup: { entry: "/index.js" },
+    files: {
       "/index.js": {
         code: 'const title = "This is a simple code editor"',
       },
-    }}
-  >
-    <SandpackThemeProvider>
-      <SandpackCodeEditor showTabs {...args} />
-    </SandpackThemeProvider>
-  </SandpackProvider>
-);
+    },
+  });
+  if (!fs) return null;
+  return (
+    <SandpackProvider fs={fs}>
+      <SandpackThemeProvider>
+        <SandpackCodeEditor showTabs {...args} />
+      </SandpackThemeProvider>
+    </SandpackProvider>
+  );
+};
 
-export const InlineError: React.FC = () => (
-  <SandpackProvider
-    files={{
-      "/App.js": `export default function App() 
+export const InlineError: React.FC = () => {
+  const fs = useSandpackFS({
+    template: "react",
+    files: {
+      "/App.js": `export default function App()
   return <h1>Hello world</h1>
 }`,
-    }}
-    template="react"
-  >
-    <SandpackThemeProvider>
-      <SandpackCodeEditor showInlineErrors showLineNumbers />
-      <SandpackPreview />
-    </SandpackThemeProvider>
-  </SandpackProvider>
-);
+    },
+  });
+  if (!fs) return null;
+  return (
+    <SandpackProvider fs={fs}>
+      <SandpackThemeProvider>
+        <SandpackCodeEditor showInlineErrors showLineNumbers />
+        <SandpackPreview />
+      </SandpackThemeProvider>
+    </SandpackProvider>
+  );
+};
 
-export const ClosableTabs: React.FC = () => (
-  <SandpackProvider
-    options={{ visibleFiles: ["/App.js", "/index.js", "/styles.css"] }}
-    template="react"
-    theme="dark"
-  >
-    <SandpackCodeEditor closableTabs />
-  </SandpackProvider>
-);
+export const ClosableTabs: React.FC = () => {
+  const fs = useSandpackFS({ template: "react" });
+  if (!fs) return null;
+  return (
+    <SandpackProvider
+      fs={fs}
+      options={{ visibleFiles: ["/App.js", "/index.js", "/styles.css"] }}
+      theme="dark"
+    >
+      <SandpackCodeEditor closableTabs />
+    </SandpackProvider>
+  );
+};
 
 export const ExtensionAutocomplete: React.FC = () => {
   const [active, setActive] = React.useState(false);
+  const fs = useSandpackFS({ template: "react" });
+  if (!fs) return null;
   return (
     <>
       <button onClick={(): void => setActive((prev): boolean => !prev)}>
         Toggle
       </button>
-      <SandpackProvider template="react">
+      <SandpackProvider fs={fs}>
         <SandpackThemeProvider>
           <SandpackCodeEditor
             extensions={active ? [autocompletion()] : []}
@@ -98,57 +113,66 @@ export const ExtensionAutocomplete: React.FC = () => {
 };
 
 export const ReadOnly: React.FC = () => {
+  const fs1 = useSandpackFS({
+    template: "react-ts",
+    customSetup: { entry: "/index.tsx" },
+    files: {
+      "/index.tsx": { code: "", hidden: true },
+      "/App.tsx": { code: "Hello", readOnly: true, active: true },
+      "/src/components/button.tsx": { code: "World", readOnly: false },
+    },
+  });
+  const fs2 = useSandpackFS({ template: "react-ts" });
+  const fs3 = useSandpackFS({
+    template: "react-ts",
+    files: {
+      "/index.tsx": { code: "", hidden: true },
+      "/src/App.tsx": { code: "Hello", readOnly: true },
+      "/src/components/button.tsx": { code: "World", readOnly: false },
+    },
+  });
+  const fs4 = useSandpackFS({
+    template: "react-ts",
+    files: {
+      "/index.tsx": { code: "", hidden: true },
+      "/src/App.tsx": { code: "Hello", readOnly: true },
+      "/src/components/button.tsx": { code: "World", readOnly: false },
+    },
+  });
+  const fs5 = useSandpackFS({
+    template: "react-ts",
+    files: {
+      "/index.tsx": { code: "", hidden: true },
+      "/src/App.tsx": { code: "Hello", readOnly: true, active: true },
+      "/src/components/button.tsx": { code: "World", readOnly: false },
+    },
+  });
+
+  if (!fs1 || !fs2 || !fs3 || !fs4 || !fs5) return null;
   return (
     <>
       <p>Read-only by file</p>
       <Sandpack
-        customSetup={{ entry: "/index.tsx" }}
-        files={{
-          "/index.tsx": { code: "", hidden: true },
-          "/App.tsx": { code: "Hello", readOnly: true, active: true },
-          "/src/components/button.tsx": { code: "World", readOnly: false },
-        }}
+        fs={fs1}
         options={{ showTabs: true, activeFile: "/App.tsx" }}
-        template="react-ts"
       />
 
       <p>Read-only global</p>
-      <Sandpack
-        options={{ showTabs: true, readOnly: true }}
-        template="react-ts"
-      />
+      <Sandpack fs={fs2} options={{ showTabs: true, readOnly: true }} />
 
       <p>Read-only global and by file</p>
-      <Sandpack
-        files={{
-          "/index.tsx": { code: "", hidden: true },
-          "/src/App.tsx": { code: "Hello", readOnly: true },
-          "/src/components/button.tsx": { code: "World", readOnly: false },
-        }}
-        options={{ showTabs: false, readOnly: true }}
-        template="react-ts"
-      />
+      <Sandpack fs={fs3} options={{ showTabs: false, readOnly: true }} />
 
       <p>Read-only global, but no label</p>
       <Sandpack
-        files={{
-          "/index.tsx": { code: "", hidden: true },
-          "/src/App.tsx": { code: "Hello", readOnly: true },
-          "/src/components/button.tsx": { code: "World", readOnly: false },
-        }}
+        fs={fs4}
         options={{ showTabs: false, readOnly: true, showReadOnly: false }}
-        template="react-ts"
       />
 
       <p>Read-only by file, but no label</p>
       <Sandpack
-        files={{
-          "/index.tsx": { code: "", hidden: true },
-          "/src/App.tsx": { code: "Hello", readOnly: true, active: true },
-          "/src/components/button.tsx": { code: "World", readOnly: false },
-        }}
+        fs={fs5}
         options={{ showTabs: true, readOnly: false, showReadOnly: false }}
-        template="react-ts"
       />
     </>
   );

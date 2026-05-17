@@ -9,6 +9,7 @@ import {
   SandpackFileExplorer,
   SandpackPreview,
 } from "../components";
+import { useSandpackFS } from "../utils/storyHelpers";
 
 import { SANDBOX_TEMPLATES } from ".";
 
@@ -20,15 +21,20 @@ Object.keys(SANDBOX_TEMPLATES).forEach((template) =>
       SANDBOX_TEMPLATES[template].environment === "node" ||
       SANDBOX_TEMPLATES[template].environment === "static";
 
+    const fs = useSandpackFS({
+      template: template as SandpackPredefinedTemplate,
+    });
+    if (!fs) return null;
+
     return (
       <SandpackProvider
+        fs={fs}
         options={{
           bundlerTimeOut: 90000,
           bundlerURL: isNodeStatic
             ? undefined
             : "https://1-17-1-sandpack.codesandbox.io/",
         }}
-        template={template as SandpackPredefinedTemplate}
       >
         <SandpackLayout>
           <SandpackFileExplorer />

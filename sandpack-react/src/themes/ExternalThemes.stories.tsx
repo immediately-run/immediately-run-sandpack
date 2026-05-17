@@ -10,30 +10,36 @@ import {
   SandpackProvider,
   SandpackLayout,
 } from "../";
+import { useSandpackFS } from "../utils/storyHelpers";
 
 const stories = storiesOf("presets/Themes (external)", module);
 
 Object.entries(allThemes).forEach(([themeName, value]) =>
-  stories.add(themeName, () => (
-    <>
-      <Sandpack
-        options={{
-          showLineNumbers: true,
-          showInlineErrors: true,
-          showNavigator: true,
-          showTabs: true,
-        }}
-        template="react"
-        theme={value}
-      />
+  stories.add(themeName, () => {
+    const fs1 = useSandpackFS({ template: "react" });
+    const fs2 = useSandpackFS({ template: "react" });
+    if (!fs1 || !fs2) return null;
+    return (
+      <>
+        <Sandpack
+          fs={fs1}
+          options={{
+            showLineNumbers: true,
+            showInlineErrors: true,
+            showNavigator: true,
+            showTabs: true,
+          }}
+          theme={value}
+        />
 
-      <SandpackProvider template="react" theme={value}>
-        <SandpackLayout>
-          <SandpackFileExplorer />
-          <SandpackCodeEditor showLineNumbers showTabs />
-          <SandpackPreview showNavigator />
-        </SandpackLayout>
-      </SandpackProvider>
-    </>
-  )),
+        <SandpackProvider fs={fs2} theme={value}>
+          <SandpackLayout>
+            <SandpackFileExplorer />
+            <SandpackCodeEditor showLineNumbers showTabs />
+            <SandpackPreview showNavigator />
+          </SandpackLayout>
+        </SandpackProvider>
+      </>
+    );
+  }),
 );

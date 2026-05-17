@@ -3,6 +3,7 @@ import React from "react";
 import { SandpackPreview } from "../components/Preview";
 import { SandpackLayout } from "../components/common/Layout";
 import { SandpackProvider } from "../contexts/sandpackContext";
+import { useSandpackFS } from "../utils/storyHelpers";
 
 import { useSandpackNavigation } from "./useSandpackNavigation";
 
@@ -19,11 +20,15 @@ const CustomRefreshButton: React.FC = () => {
   );
 };
 
-export const CustomCodeEditor = (): React.ReactElement => (
-  <SandpackProvider template="react">
-    <SandpackLayout>
-      <SandpackPreview showRefreshButton={false} />
-    </SandpackLayout>
-    <CustomRefreshButton />
-  </SandpackProvider>
-);
+export const CustomCodeEditor = (): React.ReactElement | null => {
+  const fs = useSandpackFS({ template: "react" });
+  if (!fs) return null;
+  return (
+    <SandpackProvider fs={fs}>
+      <SandpackLayout>
+        <SandpackPreview showRefreshButton={false} />
+      </SandpackLayout>
+      <CustomRefreshButton />
+    </SandpackProvider>
+  );
+};

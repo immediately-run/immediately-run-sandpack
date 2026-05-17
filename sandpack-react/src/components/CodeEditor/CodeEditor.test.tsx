@@ -3,18 +3,30 @@
  */
 import { act, render, screen } from "@testing-library/react";
 import "@testing-library/jest-dom";
+import type { SandpackFS } from "@codesandbox/sandpack-client";
 import React from "react";
 
 import { SandpackProvider } from "../../";
+import { createSandpackFS } from "../../utils/createSandpackFS";
 
 import { SandpackCodeEditor } from ".";
 
 describe("read-only", () => {
   jest.useFakeTimers();
 
+  let fs: SandpackFS;
+
+  beforeAll(async () => {
+    fs = await createSandpackFS({ template: "vanilla" });
+  });
+
+  afterAll(() => {
+    fs.dispose();
+  });
+
   it("should render the read-only flag", () => {
     render(
-      <SandpackProvider>
+      <SandpackProvider fs={fs}>
         <SandpackCodeEditor readOnly />
       </SandpackProvider>,
     );
@@ -29,7 +41,7 @@ describe("read-only", () => {
 
   it("should not render the read-only flag, when showReadOnly is false", () => {
     render(
-      <SandpackProvider>
+      <SandpackProvider fs={fs}>
         <SandpackCodeEditor showReadOnly={false} readOnly />
       </SandpackProvider>,
     );

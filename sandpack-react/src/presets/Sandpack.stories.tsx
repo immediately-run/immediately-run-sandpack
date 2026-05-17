@@ -4,15 +4,17 @@ import React from "react";
 
 import { Sandpack } from "../";
 import { REACT_TEMPLATE } from "../templates";
+import { useSandpackFS } from "../utils/storyHelpers";
 
 export default {
   title: "presets/Sandpack: options",
   component: Sandpack,
 };
 
-export const Main: React.FC = () => (
-  <Sandpack
-    files={{
+export const Main: React.FC = () => {
+  const fs = useSandpackFS({
+    template: "react",
+    files: {
       "/App.js": `import Button from './button';
 import Link from './link';
 
@@ -32,39 +34,50 @@ export default function App() {
       "/link.js": `export default function Link() {
   return <a href="https://www.example.com" target="_blank">Click Here</a>
 }`,
-    }}
-    options={{
-      showLineNumbers: true,
-      showInlineErrors: true,
-    }}
-    template="react"
-  />
-);
+    },
+  });
+  if (!fs) return null;
+  return (
+    <Sandpack
+      fs={fs}
+      options={{
+        showLineNumbers: true,
+        showInlineErrors: true,
+      }}
+    />
+  );
+};
 
-export const Layout: React.FC = () => (
-  <>
-    <p>Console</p>
-    <Sandpack options={{ layout: "console" }} template="node" />
+export const Layout: React.FC = () => {
+  const fsNode = useSandpackFS({ template: "node" });
+  const fsTestTs = useSandpackFS({ template: "test-ts" });
+  const fsReact = useSandpackFS({ template: "react" });
+  if (!fsNode || !fsTestTs || !fsReact) return null;
+  return (
+    <>
+      <p>Console</p>
+      <Sandpack fs={fsNode} options={{ layout: "console" }} />
 
-    <p>Tests</p>
-    <Sandpack options={{ layout: "tests" }} template="test-ts" />
+      <p>Tests</p>
+      <Sandpack fs={fsTestTs} options={{ layout: "tests" }} />
 
-    <p>Preview</p>
-    <Sandpack options={{ layout: "preview" }} template="react" />
-  </>
-);
+      <p>Preview</p>
+      <Sandpack fs={fsReact} options={{ layout: "preview" }} />
+    </>
+  );
+};
 
-export const CustomSetup: React.FC = () => (
-  <Sandpack
-    customSetup={{
+export const CustomSetup: React.FC = () => {
+  const fs = useSandpackFS({
+    customSetup: {
       entry: "/src/index.tsx",
       dependencies: {
         react: "latest",
         "react-dom": "latest",
         "react-scripts": "4.0.0",
       },
-    }}
-    files={{
+    },
+    files: {
       "./tsconfig.json": {
         code: `{
 "include": [
@@ -96,7 +109,6 @@ export const CustomSetup: React.FC = () => (
 </html>`,
         hidden: true,
       },
-
       "/src/index.tsx": {
         code: `import * as React from "react";
 import { render } from "react-dom";
@@ -108,7 +120,6 @@ render(<Main test="World"/>, rootElement);
         `,
         hidden: true,
       },
-
       "/src/main.tsx": {
         code: `import * as React from "react";
 
@@ -118,15 +129,22 @@ export const Main: React.FC<{test: string}> = ({test}) => {
   )
 }`,
       },
-    }}
-    options={{ wrapContent: true, activeFile: "/src/main.tsx" }}
-    theme="dark"
-  />
-);
+    },
+  });
+  if (!fs) return null;
+  return (
+    <Sandpack
+      fs={fs}
+      options={{ wrapContent: true, activeFile: "/src/main.tsx" }}
+      theme="dark"
+    />
+  );
+};
 
-export const ExternalResources: React.FC = () => (
-  <Sandpack
-    files={{
+export const ExternalResources: React.FC = () => {
+  const fs = useSandpackFS({
+    template: "react",
+    files: {
       "/App.js": `export default () => {
   return <a
     href="#"
@@ -135,59 +153,78 @@ export const ExternalResources: React.FC = () => (
     Log in
   </a>
 }`,
-    }}
-    options={{
-      externalResources: [
-        "https://unpkg.com/@tailwindcss/ui/dist/tailwind-ui.min.css",
-      ],
-    }}
-    template="react"
-  />
-);
+    },
+  });
+  if (!fs) return null;
+  return (
+    <Sandpack
+      fs={fs}
+      options={{
+        externalResources: [
+          "https://unpkg.com/@tailwindcss/ui/dist/tailwind-ui.min.css",
+        ],
+      }}
+    />
+  );
+};
 
-export const AutoRun = (): React.ReactElement => (
-  <Sandpack
-    files={{
+export const AutoRun = (): React.ReactElement | null => {
+  const fs = useSandpackFS({
+    template: "react",
+    files: {
       "/App.js": `export default function Kitten() {
   return (
     <img src="https://placekitten.com/200/250" alt="Kitten" />
   );
 }`,
-    }}
-    options={{
-      autorun: false,
-      showTabs: true,
-      showLineNumbers: true,
-      showNavigator: true,
-    }}
-    template="react"
-  />
-);
+    },
+  });
+  if (!fs) return null;
+  return (
+    <Sandpack
+      fs={fs}
+      options={{
+        autorun: false,
+        showTabs: true,
+        showLineNumbers: true,
+        showNavigator: true,
+      }}
+    />
+  );
+};
 
-export const AutoReload = (): React.ReactElement => (
-  <Sandpack
-    files={{
+export const AutoReload = (): React.ReactElement | null => {
+  const fs = useSandpackFS({
+    template: "react",
+    files: {
       "/App.js": `export default function Kitten() {
   return (
     <img src="https://placekitten.com/200/250" alt="Kitten" />
   );
 }`,
-    }}
-    options={{
-      autorun: true,
-      autoReload: false,
-    }}
-    template="react"
-  />
-);
+    },
+  });
+  if (!fs) return null;
+  return (
+    <Sandpack
+      fs={fs}
+      options={{
+        autorun: true,
+        autoReload: false,
+      }}
+    />
+  );
+};
 
 export const InitModeUserVisible: React.FC = () => {
+  const fs = useSandpackFS();
+  if (!fs) return null;
   return (
     <>
       {new Array(30).fill(" ").map((_, index) => {
         return (
           <div key={index} style={{ marginBottom: 200 }}>
-            <Sandpack options={{ initMode: "user-visible" }} />
+            <Sandpack fs={fs} options={{ initMode: "user-visible" }} />
           </div>
         );
       })}
@@ -195,13 +232,17 @@ export const InitModeUserVisible: React.FC = () => {
   );
 };
 
-export const ShowLineNumber: React.FC = () => (
-  <Sandpack options={{ showLineNumbers: true }} template="react" />
-);
+export const ShowLineNumber: React.FC = () => {
+  const fs = useSandpackFS({ template: "react" });
+  if (!fs) return null;
+  return <Sandpack fs={fs} options={{ showLineNumbers: true }} />;
+};
 
-export const wrapContent: React.FC = () => (
-  <Sandpack options={{ wrapContent: true }} template="vanilla" />
-);
+export const wrapContent: React.FC = () => {
+  const fs = useSandpackFS({ template: "vanilla" });
+  if (!fs) return null;
+  return <Sandpack fs={fs} options={{ wrapContent: true }} />;
+};
 
 const defaultFiles = {
   "/styles.css": `body {
@@ -244,7 +285,7 @@ root.render(
 
 const filesA = {
   "/App.js": `import "./styles.css";
-  
+
 export default function App() {
   return <h1>File A</h1>
 }`,
@@ -252,7 +293,7 @@ export default function App() {
 
 const filesB = {
   "/App.js": `import "./styles.css";
-  
+
 export default function App() {
   return <h1>File B</h1>
 }`,
@@ -265,41 +306,52 @@ export default function App() {
  * filesystem via the `files` prop or mount a custom ZenFS backend and
  * hand the result in via `fs={...}`.
  */
-export const FileResolver = (): JSX.Element => (
-  <Sandpack
-    customSetup={{ environment: "create-react-app", entry: "/index.js" }}
-    files={{ ...defaultFiles, ...filesA, ...filesB }}
-    options={{ bundlerURL: "https://sandpack-bundler.codesandbox.io" }}
-  />
-);
-
-export const ShowConsoleButton: React.FC = () => (
-  <div style={{ width: 800 }}>
+export const FileResolver = (): JSX.Element | null => {
+  const fs = useSandpackFS({
+    customSetup: { environment: "create-react-app", entry: "/index.js" },
+    files: { ...defaultFiles, ...filesA, ...filesB },
+  });
+  if (!fs) return null;
+  return (
     <Sandpack
-      files={{
-        "/index.js": `${REACT_TEMPLATE.files["/index.js"].code}; 
-        
+      fs={fs}
+      options={{ bundlerURL: "https://sandpack-bundler.codesandbox.io" }}
+    />
+  );
+};
+
+export const ShowConsoleButton: React.FC = () => {
+  const fs = useSandpackFS({
+    template: "react",
+    files: {
+      "/index.js": `${REACT_TEMPLATE.files["/index.js"].code};
+
         console.error("Something went wrong");
-        
+
         console.log(function helloWord() {})
         `,
-      }}
-      options={{
-        showConsoleButton: true,
-        showConsole: true,
-        // editorHeight: 350,
-      }}
-      template="react"
-    />
-  </div>
-);
+    },
+  });
+  if (!fs) return null;
+  return (
+    <div style={{ width: 800 }}>
+      <Sandpack
+        fs={fs}
+        options={{
+          showConsoleButton: true,
+          showConsole: true,
+        }}
+      />
+    </div>
+  );
+};
 
-export const CustomLanguages: React.FC = () => (
-  <Sandpack
-    customSetup={{
+export const CustomLanguages: React.FC = () => {
+  const fs = useSandpackFS({
+    customSetup: {
       entry: "/example.sh",
-    }}
-    files={{
+    },
+    files: {
       "/example.sh": `#!/bin/sh
 
 EXAMPLE="drawn joyed"
@@ -308,11 +360,11 @@ EXAMPLE="drawn joyed"
 function show-example() {
   echo $EXAMPLE
 }`,
-      "/example.bat": `@echo off 
+      "/example.bat": `@echo off
 
 Rem Prints the "example" variable
 
-set example=Hello world 
+set example=Hello world
 
 echo %example%`,
       "/example.ps1": `$example = "Hello world"
@@ -320,30 +372,33 @@ echo %example%`,
 # Prints the "example" variable
 
 Write-Output $example`,
-    }}
-    options={{
-      codeEditor: {
-        additionalLanguages: [
-          {
-            name: "shell",
-            extensions: ["sh", "bat", "ps1"],
-            language: new LanguageSupport(StreamLanguage.define(shell)),
-          },
-        ],
-      },
-    }}
-  />
-);
+    },
+  });
+  if (!fs) return null;
+  return (
+    <Sandpack
+      fs={fs}
+      options={{
+        codeEditor: {
+          additionalLanguages: [
+            {
+              name: "shell",
+              extensions: ["sh", "bat", "ps1"],
+              language: new LanguageSupport(StreamLanguage.define(shell)),
+            },
+          ],
+        },
+      }}
+    />
+  );
+};
 
 export const RtlLayout: React.FC = () => {
+  const fs = useSandpackFS({ template: "react" });
+  if (!fs) return null;
   return (
     <>
-      <Sandpack
-        options={{
-          rtl: true,
-        }}
-        template="react"
-      />
+      <Sandpack fs={fs} options={{ rtl: true }} />
     </>
   );
 };

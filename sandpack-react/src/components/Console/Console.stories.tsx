@@ -2,6 +2,7 @@ import React, { useState } from "react";
 
 import { SandpackCodeEditor, SandpackPreview } from "..";
 import { SandpackProvider, SandpackLayout, Sandpack } from "../..";
+import { useSandpackFS } from "../../utils/storyHelpers";
 
 import type { SandpackConsoleRef } from "./SandpackConsole";
 import { SandpackConsole } from "./SandpackConsole";
@@ -11,9 +12,9 @@ export default {
 };
 
 /* eslint-disable-next-line @typescript-eslint/no-explicit-any,@typescript-eslint/no-explicit-any */
-const files = (full: boolean): any => ({
+const makeFiles = (full: boolean): any => ({
   "/App.js": `export default function App() {
-  
+
     return (
       <>
         <p>Primitives</p>
@@ -22,7 +23,7 @@ const files = (full: boolean): any => ({
         <button onClick={() => console.log(true)}>boolean</button>
         <button onClick={() => console.log(undefined)}>undefined</button>
         <button onClick={() => console.log(null)}>null</button>
-        
+
         ${
           full
             ? `<p>Others</p>
@@ -62,9 +63,14 @@ const files = (full: boolean): any => ({
 export const Main: React.FC = () => {
   const [showHeader, setShowHeader] = React.useState(true);
   const [showSyntaxErrors, setShowSyntaxErrors] = React.useState(true);
+  const fs = useSandpackFS({
+    template: "react",
+    files: makeFiles(true),
+  });
+  if (!fs) return null;
 
   return (
-    <SandpackProvider files={files(true)} template="react">
+    <SandpackProvider fs={fs}>
       <SandpackLayout>
         <SandpackCodeEditor />
         <SandpackPreview />
@@ -101,32 +107,34 @@ export const Main: React.FC = () => {
 };
 
 export const Preset: React.FC = () => {
+  const fs1 = useSandpackFS({ template: "react" });
+  const fs2 = useSandpackFS({ template: "react", files: makeFiles(false) });
+  const fs3 = useSandpackFS({ template: "react", files: makeFiles(false) });
+  const fs4 = useSandpackFS({ template: "react", files: makeFiles(false) });
+  if (!fs1 || !fs2 || !fs3 || !fs4) return null;
   return (
     <div style={{ width: "auto" }}>
-      <Sandpack template="react" />
+      <Sandpack fs={fs1} />
 
       <br />
 
       <Sandpack
-        files={files(false)}
+        fs={fs2}
         options={{ showConsoleButton: true, showConsole: true }}
-        template="react"
       />
 
       <br />
 
       <Sandpack
-        files={files(false)}
+        fs={fs3}
         options={{ showConsoleButton: false, showConsole: true }}
-        template="react"
       />
 
       <br />
 
       <Sandpack
-        files={files(false)}
+        fs={fs4}
         options={{ showConsoleButton: true, showConsole: false }}
-        template="react"
       />
     </div>
   );
@@ -134,13 +142,15 @@ export const Preset: React.FC = () => {
 
 export const ImperativeReset: React.FC = () => {
   const consoleRef = React.useRef<SandpackConsoleRef>(null);
+  const fs = useSandpackFS();
+  if (!fs) return null;
 
   const resetLogs = () => {
     consoleRef.current?.reset();
   };
 
   return (
-    <SandpackProvider>
+    <SandpackProvider fs={fs}>
       <SandpackCodeEditor />
       <SandpackPreview />
       <button onClick={resetLogs}>Reset logs</button>
@@ -149,11 +159,12 @@ export const ImperativeReset: React.FC = () => {
   );
 };
 
-export const StandaloneMode = () => (
-  <SandpackProvider
-    files={{
+export const StandaloneMode = () => {
+  const fs = useSandpackFS({
+    template: "node",
+    files: {
       "/.eslintrc.js": `module.exports = {
-  rules: { 
+  rules: {
     "no-unused-vars": "error",
     "no-console": "error",
   },
@@ -172,33 +183,50 @@ console.log("foo");`,
         },
         scripts: { start: "eslint index.js" },
       }),
-    }}
-    options={{ visibleFiles: ["/index.js", "/.eslintrc.js"] }}
-    template="node"
-  >
-    <SandpackLayout>
-      <SandpackCodeEditor />
-      <SandpackConsole standalone />
-    </SandpackLayout>
-  </SandpackProvider>
-);
+    },
+  });
+  if (!fs) return null;
+  return (
+    <SandpackProvider
+      fs={fs}
+      options={{ visibleFiles: ["/index.js", "/.eslintrc.js"] }}
+    >
+      <SandpackLayout>
+        <SandpackCodeEditor />
+        <SandpackConsole standalone />
+      </SandpackLayout>
+    </SandpackProvider>
+  );
+};
 
 export const MaxMessageCount = () => {
   const [mode, setMode] = useState("client");
   const [maxMessageCount, setMaxMessageCount] = useState(5);
+  const vanillaFs = useSandpackFS({
+    template: "vanilla",
+    files: {
+      "/index.js": `new Array(10).fill('').forEach((_, i) => console.log(i));`,
+    },
+  });
+  const nodeFs = useSandpackFS({
+    template: "node",
+    files: {
+      "/index.js": `new Array(10).fill('').forEach((_, i) => console.log(i));`,
+      "/package.json": JSON.stringify({
+        scripts: { start: "node index.js" },
+      }),
+    },
+  });
+
+  const activeFs = mode === "client" ? vanillaFs : nodeFs;
+  if (!activeFs) return null;
 
   return (
     <>
       <SandpackProvider
         key={mode}
-        files={{
-          "/index.js": `new Array(10).fill('').forEach((_, i) => console.log(i));`,
-          "/package.json": JSON.stringify({
-            scripts: { start: "node index.js" },
-          }),
-        }}
+        fs={activeFs}
         options={{ visibleFiles: ["/index.js"], recompileDelay: 500 }}
-        template={mode === "client" ? "vanilla" : "node"}
       >
         <SandpackLayout>
           <SandpackCodeEditor />
@@ -237,10 +265,10 @@ export const MaxMessageCount = () => {
 };
 
 export const StaticTemplate: React.FC = () => {
-  return (
-    <Sandpack
-      files={{
-        "index.html": `<!DOCTYPE html>
+  const fs = useSandpackFS({
+    template: "static",
+    files: {
+      "index.html": `<!DOCTYPE html>
 <html>
 
 <head>
@@ -259,22 +287,23 @@ export const StaticTemplate: React.FC = () => {
 </body>
 
 </html>`,
-      }}
-      options={{ showConsole: true }}
-      template="static"
-    />
-  );
+    },
+  });
+  if (!fs) return null;
+  return <Sandpack fs={fs} options={{ showConsole: true }} />;
 };
 
 export const NodeTemplate: React.FC = () => {
-  return <Sandpack options={{ showConsole: true }} template="node" />;
+  const fs = useSandpackFS({ template: "node" });
+  if (!fs) return null;
+  return <Sandpack fs={fs} options={{ showConsole: true }} />;
 };
 
 export const ReactTemplate: React.FC = () => {
-  return (
-    <Sandpack
-      files={{
-        "App.js": `import { useState } from "react"
+  const fs = useSandpackFS({
+    template: "react",
+    files: {
+      "App.js": `import { useState } from "react"
 export default function App() {
     const foo = useState("")
     console.log(foo)
@@ -283,9 +312,8 @@ export default function App() {
       </>
     )
 }`,
-      }}
-      options={{ showConsole: true }}
-      template="react"
-    />
-  );
+    },
+  });
+  if (!fs) return null;
+  return <Sandpack fs={fs} options={{ showConsole: true }} />;
 };

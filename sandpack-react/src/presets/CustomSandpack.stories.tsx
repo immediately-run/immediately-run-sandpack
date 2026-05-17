@@ -25,16 +25,17 @@ import {
   type SandpackContext,
 } from "../";
 import { useSandpack } from "../hooks/useSandpack";
+import { useSandpackFS } from "../utils/storyHelpers";
 
 export default {
   title: "presets/Sandpack: custom",
 };
 
 export const ExperimentalServiceWorker: React.FC = () => {
-  return (
-    <Sandpack
-      files={{
-        "/public/logo.svg": `<svg xmlns="http://www.w3.org/2000/svg" viewBox="-11.5 -10.23174 23 20.46348">
+  const fs = useSandpackFS({
+    template: "react",
+    files: {
+      "/public/logo.svg": `<svg xmlns="http://www.w3.org/2000/svg" viewBox="-11.5 -10.23174 23 20.46348">
   <title>React Logo</title>
   <circle cx="0" cy="0" r="2.05" fill="#61dafb"/>
   <g stroke="#61dafb" stroke-width="1" fill="none">
@@ -44,7 +45,7 @@ export const ExperimentalServiceWorker: React.FC = () => {
   </g>
 </svg>
   `,
-        "/App.js": `export default function App() {
+      "/App.js": `export default function App() {
   return (
     <>
       <h1>Hello React</h1>
@@ -53,71 +54,74 @@ export const ExperimentalServiceWorker: React.FC = () => {
   );
 }
         `,
-      }}
+    },
+  });
+  if (!fs) return null;
+  return (
+    <Sandpack
+      fs={fs}
       options={{
         experimental_enableServiceWorker: true,
         experimental_enableStableServiceWorkerId: true,
       }}
-      template="react"
     />
   );
 };
 
-export const UsingSandpackLayout: React.FC = () => (
-  <SandpackProvider>
-    <SandpackLayout>
-      <SandpackStack>
-        <SandpackTranspiledCode />
-      </SandpackStack>
-      <SandpackCodeEditor />
-      <SandpackCodeViewer />
-    </SandpackLayout>
-  </SandpackProvider>
-);
+export const UsingSandpackLayout: React.FC = () => {
+  const fs = useSandpackFS();
+  if (!fs) return null;
+  return (
+    <SandpackProvider fs={fs}>
+      <SandpackLayout>
+        <SandpackStack>
+          <SandpackTranspiledCode />
+        </SandpackStack>
+        <SandpackCodeEditor />
+        <SandpackCodeViewer />
+      </SandpackLayout>
+    </SandpackProvider>
+  );
+};
 
-export const UsingMultipleEditor: React.FC = (props) => {
+export const UsingMultipleEditor: React.FC = () => {
   const [isAutoReload, setAutoReload] = React.useState(true);
+  const fs = useSandpackFS({ template: "static" });
+  if (!fs) return null;
 
   return (
-    <div
-      style={{
-        width: "100%",
-        height: "500px",
-      }}
-    >
+    <div style={{ width: "100%", height: "500px" }}>
       <SandpackProvider
-        {...props}
+        fs={fs}
         options={{ initMode: "immediate", autoReload: isAutoReload }}
-        template="static"
       >
         <SandpackConsumer>
           {(context: SandpackContext | null) => {
             if (!context) return <></>;
 
-            const { files, updateFile, autoReload } = context;
-            const fileListValues = Object.values(files);
-            const fileListKeys = Object.keys(files);
+            const { updateFile, autoReload } = context;
+            const { fileList, fs: ctxFs } = context;
 
             return (
               <SandpackLayout>
                 <SandpackStack style={{ padding: "10px 0" }}>
                   <CodeEditor
-                    code={fileListValues[0].code}
-                    filePath={fileListKeys[0]}
+                    code=""
+                    filePath={fileList[0] ?? "/index.html"}
                     initMode="immediate"
                     onCodeUpdate={(newCode) => {
-                      updateFile(fileListKeys[0], newCode, autoReload);
+                      if (fileList[0]) updateFile(fileList[0], newCode, autoReload);
                     }}
                   />
                 </SandpackStack>
 
                 <SandpackStack style={{ padding: "10px 0" }}>
                   <CodeEditor
-                    code={fileListValues[1].code}
-                    filePath={fileListKeys[1]}
+                    code=""
+                    filePath={fileList[1] ?? "/styles.css"}
                     initMode="immediate"
                     onCodeUpdate={(newCode) => {
-                      updateFile(fileListKeys[1], newCode, autoReload);
+                      if (fileList[1]) updateFile(fileList[1], newCode, autoReload);
                     }}
                   />
                 </SandpackStack>
@@ -138,43 +142,47 @@ export const UsingMultipleEditor: React.FC = (props) => {
   );
 };
 
-export const UsingVisualElements: React.FC = () => (
-  <SandpackProvider options={{ activeFile: "/App.js" }} template="react">
-    <SandpackThemeProvider>
-      <SandpackCodeEditor
-        style={{
-          width: 500,
-          height: 300,
-        }}
-      />
+export const UsingVisualElements: React.FC = () => {
+  const fs = useSandpackFS({ template: "react" });
+  if (!fs) return null;
+  return (
+    <SandpackProvider fs={fs} options={{ activeFile: "/App.js" }}>
+      <SandpackThemeProvider>
+        <SandpackCodeEditor
+          style={{
+            width: 500,
+            height: 300,
+          }}
+        />
 
-      <SandpackPreview
-        showOpenInCodeSandbox={false}
-        showRefreshButton={false}
-        style={{
-          border: "1px solid red",
-          marginBottom: 4,
-          marginTop: 4,
-          width: 500,
-          height: 300,
-        }}
-      />
+        <SandpackPreview
+          showOpenInCodeSandbox={false}
+          showRefreshButton={false}
+          style={{
+            border: "1px solid red",
+            marginBottom: 4,
+            marginTop: 4,
+            width: 500,
+            height: 300,
+          }}
+        />
 
-      <div
-        style={{
-          display: "flex",
-          width: 500,
-          justifyContent: "space-between",
-        }}
-      >
-        <OpenInCodeSandboxButton />
-        <RoundedButton>
-          <RefreshIcon />
-        </RoundedButton>
-      </div>
-    </SandpackThemeProvider>
-  </SandpackProvider>
-);
+        <div
+          style={{
+            display: "flex",
+            width: 500,
+            justifyContent: "space-between",
+          }}
+        >
+          <OpenInCodeSandboxButton />
+          <RoundedButton>
+            <RefreshIcon />
+          </RoundedButton>
+        </div>
+      </SandpackThemeProvider>
+    </SandpackProvider>
+  );
+};
 
 const CustomRefreshButton = (): JSX.Element => {
   const { refresh } = useSandpackNavigation();
@@ -218,43 +226,47 @@ const CustomCodeEditor = (): JSX.Element => {
   );
 };
 
-export const UsingHooks: React.FC = () => (
-  <SandpackProvider>
-    <SandpackThemeProvider>
-      <CustomCodeEditor />
+export const UsingHooks: React.FC = () => {
+  const fs = useSandpackFS();
+  if (!fs) return null;
+  return (
+    <SandpackProvider fs={fs}>
+      <SandpackThemeProvider>
+        <CustomCodeEditor />
 
-      <SandpackPreview
-        showOpenInCodeSandbox={false}
-        showRefreshButton={false}
-        style={{ border: "1px solid red", width: 400, height: 300 }}
-      />
+        <SandpackPreview
+          showOpenInCodeSandbox={false}
+          showRefreshButton={false}
+          style={{ border: "1px solid red", width: 400, height: 300 }}
+        />
 
-      <div
-        style={{
-          display: "flex",
-          width: 400,
-          margin: "8px 0",
-          justifyContent: "space-between",
-        }}
-      >
-        <CustomRefreshButton />
-        <CustomOpenInCSB />
-      </div>
+        <div
+          style={{
+            display: "flex",
+            width: 400,
+            margin: "8px 0",
+            justifyContent: "space-between",
+          }}
+        >
+          <CustomRefreshButton />
+          <CustomOpenInCSB />
+        </div>
 
-      <div style={{ width: 400 }}>
-        <SandpackTranspiledCode />
-      </div>
-    </SandpackThemeProvider>
-  </SandpackProvider>
-);
+        <div style={{ width: 400 }}>
+          <SandpackTranspiledCode />
+        </div>
+      </SandpackThemeProvider>
+    </SandpackProvider>
+  );
+};
 
 const code1 = `import React from 'react'
 
 function Kitten() {
   return (
-    <img 
-      src="https://placekitten.com/200/200" 
-      alt="Kitten" 
+    <img
+      src="https://placekitten.com/200/200"
+      alt="Kitten"
     />
   )
 }
@@ -274,14 +286,18 @@ const code2 = `import React from 'react'
 
 export default function KittenGallery() {
   return (
-    <img 
-      src="https://placekitten.com/200/200" 
-      alt="Kitten" 
+    <img
+      src="https://placekitten.com/200/200"
+      alt="Kitten"
     />
   )
 }`;
 
-const CustomPreview: React.FC = () => {
+const JustIframeContent: React.FC<{ code1: string; code2: string }> = ({
+  code1: c1,
+  code2: c2,
+}) => {
+  const [first, setFirst] = React.useState(true);
   const { sandpack } = useSandpack();
   const iframeRef = useRef<HTMLIFrameElement>();
 
@@ -290,30 +306,18 @@ const CustomPreview: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  return (
-    <iframe
-      ref={iframeRef}
-      style={{
-        width: 400,
-        height: 400,
-      }}
-      title="Sandpack Preview"
-    />
-  );
-};
-
-export const JustIframe = (): React.ReactElement => {
-  const [first, setFirst] = React.useState(true);
-  const code = first ? code1 : code2;
+  useEffect(() => {
+    sandpack.updateFile("/App.js", first ? c1 : c2);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [first]);
 
   return (
-    <SandpackProvider
-      files={{
-        "/App.js": code,
-      }}
-      template="react"
-    >
-      <CustomPreview />
+    <>
+      <iframe
+        ref={iframeRef}
+        style={{ width: 400, height: 400 }}
+        title="Sandpack Preview"
+      />
       <div
         style={{
           display: "flex",
@@ -328,18 +332,33 @@ export const JustIframe = (): React.ReactElement => {
         </button>
         <CustomOpenInCSB />
       </div>
+    </>
+  );
+};
+
+export const JustIframe = (): React.ReactElement | null => {
+  const fs = useSandpackFS({
+    template: "react",
+    files: { "/App.js": code1 },
+  });
+  if (!fs) return null;
+  return (
+    <SandpackProvider fs={fs}>
+      <JustIframeContent code1={code1} code2={code2} />
     </SandpackProvider>
   );
 };
 
 export const MultiplePreviews: React.FC = () => {
   const [count, setCount] = useState(2);
+  const fs = useSandpackFS();
+  if (!fs) return null;
 
   const previews = Array.from(Array(count).keys());
 
   return (
     <>
-      <SandpackProvider>
+      <SandpackProvider fs={fs}>
         <SandpackLayout>
           <SandpackCodeEditor />
           {previews.map((pr) => (
@@ -370,16 +389,18 @@ const SandpackListener: React.FC = () => {
 export const MultiplePreviewsAndListeners: React.FC = () => {
   const [count, setCount] = useState(2);
   const [listenersCount, setListenersCount] = useState(0);
+  const fs = useSandpackFS({ template: "static" });
+  if (!fs) return null;
 
   const previews = Array.from(Array(count).keys());
 
   return (
     <>
       <SandpackProvider
+        fs={fs}
         options={{ autorun: true, autoReload: true }}
-        template="static"
       >
-        {new Array(listenersCount).fill(" ").map((pr, index) => (
+        {new Array(listenersCount).fill(" ").map((_pr, index) => (
           <SandpackListener key={index} />
         ))}
         <SandpackLayout>
@@ -403,12 +424,16 @@ export const MultiplePreviewsAndListeners: React.FC = () => {
   );
 };
 
-export const ClosableTabs: React.FC = () => (
-  <Sandpack
-    options={{ closableTabs: true, visibleFiles: ["/App.js", "/index.js"] }}
-    template="react"
-  />
-);
+export const ClosableTabs: React.FC = () => {
+  const fs = useSandpackFS({ template: "react" });
+  if (!fs) return null;
+  return (
+    <Sandpack
+      fs={fs}
+      options={{ closableTabs: true, visibleFiles: ["/App.js", "/index.js"] }}
+    />
+  );
+};
 
 const ResetButtonComp: React.FC = () => {
   const { sandpack } = useSandpack();
@@ -448,39 +473,44 @@ const ResetCurrentFileButton: React.FC = () => {
   );
 };
 
-export const ResetButton: React.FC = () => (
-  <>
-    <SandpackProvider template="react">
-      <SandpackLayout>
-        <div
-          className={stackClassName.toString()}
-          style={{ position: "relative", width: "100%" }}
-        >
-          <SandpackCodeEditor />
-          <ResetButtonComp />
-        </div>
-        <SandpackStack>
-          <SandpackPreview />
-        </SandpackStack>
-      </SandpackLayout>
-    </SandpackProvider>
+export const ResetButton: React.FC = () => {
+  const fs1 = useSandpackFS({ template: "react" });
+  const fs2 = useSandpackFS({ template: "react" });
+  if (!fs1 || !fs2) return null;
+  return (
+    <>
+      <SandpackProvider fs={fs1}>
+        <SandpackLayout>
+          <div
+            className={stackClassName.toString()}
+            style={{ position: "relative", width: "100%" }}
+          >
+            <SandpackCodeEditor />
+            <ResetButtonComp />
+          </div>
+          <SandpackStack>
+            <SandpackPreview />
+          </SandpackStack>
+        </SandpackLayout>
+      </SandpackProvider>
 
-    <SandpackProvider template="react">
-      <SandpackLayout>
-        <div
-          className={stackClassName.toString()}
-          style={{ position: "relative", width: "100%" }}
-        >
-          <SandpackCodeEditor />
-          <ResetCurrentFileButton />
-        </div>
-        <SandpackStack>
-          <SandpackPreview />
-        </SandpackStack>
-      </SandpackLayout>
-    </SandpackProvider>
-  </>
-);
+      <SandpackProvider fs={fs2}>
+        <SandpackLayout>
+          <div
+            className={stackClassName.toString()}
+            style={{ position: "relative", width: "100%" }}
+          >
+            <SandpackCodeEditor />
+            <ResetCurrentFileButton />
+          </div>
+          <SandpackStack>
+            <SandpackPreview />
+          </SandpackStack>
+        </SandpackLayout>
+      </SandpackProvider>
+    </>
+  );
+};
 
 const ListenerIframeMessage = (): JSX.Element => {
   const [message, setMessage] = useState("Hello world");
@@ -503,9 +533,10 @@ const ListenerIframeMessage = (): JSX.Element => {
   );
 };
 
-export const IframeMessage: React.FC = () => (
-  <SandpackProvider
-    files={{
+export const IframeMessage: React.FC = () => {
+  const fs = useSandpackFS({
+    template: "react",
+    files: {
       "/App.js": `import {useState, useEffect} from "react";
 
 export default function App() {
@@ -520,30 +551,27 @@ useEffect(() => {
 return <h1>{message}</h1>
 }
 `,
-    }}
-    template="react"
-  >
-    <ListenerIframeMessage />
-    <SandpackLayout>
-      <SandpackCodeEditor />
-      <SandpackPreview />
-    </SandpackLayout>
-  </SandpackProvider>
-);
+    },
+  });
+  if (!fs) return null;
+  return (
+    <SandpackProvider fs={fs}>
+      <ListenerIframeMessage />
+      <SandpackLayout>
+        <SandpackCodeEditor />
+        <SandpackPreview />
+      </SandpackLayout>
+    </SandpackProvider>
+  );
+};
 
-export const CustomNpmRegistries: React.FC = () => (
-  <Sandpack
-    customSetup={{
+export const CustomNpmRegistries: React.FC = () => {
+  const fs = useSandpackFS({
+    template: "react",
+    customSetup: {
       dependencies: { "@codesandbox/test-package": "1.0.5" },
-      npmRegistries: [
-        {
-          enabledScopes: ["@codesandbox"],
-          limitToScopes: true,
-          registryUrl: "https://xywctu-4000.preview.csb.app",
-        },
-      ],
-    }}
-    files={{
+    },
+    files: {
       "/App.js": `import { Button } from "@codesandbox/test-package"
 
 export default function App() {
@@ -554,13 +582,25 @@ export default function App() {
   )
 }
 `,
-    }}
-    template="react"
-  />
-);
+    },
+  });
+  if (!fs) return null;
+  return (
+    <Sandpack
+      fs={fs}
+      npmRegistries={[
+        {
+          enabledScopes: ["@codesandbox"],
+          limitToScopes: true,
+          registryUrl: "https://xywctu-4000.preview.csb.app",
+        },
+      ]}
+    />
+  );
+};
 
 export const HiddenHeadTags: React.FC = () => {
-  const files = {
+  const sharedFiles = {
     "hidden-test.js": `
 function alertTest() {
   alert('Hidden Script Test');
@@ -594,37 +634,28 @@ body {
 `,
   };
 
+  const sharedOptions = {
+    externalResources: [
+      "https://unpkg.com/@tailwindcss/ui/dist/tailwind-ui.min.css",
+      "/hidden-test.js",
+      "/hidden-test-1.css",
+      "/hidden-test-2.css",
+    ],
+  };
+
+  const fs1 = useSandpackFS({ template: "static", files: sharedFiles });
+  const fs2 = useSandpackFS({ template: "static", files: sharedFiles });
+  if (!fs1 || !fs2) return null;
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
       <div>
         <div>Sandpack Component</div>
-        <Sandpack
-          files={files}
-          options={{
-            externalResources: [
-              "https://unpkg.com/@tailwindcss/ui/dist/tailwind-ui.min.css",
-              "/hidden-test.js",
-              "/hidden-test-1.css",
-              "/hidden-test-2.css",
-            ],
-          }}
-          template="static"
-        />
+        <Sandpack fs={fs1} options={sharedOptions} />
       </div>
       <div>
         <div>Sandpack Provider Component</div>
-        <SandpackProvider
-          files={files}
-          options={{
-            externalResources: [
-              "https://unpkg.com/@tailwindcss/ui/dist/tailwind-ui.min.css",
-              "/hidden-test.js",
-              "/hidden-test-1.css",
-              "/hidden-test-2.css",
-            ],
-          }}
-          template="static"
-        >
+        <SandpackProvider fs={fs2} options={sharedOptions}>
           <SandpackLayout>
             <SandpackFileExplorer />
             <SandpackCodeEditor closableTabs showLineNumbers />

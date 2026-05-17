@@ -3,6 +3,7 @@
  */
 import { renderHook, act, waitFor } from "@testing-library/react";
 
+import { createSandpackFS } from "../../utils/createSandpackFS";
 import { useFiles } from "./useFiles";
 
 /**
@@ -15,17 +16,20 @@ async function waitForReady<T extends { isLoading: boolean }>(
 }
 
 describe(useFiles, () => {
-  it("exposes the default template's visible file once initialized", async () => {
-    const { result } = renderHook(() => useFiles({}));
+  it("exposes the visible file once initialized", async () => {
+    const fs = await createSandpackFS({ template: "vanilla" });
+    const { result } = renderHook(() => useFiles({ fs }));
 
     await waitForReady(() => result.current[0]);
 
     expect(result.current[0].activeFile).toBeTruthy();
     expect(result.current[0].fileList.length).toBeGreaterThan(0);
+    fs.dispose();
   });
 
   it("adds a new file", async () => {
-    const { result } = renderHook(() => useFiles({}));
+    const fs = await createSandpackFS({ template: "vanilla" });
+    const { result } = renderHook(() => useFiles({ fs }));
     await waitForReady(() => result.current[0]);
 
     await act(async () => {
@@ -36,10 +40,12 @@ describe(useFiles, () => {
       expect(result.current[0].fileList).toContain("/App.js"),
     );
     expect(await result.current[0].fs.readFile("/App.js")).toBe("new-content");
+    fs.dispose();
   });
 
   it("deletes a file", async () => {
-    const { result } = renderHook(() => useFiles({}));
+    const fs = await createSandpackFS({ template: "vanilla" });
+    const { result } = renderHook(() => useFiles({ fs }));
     await waitForReady(() => result.current[0]);
 
     expect(result.current[0].fileList).toContain("/index.js");
@@ -51,12 +57,16 @@ describe(useFiles, () => {
     await waitFor(() =>
       expect(result.current[0].fileList).not.toContain("/index.js"),
     );
+    fs.dispose();
   });
 
   it("deletes the activeFile and set the following visibleFile as active", async () => {
+    const fs = await createSandpackFS({
+      template: "react",
+    });
     const { result } = renderHook(() =>
       useFiles({
-        template: "react",
+        fs,
         options: { activeFile: "/App.js", visibleFiles: ["/styles.css"] },
       }),
     );
@@ -68,10 +78,12 @@ describe(useFiles, () => {
     });
 
     expect(result.current[0].activeFile).toBe("/styles.css");
+    fs.dispose();
   });
 
   it("updates a file", async () => {
-    const { result } = renderHook(() => useFiles({ template: "react" }));
+    const fs = await createSandpackFS({ template: "react" });
+    const { result } = renderHook(() => useFiles({ fs }));
     await waitForReady(() => result.current[0]);
 
     await act(async () => {
@@ -79,35 +91,21 @@ describe(useFiles, () => {
     });
 
     expect(await result.current[0].fs.readFile("/App.js")).toBe("Foo");
-  });
-
-  it("updates multiples files", async () => {
-    const { result } = renderHook(() => useFiles({ template: "react" }));
-    await waitForReady(() => result.current[0]);
-
-    await act(async () => {
-      await result.current[1].updateFile({
-        "/App.js": "Foo",
-        "/index.js": "Baz",
-      });
-    });
-
-    expect(await result.current[0].fs.readFile("/App.js")).toBe("Foo");
-    expect(await result.current[0].fs.readFile("/index.js")).toBe("Baz");
+    fs.dispose();
   });
 
   it("preserves per-file metadata on subsequent updates", async () => {
-    const { result } = renderHook(() =>
-      useFiles({
-        template: "react",
-        files: {
-          "/App.js": {
-            code: "export default function App() { return <h1>Hello world</h1>}",
-            readOnly: true,
-          },
+    const fs = await createSandpackFS({
+      template: "react",
+      files: {
+        "/App.js": {
+          code: "export default function App() { return <h1>Hello world</h1>}",
+          readOnly: true,
         },
-      }),
-    );
+      },
+    });
+
+    const { result } = renderHook(() => useFiles({ fs }));
 
     await waitForReady(() => result.current[0]);
 
@@ -121,5 +119,6 @@ describe(useFiles, () => {
     expect(result.current[0].fs.getMetadata("/App.js")).toEqual({
       readOnly: true,
     });
+    fs.dispose();
   }, 10000);
 });

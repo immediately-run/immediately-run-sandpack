@@ -93,25 +93,6 @@ export interface SandboxSetup {
   disableDependencyPreprocessing?: boolean;
 }
 
-/**
- * @deprecated Sandpack now stores file contents inside a {@link SandpackFS}.
- * This shape is kept only for interop with callers that materialize a flat
- * snapshot (e.g. the bundler iframe's `compile` payload).
- */
-export interface SandpackBundlerFile {
-  code: string;
-  hidden?: boolean;
-  active?: boolean;
-  readOnly?: boolean;
-}
-
-/**
- * @deprecated Use {@link SandpackFS} instead. Still produced internally when
- * a flat snapshot is needed (e.g. when serializing for the bundler iframe
- * protocol or for Open-in-CodeSandbox).
- */
-export type SandpackBundlerFiles = Record<string, SandpackBundlerFile>;
-
 export interface Module {
   code: string;
   path: string;

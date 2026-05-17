@@ -4,6 +4,7 @@ import { SandpackProvider } from "../../contexts/sandpackContext";
 import { SandpackThemeProvider } from "../../styles/themeContext";
 import { SandpackPreview } from "../Preview";
 import { SandpackLayout } from "../common/Layout";
+import { useSandpackFS } from "../../utils/storyHelpers";
 
 import { Navigator } from ".";
 
@@ -11,34 +12,31 @@ export default {
   title: "components/Navigator",
 };
 
-export const Component: React.FC = () => (
-  <SandpackProvider template="react">
-    <SandpackThemeProvider>
-      <Navigator />
-    </SandpackThemeProvider>
-  </SandpackProvider>
-);
+export const Component: React.FC = () => {
+  const fs = useSandpackFS({ template: "react" });
+  if (!fs) return null;
+  return (
+    <SandpackProvider fs={fs}>
+      <SandpackThemeProvider>
+        <Navigator />
+      </SandpackThemeProvider>
+    </SandpackProvider>
+  );
+};
 
-const routingSetup = {
-  dependencies: {
-    "react-router-dom": "5.3.0",
-    "react-scripts": "latest",
-    react: "latest",
-    "react-dom": "latest",
+const routingFiles = {
+  "/index.html": {
+    code: `<div id="root"></div>`,
   },
-  files: {
-    "/index.html": {
-      code: `<div id="root"></div>`,
-    },
-    "/index.js": {
-      code: `import ReactDOM from "react-dom";
+  "/index.js": {
+    code: `import ReactDOM from "react-dom";
 import App from "./example";
 
 ReactDOM.render(<App />, document.getElementById("root"));
         `,
-    },
-    "/example.js": {
-      code: `import {
+  },
+  "/example.js": {
+    code: `import {
   BrowserRouter as Router,
   Switch,
   Route,
@@ -102,30 +100,53 @@ function Dashboard() {
     </div>
   );
 }
-        
+
 `,
-    },
   },
 };
 
-export const WithRouting: React.FC = () => (
-  <SandpackProvider customSetup={routingSetup} template="react">
-    <SandpackLayout>
-      <SandpackPreview showNavigator />
-    </SandpackLayout>
-  </SandpackProvider>
-);
+const routingSetup = {
+  dependencies: {
+    "react-router-dom": "5.3.0",
+    "react-scripts": "latest",
+    react: "latest",
+    "react-dom": "latest",
+  },
+};
 
-export const WithStartingRoute: React.FC = () => (
-  <SandpackProvider
-    customSetup={routingSetup}
-    options={{
-      startRoute: "/about",
-    }}
-    template="react"
-  >
-    <SandpackLayout>
-      <SandpackPreview showNavigator />
-    </SandpackLayout>
-  </SandpackProvider>
-);
+export const WithRouting: React.FC = () => {
+  const fs = useSandpackFS({
+    template: "react",
+    customSetup: routingSetup,
+    files: routingFiles,
+  });
+  if (!fs) return null;
+  return (
+    <SandpackProvider fs={fs}>
+      <SandpackLayout>
+        <SandpackPreview showNavigator />
+      </SandpackLayout>
+    </SandpackProvider>
+  );
+};
+
+export const WithStartingRoute: React.FC = () => {
+  const fs = useSandpackFS({
+    template: "react",
+    customSetup: routingSetup,
+    files: routingFiles,
+  });
+  if (!fs) return null;
+  return (
+    <SandpackProvider
+      fs={fs}
+      options={{
+        startRoute: "/about",
+      }}
+    >
+      <SandpackLayout>
+        <SandpackPreview showNavigator />
+      </SandpackLayout>
+    </SandpackProvider>
+  );
+};

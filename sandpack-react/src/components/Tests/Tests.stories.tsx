@@ -4,6 +4,7 @@ import type { CSSProperties } from "@stitches/core";
 import * as React from "react";
 
 import { SandpackProvider, SandpackLayout, SandpackCodeEditor } from "../..";
+import { useSandpackFS } from "../../utils/storyHelpers";
 
 import { SandpackTests } from "./";
 
@@ -14,7 +15,7 @@ export default {
 const addTests = `import {add} from './add';
 
 test('Root of file test', () => {
-  expect(add(1, 2)).toBe(add(2, 1)); 
+  expect(add(1, 2)).toBe(add(2, 1));
 })
 
 describe('extending expect', () => {
@@ -30,12 +31,12 @@ describe('extending expect', () => {
     describe('Nested describe block', () => {
       test('1000 + 1 = 1001', () => {
         expect(add(1000, 1)).toBe(1001);
-      });  
+      });
 
       describe('Double nested describe block', () => {
         test('10 + 1 = 11', () => {
           expect(add(10, 1)).toBe(11);
-        });  
+        });
       });
     });
   });
@@ -44,7 +45,7 @@ describe('extending expect', () => {
 describe('Sibling describe block', () => {
   test('1 + 1 = 2', () => {
     expect(add(1, 1)).toBe(2);
-  });  
+  });
 });
 
 describe('Empty describe block', () => {});
@@ -93,19 +94,20 @@ const sub = "export const sub = (a: number, b: number): number => a - b;";
 
 export const Main: React.FC = () => {
   const [theme, setTheme] = React.useState("dark");
+  const fs = useSandpackFS({
+    customSetup: { entry: "add.ts" },
+    files: {
+      "/add.test.ts": addTests,
+      "/add.ts": add,
+      "/src/app/sub.ts": sub,
+      "/src/app/sub.test.ts": subTests,
+      "/failing.test.ts": failingTests,
+    },
+  });
+  if (!fs) return null;
   return (
     <div style={{ width: 800 }}>
-      <SandpackProvider
-        customSetup={{ entry: "add.ts" }}
-        files={{
-          "/add.test.ts": addTests,
-          "/add.ts": add,
-          "/src/app/sub.ts": sub,
-          "/src/app/sub.test.ts": subTests,
-          "/failing.test.ts": failingTests,
-        }}
-        theme={themes[theme] ?? theme}
-      >
+      <SandpackProvider fs={fs} theme={themes[theme as keyof typeof themes] ?? theme}>
         <SandpackLayout
           style={{ "--sp-layout-height": "350px" } as CSSProperties}
         >
@@ -128,17 +130,18 @@ export const Main: React.FC = () => {
 };
 
 export const VerboseMode: React.FC = () => {
+  const fs = useSandpackFS({
+    customSetup: { entry: "add.ts" },
+    files: {
+      "/add.test.ts": addTests,
+      "/add.ts": add,
+      "/src/app/sub.ts": sub,
+      "/src/app/sub.test.ts": subTests,
+    },
+  });
+  if (!fs) return null;
   return (
-    <SandpackProvider
-      customSetup={{ entry: "add.ts" }}
-      files={{
-        "/add.test.ts": addTests,
-        "/add.ts": add,
-        "/src/app/sub.ts": sub,
-        "/src/app/sub.test.ts": subTests,
-      }}
-      theme={dracula}
-    >
+    <SandpackProvider fs={fs} theme={dracula}>
       <SandpackLayout style={{ "--sp-layout-height": "70vh" } as CSSProperties}>
         <SandpackCodeEditor showRunButton={false} showLineNumbers />
         <SandpackTests verbose />
@@ -147,22 +150,20 @@ export const VerboseMode: React.FC = () => {
   );
 };
 
-/**
- * This story is used to test the `hideTestsAndSupressLogs` prop.
- * Tests content should not be visible in the tests console.
- * It is useful when you want to hide the tests from the user.
- *
- */
 export const HiddenTests: React.FC = () => {
+  const fs = useSandpackFS({
+    customSetup: { entry: "add.ts" },
+    files: {
+      "/add.test.ts": addTests,
+      "/add.ts": add,
+      "/src/app/sub.ts": sub,
+      "/src/app/sub.test.ts": subTests,
+    },
+  });
+  if (!fs) return null;
   return (
     <SandpackProvider
-      customSetup={{ entry: "add.ts" }}
-      files={{
-        "/add.test.ts": addTests,
-        "/add.ts": add,
-        "/src/app/sub.ts": sub,
-        "/src/app/sub.test.ts": subTests,
-      }}
+      fs={fs}
       options={{
         visibleFiles: ["/add.ts"],
       }}
@@ -177,15 +178,16 @@ export const HiddenTests: React.FC = () => {
 };
 
 export const OneTestFile: React.FC = () => {
+  const fs = useSandpackFS({
+    customSetup: { entry: "sub.ts" },
+    files: {
+      "/sub.ts": sub,
+      "/sub.test.ts": subTests,
+    },
+  });
+  if (!fs) return null;
   return (
-    <SandpackProvider
-      customSetup={{ entry: "sub.ts" }}
-      files={{
-        "/sub.ts": sub,
-        "/sub.test.ts": subTests,
-      }}
-      theme={dracula}
-    >
+    <SandpackProvider fs={fs} theme={dracula}>
       <SandpackLayout style={{ "--sp-layout-height": "70vh" } as CSSProperties}>
         <SandpackCodeEditor showRunButton={false} showLineNumbers />
         <SandpackTests verbose />
@@ -195,18 +197,19 @@ export const OneTestFile: React.FC = () => {
 };
 
 export const FileError: React.FC = () => {
+  const fs = useSandpackFS({
+    customSetup: { entry: "entry.ts" },
+    files: {
+      "/error.test.ts": fileErrorTest,
+      "/entry.ts": {
+        hidden: true,
+        code: "",
+      },
+    },
+  });
+  if (!fs) return null;
   return (
-    <SandpackProvider
-      customSetup={{ entry: "entry.ts" }}
-      files={{
-        "/error.test.ts": fileErrorTest,
-        "/entry.ts": {
-          hidden: true,
-          code: "",
-        },
-      }}
-      theme={dracula}
-    >
+    <SandpackProvider fs={fs} theme={dracula}>
       <SandpackLayout style={{ "--sp-layout-height": "70vh" } as CSSProperties}>
         <SandpackCodeEditor showRunButton={false} showLineNumbers />
         <SandpackTests />
@@ -216,25 +219,26 @@ export const FileError: React.FC = () => {
 };
 
 export const ExtendedExpect: React.FC = () => {
+  const fs = useSandpackFS({
+    customSetup: {
+      entry: "entry.ts",
+      dependencies: { "jest-extended": "*" },
+    },
+    files: {
+      "/setup.test.ts": {
+        hidden: true,
+        code: "import * as matchers from 'jest-extended';\nexpect.extend(matchers);",
+      },
+      "/extended.test.ts": extendedTest,
+      "/entry.ts": {
+        hidden: true,
+        code: "",
+      },
+    },
+  });
+  if (!fs) return null;
   return (
-    <SandpackProvider
-      customSetup={{
-        entry: "entry.ts",
-        dependencies: { "jest-extended": "*" },
-      }}
-      files={{
-        "/setup.test.ts": {
-          hidden: true,
-          code: "import * as matchers from 'jest-extended';\nexpect.extend(matchers);",
-        },
-        "/extended.test.ts": extendedTest,
-        "/entry.ts": {
-          hidden: true,
-          code: "",
-        },
-      }}
-      theme={dracula}
-    >
+    <SandpackProvider fs={fs} theme={dracula}>
       <SandpackLayout style={{ "--sp-layout-height": "70vh" } as CSSProperties}>
         <SandpackCodeEditor showRunButton={false} showLineNumbers />
         <SandpackTests />
@@ -244,19 +248,20 @@ export const ExtendedExpect: React.FC = () => {
 };
 
 export const SlowTest: React.FC = () => {
+  const fs = useSandpackFS({
+    customSetup: { entry: "add.ts" },
+    files: {
+      "/slow.test.ts": slowTest,
+      "/add.test.ts": addTests,
+      "/slow2.test.ts": slowTest,
+      "/add.ts": add,
+      "/src/app/sub.ts": sub,
+      "/src/app/sub.test.ts": subTests,
+    },
+  });
+  if (!fs) return null;
   return (
-    <SandpackProvider
-      customSetup={{ entry: "add.ts" }}
-      files={{
-        "/slow.test.ts": slowTest,
-        "/add.test.ts": addTests,
-        "/slow2.test.ts": slowTest,
-        "/add.ts": add,
-        "/src/app/sub.ts": sub,
-        "/src/app/sub.test.ts": subTests,
-      }}
-      theme={dracula}
-    >
+    <SandpackProvider fs={fs} theme={dracula}>
       <SandpackLayout style={{ "--sp-layout-height": "70vh" } as CSSProperties}>
         <SandpackCodeEditor showRunButton={false} showLineNumbers />
         <SandpackTests verbose />
@@ -266,15 +271,16 @@ export const SlowTest: React.FC = () => {
 };
 
 export const NoTests: React.FC = () => {
+  const fs = useSandpackFS({
+    customSetup: { entry: "add.ts" },
+    files: {
+      "/add.ts": add,
+      "/src/app/sub.ts": sub,
+    },
+  });
+  if (!fs) return null;
   return (
-    <SandpackProvider
-      customSetup={{ entry: "add.ts" }}
-      files={{
-        "/add.ts": add,
-        "/src/app/sub.ts": sub,
-      }}
-      theme={dracula}
-    >
+    <SandpackProvider fs={fs} theme={dracula}>
       <SandpackLayout style={{ "--sp-layout-height": "70vh" } as CSSProperties}>
         <SandpackCodeEditor showRunButton={false} showLineNumbers />
         <SandpackTests />
@@ -284,17 +290,19 @@ export const NoTests: React.FC = () => {
 };
 
 export const OnCompleteHandler: React.FC = () => {
+  const fs = useSandpackFS({
+    customSetup: { entry: "add.ts" },
+    files: {
+      "/add.test.ts": addTests,
+      "/add.ts": add,
+      "/src/app/sub.ts": sub,
+      "/src/app/sub.test.ts": subTests,
+      "/failing.test.ts": failingTests,
+    },
+  });
+  if (!fs) return null;
   return (
-    <SandpackProvider
-      customSetup={{ entry: "add.ts" }}
-      files={{
-        "/add.test.ts": addTests,
-        "/add.ts": add,
-        "/src/app/sub.ts": sub,
-        "/src/app/sub.test.ts": subTests,
-        "/failing.test.ts": failingTests,
-      }}
-    >
+    <SandpackProvider fs={fs}>
       <SandpackLayout style={{ "--sp-layout-height": "70vh" } as CSSProperties}>
         <SandpackCodeEditor showRunButton={false} showLineNumbers />
         {/* eslint-disable-next-line no-console */}

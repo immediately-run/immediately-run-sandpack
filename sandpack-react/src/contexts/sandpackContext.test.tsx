@@ -2,26 +2,29 @@
  * @jest-environment jsdom
  */
 import { renderHook, act, waitFor } from "@testing-library/react";
+import type { SandpackFS } from "@codesandbox/sandpack-client";
 import React from "react";
 
 import type { UseSandpack } from "..";
 import { REACT_TEMPLATE, useSandpack } from "..";
 
+import { createSandpackFS } from "../utils/createSandpackFS";
 import { SandpackProvider } from "./sandpackContext";
 
 jest.useFakeTimers();
 
 /**
- * Boots a {@link SandpackProvider}, waits for the async fs init, and starts
- * the sandbox. Returns the hook result ref so assertions see live state.
+ * Boots a {@link SandpackProvider} with a fresh react-template filesystem,
+ * waits for the async fs init, and starts the sandbox.
+ * Returns the hook result ref so assertions see live state.
  */
 const createContext = async (
-  providerProps: Omit<React.ComponentProps<typeof SandpackProvider>, "children"> = {
-    template: "react",
-  },
+  providerOptions: Omit<React.ComponentProps<typeof SandpackProvider>, "children" | "fs"> = {},
 ): Promise<{ current: UseSandpack }> => {
+  const fs = await createSandpackFS({ template: "react" });
+
   const wrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-    <SandpackProvider {...providerProps}>{children}</SandpackProvider>
+    <SandpackProvider fs={fs} {...providerOptions}>{children}</SandpackProvider>
   );
   const { result } = renderHook(() => useSandpack(), { wrapper });
 
@@ -57,9 +60,7 @@ describe(SandpackProvider, () => {
       const instance = await createContext();
 
       await act(async () => {
-        await instance.current.sandpack.addFile({
-          "new-file.js": "new-content",
-        });
+        await instance.current.sandpack.addFile("/new-file.js", "new-content");
       });
 
       await waitFor(() =>
@@ -84,7 +85,6 @@ describe(SandpackProvider, () => {
 
     it("deletes the activeFile and set the following visibleFile as active", async () => {
       const instance = await createContext({
-        template: "react",
         options: { activeFile: "/App.js", visibleFiles: ["/styles.css"] },
       });
 
@@ -108,24 +108,6 @@ describe(SandpackProvider, () => {
 
       expect(await instance.current.sandpack.fs.readFile("/App.js")).toBe(
         "Foo",
-      );
-    });
-
-    it("updates multiples files", async () => {
-      const instance = await createContext();
-
-      await act(async () => {
-        await instance.current.sandpack.updateFile({
-          "/App.js": "Foo",
-          "/index.js": "Baz",
-        });
-      });
-
-      expect(await instance.current.sandpack.fs.readFile("/App.js")).toBe(
-        "Foo",
-      );
-      expect(await instance.current.sandpack.fs.readFile("/index.js")).toBe(
-        "Baz",
       );
     });
 

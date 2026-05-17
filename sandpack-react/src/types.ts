@@ -5,15 +5,14 @@ import type {
   BundlerState,
   FileMetaMap,
   ListenerFunction,
+  NpmRegistry,
   ReactDevToolsMode,
   SandpackClient,
   SandpackError,
   SandpackFS,
-  SandpackFilesInput,
   SandpackMessage,
   UnsubscribeFunction,
   SandpackLogLevel,
-  NpmRegistry,
 } from "@codesandbox/sandpack-client";
 import type React from "react";
 
@@ -31,38 +30,28 @@ import type { CodeEditorProps } from ".";
  * general usage.
  */
 
+export interface SandpackExportOptions {
+  /**
+   * Workspace API key from codesandbox.io/t/permissions.
+   * When set, the sandbox will be created inside the given workspace id.
+   */
+  apiToken: string;
+
+  /**
+   * The default visibility of the new sandboxes inside the workspace.
+   *
+   * @note Use `private` if there is a private registry or private NPM
+   * configured in your workspace.
+   */
+  privacy: "private" | "public";
+}
+
 export interface SandpackProps {
   /**
-   * It accepts an object, where each key is the relative
-   * path of that file in the sandbox folder structure. Files passed in
-   * through the files prop override those in the template structure.
-   *
-   * Since each template uses the same type to define the files, you can
-   * overwrite the contents of any of the template files.
-   *
-   * Example:
-   * ```js
-   * {
-   *  "/App.js": "export default () => 'foo'"
-   * }
-   * ```
+   * The fully-initialized filesystem to use as the source of truth.
+   * Create one with {@link createSandpackFS}.
    */
-  files?: SandpackFiles;
-
-  /**
-   * Set of presets to easily initialize sandboxes. Each template contains
-   * its files, environment and dependencies, and you can overwrite it
-   * using `customSetup` or `dependencies`.
-   */
-  template?: SandpackPredefinedTemplate;
-
-  /**
-   * Pass custom properties to set your own Sandpack environment.
-   *
-   * Since each template uses the same type to define the files, you can
-   * overwrite the contents of any of the template files.
-   */
-  customSetup?: SandpackSetup;
+  fs: SandpackFS;
 
   /**
    * The theme specifies the color set of the components, syntax highlight,
@@ -74,7 +63,7 @@ export interface SandpackProps {
 
   /**
    * Pass custom properties to customize the interface and the behavior
-   * of the sandbox, such as initialization mode, recompile mode, files resolver, etc.
+   * of the sandbox, such as initialization mode, recompile mode, etc.
    */
   options?: SandpackOptions;
 
@@ -83,6 +72,16 @@ export interface SandpackProps {
    * and unlock a few capabilities, like private dependencies.
    */
   teamId?: string;
+
+  /**
+   * Options for exporting the sandbox to CodeSandbox.
+   */
+  exportOptions?: SandpackExportOptions;
+
+  /**
+   * Custom npm registry configuration.
+   */
+  npmRegistries?: NpmRegistry[];
 }
 
 /**
@@ -91,13 +90,13 @@ export interface SandpackProps {
 export interface SandpackOptions {
   /**
    * List of files that will be visible for the user interacts with.
-   * It defaults to the main file from a given template.
+   * It defaults to the non-hidden files from the filesystem.
    */
   visibleFiles?: string[];
 
   /**
    * Use this to set a file as active by default in the editor component.
-   * It defaults to the main file from a given template.
+   * It defaults to the first visible file.
    */
   activeFile?: string;
 
@@ -143,21 +142,12 @@ export interface SandpackOptions {
   initMode?: SandpackInitMode;
   initModeObserverOptions?: IntersectionObserverInit;
   /**
-   * Determines whether or not the bundling process should start automatically
-   *  for a component in Sandpack. By default, when the component gets closer
-   *  to the viewport or when the page loads and the component is already in
-   *  the viewport, the bundling process will start automatically. However,
-   *  if this prop is set to false, the bundling process will only start when
-   *  triggered manually by the user.
+   * Determines whether or not the bundling process should start automatically.
    */
   autorun?: boolean;
   /**
    * Determines whether or not the component should automatically reload when
-   *  changes are made to the code. When this prop is set to true, any changes
-   *  made to the code will trigger an automatic reload of the component,
-   * allowing the user to see the changes immediately. However, if this prop
-   *  is set to false, the component will need to be manually reloaded by the
-   *  user to see the changes.
+   * changes are made to the code.
    */
   autoReload?: boolean;
   recompileMode?: "immediate" | "delayed";
@@ -179,87 +169,12 @@ export interface SandpackOptions {
  * @category Setup
  */
 export interface SandpackSetup {
-  /**
-   * Any template will include the needed dependencies,
-   * but you can specify any additional dependencies. The key
-   * should be the name of the package, while the value is the version,
-   * in exactly the same format as it would be inside package.json.
-   *
-   * Examples:
-   * ```js
-   * {
-   *  "react": "latest",
-   *  "@material-ui/core": "4.12.3",
-   * }
-   * ```
-   */
   dependencies?: Record<string, string>;
-
-  /**
-   * Sandpack doesn't install devDependencies, because most tools in there
-   * were build tools, which is not necessary to properly run a sandbox,
-   * but maybe required for running locally or export to CodeSandbox.
-   *
-   * Examples:
-   * ```js
-   * {
-   *  "@types/react": "latest",
-   * }
-   * ```
-   */
   devDependencies?: Record<string, string>;
-
-  /**
-   * The entry file is the starting point of the bundle process.
-   *
-   * If you change the path of the entry file, make sure you control
-   * all the files that go into the bundle process, as prexisting
-   * settings in the template might not work anymore.
-   */
   entry?: string;
-
-  /**
-   * Each sandbox has its own bundler attached to them which are configured
-   * to support a specific framework and emulate their official CLI tools.
-   * They are not one-to-one implementations and thus do not support advanced
-   * configuration like custom webpack configurations or ejecting. However,
-   * they are designed to mirror the default behavior of the framework
-   */
   environment?: SandboxEnvironment;
-
-  /**
-   * The custom private npm registry setting makes it possible
-   * to retrieve npm packages from your own npm registry.
-   *
-   * Examples:
-   * ```js
-   * {
-   *   enabledScopes: ["@codesandbox"],
-   *   registryUrl: "//my-registry.domain.com",
-   *   limitToScopes: true, // if false all packages will be fetched from custom registry
-   *   registryAuthToken: "SECRET" // optional value, if public
-   * }
-   * ```
-   */
   npmRegistries?: NpmRegistry[];
-
   exportOptions?: SandpackExportOptions;
-}
-
-interface SandpackExportOptions {
-  /**
-   * Workspace API key from codesandbox.io/t/permissions.
-   * When set, the sandbox will be create inside the given workspace id.
-   */
-  apiToken: string;
-
-  /**
-   * The default visibility of the new sandboxes inside the workspace.
-   *
-   * @note Use `private` if there is a private registry or private NPM
-   * configured in your workspace.
-   */
-  privacy: "private" | "public";
 }
 
 /**
@@ -290,6 +205,8 @@ export interface SandpackFile {
   active?: boolean;
   readOnly?: boolean;
 }
+
+export type SandpackFiles = Record<string, string | SandpackFile>;
 
 /**
  * `immediate`: It immediately mounts all components, such as the code-editor
@@ -406,72 +323,31 @@ export type SandpackThemeProp =
  * For public purpose use SandpackProps instead.
  */
 
-export type TemplateFiles<Name extends SandpackPredefinedTemplate> =
-  keyof (typeof SANDBOX_TEMPLATES)[Name]["files"];
-
 export interface SandpackInternal {
-  <
-    Files extends SandpackFiles | any,
-    TemplateName extends SandpackPredefinedTemplate = "vanilla",
-  >(
-    props: SandpackInternalProps<Files, TemplateName> & {
-      files?: Files;
-      template?: TemplateName;
-    },
-  ): JSX.Element;
+  (props: SandpackInternalProps): React.ReactElement;
 }
 
 export interface SandpackInternalProvider {
-  <
-    Files extends SandpackFiles,
-    TemplateName extends SandpackPredefinedTemplate,
-  >(
-    /**
-     * Infer files & template values
-     */
-    props: React.PropsWithChildren<
-      SandpackProviderProps<Files, TemplateName> & {
-        files?: Files;
-        template?: TemplateName;
-      }
-    >,
+  (
+    props: React.PropsWithChildren<SandpackProviderProps>,
   ): React.ReactElement<
     SandpackProviderProps,
     React.Provider<SandpackProviderState>
   > | null;
 }
 
-interface SandpackRootProps<
-  Files extends SandpackFiles | any,
-  TemplateName extends SandpackPredefinedTemplate,
-> {
-  files?: Files;
-  /**
-   * Bring your own filesystem. When provided, Sandpack will use this
-   * {@link SandpackFS} instance as the source of truth instead of
-   * materializing `files` into a fresh one. Lets you persist files across
-   * tabs/sessions by backing it with a zenfs adapter like IndexedDB.
-   */
-  fs?: SandpackFS;
-  template?: TemplateName;
-  customSetup?: SandpackSetup;
+interface SandpackRootProps {
+  fs: SandpackFS;
   theme?: SandpackThemeProp;
   teamId?: string;
   sandboxId?: string;
+  exportOptions?: SandpackExportOptions;
+  npmRegistries?: NpmRegistry[];
 }
 
-export interface SandpackInternalOptions<
-  Files extends SandpackFiles | any = any,
-  TemplateName extends SandpackPredefinedTemplate = SandpackPredefinedTemplate,
-> {
-  visibleFiles?: Array<
-    Files extends SandpackFiles
-      ? TemplateFiles<TemplateName> | keyof Files
-      : TemplateFiles<TemplateName>
-  >;
-  activeFile?: Files extends SandpackFiles
-    ? TemplateFiles<TemplateName> | keyof Files
-    : TemplateFiles<TemplateName>;
+export interface SandpackInternalOptions {
+  visibleFiles?: string[];
+  activeFile?: string;
 
   initMode?: SandpackInitMode;
   initModeObserverOptions?: IntersectionObserverInit;
@@ -491,11 +367,8 @@ export interface SandpackInternalOptions<
   experimental_enableStableServiceWorkerId?: boolean;
 }
 
-interface SandpackInternalProps<
-  Files extends SandpackFiles | any,
-  TemplateName extends SandpackPredefinedTemplate,
-> extends SandpackRootProps<Files, TemplateName> {
-  options?: SandpackInternalOptions<Files, TemplateName> & {
+interface SandpackInternalProps extends SandpackRootProps {
+  options?: SandpackInternalOptions & {
     editorWidthPercentage?: number;
     editorHeight?: React.CSSProperties["height"];
 
@@ -531,14 +404,10 @@ interface SandpackInternalProps<
   };
 }
 
-export interface SandpackProviderProps<
-  Files extends SandpackFiles = SandpackFiles,
-  TemplateName extends SandpackPredefinedTemplate = SandpackPredefinedTemplate,
->
-  extends
-    SandpackRootProps<Files, TemplateName>,
+export interface SandpackProviderProps
+  extends SandpackRootProps,
     React.HTMLAttributes<HTMLDivElement> {
-  options?: SandpackInternalOptions<Files, TemplateName>;
+  options?: SandpackInternalOptions;
   children?: React.ReactNode;
 }
 
@@ -568,7 +437,7 @@ export interface SandpackState {
 
   /**
    * List the file path listed in the file tab,
-   * Can only be changed through the properties of SandpackProvider (files/options)
+   * Can only be changed through the properties of SandpackProvider (fs/options)
    *
    * @internal
    */
@@ -611,7 +480,7 @@ export interface SandpackState {
   status: SandpackStatus;
   /**
    * True while the async initialization of the filesystem is in flight.
-   * Consumers should treat `fs`, `fileList`, and `fileMeta` as not yet
+   * Consumers should treat `fileList` and `fileMeta` as not yet
    * available while this is `true`.
    */
   isLoading: boolean;
@@ -626,13 +495,13 @@ export interface SandpackState {
   ) => Promise<void>;
   unregisterBundler: (clientId: string) => void;
   updateFile: (
-    pathOrFiles: string | SandpackFiles,
-    code?: string,
+    path: string,
+    code: string,
     shouldUpdatePreview?: boolean,
   ) => Promise<void>;
   addFile: (
-    pathOrFiles: string | SandpackFiles,
-    code?: string,
+    path: string,
+    code: string,
     shouldUpdatePreview?: boolean,
   ) => Promise<void>;
   updateCurrentFile: (
@@ -670,17 +539,6 @@ export type SandpackStatus =
 
 export type EditorState = "pristine" | "dirty";
 
-export interface SandboxTemplate {
-  files: SandpackFilesInput;
-  dependencies: Record<string, string>;
-  devDependencies?: Record<string, string>;
-  entry?: string;
-  main: string;
-  environment: SandboxEnvironment;
-}
-
-export type SandpackFiles = Record<string, string | SandpackFile>;
-
 /**
  * Custom properties to be used in the SandpackCodeEditor component,
  * some of which are exclusive to customize the CodeMirror instance.
@@ -713,11 +571,9 @@ export interface SandpackProviderState {
   fileList: string[];
   fileMeta: FileMetaMap;
   environment?: SandboxEnvironment;
-  visibleFiles: Array<TemplateFiles<SandpackPredefinedTemplate> | string>;
-  visibleFilesFromProps: Array<
-    TemplateFiles<SandpackPredefinedTemplate> | string
-  >;
-  activeFile: TemplateFiles<SandpackPredefinedTemplate> | string;
+  visibleFiles: string[];
+  visibleFilesFromProps: string[];
+  activeFile: string;
   startRoute?: string;
   initMode: SandpackInitMode;
   bundlerState?: BundlerState;

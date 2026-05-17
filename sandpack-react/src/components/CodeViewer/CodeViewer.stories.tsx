@@ -3,6 +3,7 @@ import * as React from "react";
 
 import { SandpackProvider } from "../../contexts/sandpackContext";
 import { SandpackThemeProvider } from "../../styles/themeContext";
+import { useSandpackFS } from "../../utils/storyHelpers";
 
 import type { CodeViewerProps } from ".";
 import { SandpackCodeViewer } from ".";
@@ -12,39 +13,50 @@ export default {
   component: SandpackCodeViewer,
 };
 
-export const Component: Story<CodeViewerProps> = () => (
-  <SandpackProvider>
-    <SandpackThemeProvider>
-      <SandpackCodeViewer showTabs={false} />
-    </SandpackThemeProvider>
-  </SandpackProvider>
-);
+export const Component: Story<CodeViewerProps> = () => {
+  const fs = useSandpackFS();
+  if (!fs) return null;
+  return (
+    <SandpackProvider fs={fs}>
+      <SandpackThemeProvider>
+        <SandpackCodeViewer showTabs={false} />
+      </SandpackThemeProvider>
+    </SandpackProvider>
+  );
+};
 
-export const ShowTabs: Story<CodeViewerProps> = () => (
-  <SandpackProvider>
-    <SandpackThemeProvider>
-      <SandpackCodeViewer showTabs />
-    </SandpackThemeProvider>
-  </SandpackProvider>
-);
+export const ShowTabs: Story<CodeViewerProps> = () => {
+  const fs = useSandpackFS();
+  if (!fs) return null;
+  return (
+    <SandpackProvider fs={fs}>
+      <SandpackThemeProvider>
+        <SandpackCodeViewer showTabs />
+      </SandpackThemeProvider>
+    </SandpackProvider>
+  );
+};
 
-export const showLineNumbers: Story<CodeViewerProps> = () => (
-  <SandpackProvider>
-    <SandpackThemeProvider>
-      <SandpackCodeViewer showTabs={false} showLineNumbers />
-    </SandpackThemeProvider>
-  </SandpackProvider>
-);
+export const showLineNumbers: Story<CodeViewerProps> = () => {
+  const fs = useSandpackFS();
+  if (!fs) return null;
+  return (
+    <SandpackProvider fs={fs}>
+      <SandpackThemeProvider>
+        <SandpackCodeViewer showTabs={false} showLineNumbers />
+      </SandpackThemeProvider>
+    </SandpackProvider>
+  );
+};
 
 export const Decorators: React.FC = () => {
-  return (
-    <SandpackProvider
-      customSetup={{
-        entry: "/index.js",
-      }}
-      files={{
-        "/index.js": {
-          code: `const people = [{
+  const fs = useSandpackFS({
+    customSetup: {
+      entry: "/index.js",
+    },
+    files: {
+      "/index.js": {
+        code: `const people = [{
   id: 0,
   name: 'Creola Katherine Johnson',
   profession: 'mathematician',
@@ -61,9 +73,12 @@ export default function List() {
   );
   return <ul>{listItems}</ul>;
 }`,
-        },
-      }}
-    >
+      },
+    },
+  });
+  if (!fs) return null;
+  return (
+    <SandpackProvider fs={fs}>
       <style>
         {`.highlight {
         background: #1ea7fd2b;

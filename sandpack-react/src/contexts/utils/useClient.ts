@@ -71,11 +71,10 @@ type UseClient = (
 ) => [SandpackConfigState, UseClientOperations];
 
 export const useClient: UseClient = (
-  { options, customSetup, teamId, sandboxId },
+  { options, npmRegistries, teamId, sandboxId },
   filesState,
 ) => {
   options ??= {};
-  customSetup ??= {};
 
   const initModeFromProps = options?.initMode || "lazy";
 
@@ -138,7 +137,6 @@ export const useClient: UseClient = (
       }
 
       options ??= {};
-      customSetup ??= {};
 
       const timeOut = options?.bundlerTimeOut ?? BUNDLER_TIMEOUT;
 
@@ -192,7 +190,7 @@ export const useClient: UseClient = (
           showErrorScreen: true,
           showLoadingScreen: false,
           reactDevTools: state.reactDevTools,
-          customNpmRegistries: customSetup?.npmRegistries,
+          customNpmRegistries: npmRegistries,
           teamId,
           experimental_enableServiceWorker:
             !!options?.experimental_enableServiceWorker,

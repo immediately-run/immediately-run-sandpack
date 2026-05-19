@@ -57,4 +57,3 @@ export const ConsoleList: React.FC<{ data: SandpackConsoleData }> = ({
     </>
   );
 };
-

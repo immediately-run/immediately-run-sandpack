@@ -152,10 +152,7 @@ export const ReadOnly: React.FC = () => {
   return (
     <>
       <p>Read-only by file</p>
-      <Sandpack
-        fs={fs1}
-        options={{ showTabs: true, activeFile: "/App.tsx" }}
-      />
+      <Sandpack fs={fs1} options={{ showTabs: true, activeFile: "/App.tsx" }} />
 
       <p>Read-only global</p>
       <Sandpack fs={fs2} options={{ showTabs: true, readOnly: true }} />

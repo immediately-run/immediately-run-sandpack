@@ -51,8 +51,10 @@ describe(fromPropsToModules, () => {
 
   it("returns the folder from a subfolder", () => {
     expect(
-      fromPropsToModules({ ...defaultProps, prefixedPath: "/src/" })
-        .directories.sort(),
+      fromPropsToModules({
+        ...defaultProps,
+        prefixedPath: "/src/",
+      }).directories.sort(),
     ).toEqual(["/src/component/", "/src/folder/"]);
   });
 

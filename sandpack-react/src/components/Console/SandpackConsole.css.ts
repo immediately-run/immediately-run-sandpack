@@ -10,21 +10,18 @@ export const consoleWrapperClassName = style({
 
 globalStyle(`.${consoleWrapperClassName} iframe`, { display: "none" });
 
-globalStyle(
-  `.${consoleWrapperClassName} .${THEME_PREFIX}-bridge-frame`,
-  {
-    display: "block",
-    border: 0,
-    position: "absolute",
-    left: vars.space[2],
-    bottom: vars.space[2],
-    zIndex: vars.zIndices.top,
-    height: 12,
-    width: "30%",
-    mixBlendMode: "multiply",
-    pointerEvents: "none",
-  },
-);
+globalStyle(`.${consoleWrapperClassName} .${THEME_PREFIX}-bridge-frame`, {
+  display: "block",
+  border: 0,
+  position: "absolute",
+  left: vars.space[2],
+  bottom: vars.space[2],
+  zIndex: vars.zIndices.top,
+  height: 12,
+  width: "30%",
+  mixBlendMode: "multiply",
+  pointerEvents: "none",
+});
 
 export const consoleListClassName = style({
   overflow: "auto",

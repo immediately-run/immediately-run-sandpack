@@ -32,13 +32,10 @@ globalStyle(`.${consoleItemBaseClassName} .cm-editor`, {
 globalStyle(`.${consoleItemBaseClassName} .cm-content`, {
   padding: 0,
 });
-globalStyle(
-  `.${consoleItemBaseClassName} .${THEME_PREFIX}-pre-placeholder`,
-  {
-    margin: "0 !important",
-    fontSize: "1em",
-  },
-);
+globalStyle(`.${consoleItemBaseClassName} .${THEME_PREFIX}-pre-placeholder`, {
+  margin: "0 !important",
+  fontSize: "1em",
+});
 
 export const consoleItemClassName = recipe({
   base: consoleItemBaseClassName,

@@ -19,12 +19,17 @@ jest.useFakeTimers();
  * Returns the hook result ref so assertions see live state.
  */
 const createContext = async (
-  providerOptions: Omit<React.ComponentProps<typeof SandpackProvider>, "children" | "fs"> = {},
+  providerOptions: Omit<
+    React.ComponentProps<typeof SandpackProvider>,
+    "children" | "fs"
+  > = {},
 ): Promise<{ current: UseSandpack }> => {
   const fs = await createSandpackFS({ template: "react" });
 
   const wrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-    <SandpackProvider fs={fs} {...providerOptions}>{children}</SandpackProvider>
+    <SandpackProvider fs={fs} {...providerOptions}>
+      {children}
+    </SandpackProvider>
   );
   const { result } = renderHook(() => useSandpack(), { wrapper });
 
@@ -66,9 +71,9 @@ describe(SandpackProvider, () => {
       await waitFor(() =>
         expect(instance.current.sandpack.fileList).toContain("/new-file.js"),
       );
-      expect(
-        await instance.current.sandpack.fs.readFile("/new-file.js"),
-      ).toBe("new-content");
+      expect(await instance.current.sandpack.fs.readFile("/new-file.js")).toBe(
+        "new-content",
+      );
     });
 
     it("deletes a file", async () => {

@@ -1,20 +1,8 @@
-import type {
-  FileMetaMap,
-  SandpackFS,
-} from "@codesandbox/sandpack-client";
+import type { FileMetaMap, SandpackFS } from "@codesandbox/sandpack-client";
 import { normalizePath } from "@codesandbox/sandpack-client";
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import type {
-  SandboxEnvironment,
-  SandpackProviderProps,
-} from "../..";
+import type { SandboxEnvironment, SandpackProviderProps } from "../..";
 
 export interface FilesState {
   fs: SandpackFS;
@@ -111,11 +99,11 @@ export const useFiles: UseFiles = (props) => {
 
     async function init() {
       try {
-        const paths = await fs.list();
+        const paths = await fs.promises.readdir("/", { recursive: true });
         const snap: Record<string, string> = {};
         await Promise.all(
           paths.map(async (p) => {
-            snap[p] = await fs.readFile(p);
+            snap[p] = await fs.promises.readFile(p, "utf-8");
           }),
         );
         if (cancelled) return;
@@ -128,7 +116,8 @@ export const useFiles: UseFiles = (props) => {
           ? normalizePath(props.options.activeFile)
           : undefined;
 
-        const optionsVisibleFiles = props.options?.visibleFiles?.map(normalizePath);
+        const optionsVisibleFiles =
+          props.options?.visibleFiles?.map(normalizePath);
 
         if (optionsVisibleFiles && optionsVisibleFiles.length > 0) {
           visible.push(...optionsVisibleFiles.filter((p) => paths.includes(p)));
@@ -150,7 +139,9 @@ export const useFiles: UseFiles = (props) => {
         if (!active) active = visible[0] ?? paths[0] ?? "/";
         if (active && !visible.includes(active)) visible.push(active);
 
-        const environment = fs.getEnvironment() as SandboxEnvironment | undefined;
+        const environment = fs.getEnvironment() as
+          | SandboxEnvironment
+          | undefined;
 
         setUiState({
           visibleFiles: visible,
@@ -204,7 +195,7 @@ export const useFiles: UseFiles = (props) => {
 
     return () => {
       cancelled = true;
-      unsub();
+      if (typeof unsub === "function") unsub();
     };
   }, [fs, fsState.isLoading]);
 
@@ -250,10 +241,7 @@ export const useFiles: UseFiles = (props) => {
       setActiveFile: (activeFile: string) => {
         setUiState((prev) => ({ ...prev, activeFile }));
       },
-      updateCurrentFile: async (
-        code: string,
-        shouldUpdatePreview = true,
-      ) => {
+      updateCurrentFile: async (code: string, shouldUpdatePreview = true) => {
         await updateFile(uiState.activeFile, code, shouldUpdatePreview);
       },
       updateFile,

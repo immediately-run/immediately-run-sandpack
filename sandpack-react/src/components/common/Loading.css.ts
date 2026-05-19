@@ -30,10 +30,9 @@ globalStyle(`.${wrapperClassName} .sp-button.${buttonClassName}`, {
 globalStyle(`.${wrapperClassName}:hover .sp-button.${buttonClassName}`, {
   display: "flex",
 });
-globalStyle(
-  `.${wrapperClassName}:hover .sp-button.${buttonClassName} > span`,
-  { display: "none" },
-);
+globalStyle(`.${wrapperClassName}:hover .sp-button.${buttonClassName} > span`, {
+  display: "none",
+});
 globalStyle(`.${wrapperClassName}:hover .${cubeClassName}`, {
   display: "none",
 });

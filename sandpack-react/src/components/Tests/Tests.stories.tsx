@@ -107,7 +107,10 @@ export const Main: React.FC = () => {
   if (!fs) return null;
   return (
     <div style={{ width: 800 }}>
-      <SandpackProvider fs={fs} theme={themes[theme as keyof typeof themes] ?? theme}>
+      <SandpackProvider
+        fs={fs}
+        theme={themes[theme as keyof typeof themes] ?? theme}
+      >
         <SandpackLayout
           style={{ "--sp-layout-height": "350px" } as CSSProperties}
         >

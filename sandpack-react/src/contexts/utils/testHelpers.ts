@@ -10,9 +10,7 @@ export async function createTestFilesState(
   files: Record<string, string> = { "/index.js": "" },
 ): Promise<FilesState & { visibleFilesFromProps: string[] }> {
   const fs = await SandpackFS.fromFiles(
-    Object.fromEntries(
-      Object.entries(files).map(([k, v]) => [k, { code: v }]),
-    ),
+    Object.fromEntries(Object.entries(files).map(([k, v]) => [k, { code: v }])),
   );
   const list = await fs.list();
   return {

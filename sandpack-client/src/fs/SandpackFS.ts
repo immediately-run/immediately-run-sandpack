@@ -4,6 +4,8 @@ import {
   resolveMountConfig,
   mount,
   umount,
+  BoundContext,
+  bindContext,
 } from "@zenfs/core";
 
 /**
@@ -60,15 +62,15 @@ const normalize = (path: string): string =>
  */
 export class SandpackFS {
   /** Virtual mount point inside the global ZenFS tree, e.g. `/sandpack-42`. */
-  private readonly prefix: string;
+  fs: BoundContext["fs"];
   private readonly listeners = new Set<SandpackFSListener>();
   private metaCache: FileMetaMap = {};
   private sidecarEnvironment: string | undefined = undefined;
   private sidecarMode: string | undefined = undefined;
   private disposed = false;
 
-  private constructor(prefix: string) {
-    this.prefix = prefix;
+  private constructor(fs: BoundContext["fs"]) {
+    this.fs = fs;
   }
 
   /**
@@ -84,8 +86,9 @@ export class SandpackFS {
 
     const backend = await resolveMountConfig({ backend: InMemory });
     mount(prefix, backend);
+    const ctxt = bindContext({ root: prefix });
 
-    const instance = new SandpackFS(prefix);
+    const instance = new SandpackFS(ctxt.fs);
     if (options.environment !== undefined) {
       instance.sidecarEnvironment = options.environment;
     }
@@ -104,13 +107,9 @@ export class SandpackFS {
    */
   static async fromFileSystem(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    backend: any,
+    fs: BoundContext["fs"],
   ): Promise<SandpackFS> {
-    const id = ++mountCounter;
-    const prefix = `/__sandpack_${id}`;
-    mount(prefix, backend);
-
-    const instance = new SandpackFS(prefix);
+    const instance = new SandpackFS(fs);
     await instance.ensureMetaDir();
     await instance.refreshMetaCache();
 
@@ -227,29 +226,11 @@ export class SandpackFS {
   }
 
   // ------------------------------------------------------------------
-  // Lifecycle
-  // ------------------------------------------------------------------
-
-  dispose(): void {
-    if (this.disposed) return;
-    this.disposed = true;
-
-    try {
-      umount(this.prefix);
-    } catch {
-      // already unmounted
-    }
-
-    this.listeners.clear();
-  }
-
-  // ------------------------------------------------------------------
   // Internals
   // ------------------------------------------------------------------
 
   private toAbs(path: string): string {
-    const p = normalize(path);
-    return `${this.prefix}${p}`;
+    return normalize(path);
   }
 
   private notify(): void {
@@ -264,7 +245,7 @@ export class SandpackFS {
 
   private async ensureMetaDir(): Promise<void> {
     try {
-      await zenFs.promises.mkdir(`${this.prefix}${META_DIR}`, {
+      await zenFs.promises.mkdir(META_DIR, {
         recursive: true,
       });
     } catch {
@@ -276,7 +257,7 @@ export class SandpackFS {
     const lastSlash = absPath.lastIndexOf("/");
     if (lastSlash <= 0) return;
     const dir = absPath.slice(0, lastSlash);
-    if (!dir || dir === this.prefix) return;
+    if (!dir || dir === "/") return;
     try {
       await zenFs.promises.mkdir(dir, { recursive: true });
     } catch {

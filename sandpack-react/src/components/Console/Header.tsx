@@ -1,6 +1,9 @@
 import React from "react";
 
-import { buttonClassName, roundedButtonClassName } from "../../styles/shared.css";
+import {
+  buttonClassName,
+  roundedButtonClassName,
+} from "../../styles/shared.css";
 import { useClassNames } from "../../utils/classNames";
 import { ConsoleIcon } from "../icons";
 
@@ -31,9 +34,7 @@ export const Header: React.FC<{
         flexClassName,
       ])}
     >
-      <p
-        className={classNames("console-header-title", [headerTitleClassName])}
-      >
+      <p className={classNames("console-header-title", [headerTitleClassName])}>
         <ConsoleIcon />
         <span>Terminal</span>
       </p>

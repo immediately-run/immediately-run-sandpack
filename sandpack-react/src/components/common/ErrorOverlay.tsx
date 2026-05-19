@@ -119,9 +119,7 @@ export const ErrorOverlay: React.FC<ErrorOverlayProps> = (props) => {
         {...otherProps}
       >
         <div className={classNames("error-message", [errorMessageClassName()])}>
-          <p
-            className={classNames("error-title", [errorTitleClassName])}
-          >
+          <p className={classNames("error-title", [errorTitleClassName])}>
             Couldn&apos;t connect to server
           </p>
           <p>{mapBundlerErrors(errorMessage)}</p>

@@ -14,6 +14,7 @@
   ],
   "description": "",
   "scripts": {
+    "clean": "rm -rf sandpack*/dist/*",
     "test": "turbo run test --filter=\"@codesandbox/**\"",
     "build": "turbo run build --filter=\"@codesandbox/**\"",
     "build:client": "turbo run build --filter=\"@codesandbox/sandpack-client\"",
@@ -34,7 +35,17 @@
   },
   "author": "CodeSandbox",
   "license": "Apache-2.0",
+  "overrides": {
+    "console-feed": {
+      "react-inspector": "^9.0.0"
+    },
+    "react-inspector": "^9.0.0"
+  },
+  "resolutions": {
+    "react-inspector": "^9.0.0"
+  },
   "devDependencies": {
+    "console-feed": "^3.6.0",
     "@eslint/js": "^9.17.0",
     "@babel/preset-env": "^7.26.0",
     "@babel/preset-react": "^7.26.0",

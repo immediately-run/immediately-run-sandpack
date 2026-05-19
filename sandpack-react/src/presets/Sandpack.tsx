@@ -19,10 +19,7 @@ import {
   dragHandler,
   rtlLayoutClassName,
 } from "./Sandpack.css";
-import type {
-  SandpackInternal,
-  SandpackInternalOptions,
-} from "../types";
+import type { SandpackInternal, SandpackInternalOptions } from "../types";
 import { useClassNames } from "../utils/classNames";
 
 export const Sandpack: SandpackInternal = ({

@@ -91,13 +91,12 @@ export const InitialCollapsedFolder: React.FC = () => {
 };
 
 export const LongFileTree: React.FC = () => {
-  const files = new Array(20).fill(" ").reduce(
-    (acc: Record<string, string>, _curr: unknown, index: number) => {
+  const files = new Array(20)
+    .fill(" ")
+    .reduce((acc: Record<string, string>, _curr: unknown, index: number) => {
       acc[`/src/com${index}.js`] = "";
       return acc;
-    },
-    {},
-  );
+    }, {});
   const fs = useSandpackFS({
     customSetup: { entry: "/src/com0.js" },
     files,

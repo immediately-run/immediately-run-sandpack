@@ -92,13 +92,13 @@ export const LoadingOverlay: React.FC<
         {...props}
       >
         <div className={classNames("error-message", [errorMessageClassName()])}>
-          <p
-            className={classNames("error-title", [errorTitleClassName])}
-          >
+          <p className={classNames("error-title", [errorTitleClassName])}>
             Couldn&apos;t connect to server
           </p>
 
-          <div className={classNames("error-message", [errorMessageClassName()])}>
+          <div
+            className={classNames("error-message", [errorMessageClassName()])}
+          >
             <p>
               This means sandpack cannot connect to the runtime or your network
               is having some issues. Please check the network tab in your

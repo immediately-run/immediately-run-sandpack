@@ -26,6 +26,8 @@ import { EXTENSIONS_MAP } from "./mime";
 import type { IPreviewRequestMessage, IPreviewResponseMessage } from "./types";
 import { CHANNEL_NAME, type SandpackRuntimeMessage } from "./types";
 import { getExtension, getTemplate } from "./utils";
+import { attachFS, detachFS } from "@zenfs/core";
+import { channel } from "diagnostics_channel";
 
 const SUFFIX_PLACEHOLDER = "-{{suffix}}";
 
@@ -45,11 +47,28 @@ export class SandpackRuntime extends SandpackClient {
 
   selector!: string;
   element: Element;
+  messageChannel?: MessageChannel;
 
   unsubscribeGlobalListener: UnsubscribeFunction;
   unsubscribeChannelListener: UnsubscribeFunction;
   unsubscribeFsWatcher?: () => void;
   iframeProtocol: IFrameProtocol;
+  fs: SandpackFS;
+
+  private initFSMessageChannel() {
+    // destroy existing channel if exists
+    this.destroyFSMessageChannel();
+    this.messageChannel = new MessageChannel();
+    attachFS(this.messageChannel!.port2, this.sandboxSetup.fs.fs);
+  }
+
+  private destroyFSMessageChannel() {
+    if (this.messageChannel) {
+      detachFS(this.messageChannel.port2, this.sandboxSetup.fs.fs);
+      this.messageChannel.port1.close();
+      this.messageChannel.port2.close();
+    }
+  }
 
   constructor(
     selector: string | HTMLIFrameElement,
@@ -63,6 +82,7 @@ export class SandpackRuntime extends SandpackClient {
     this.bundlerState = undefined;
     this.errors = [];
     this.status = "initializing";
+    this.fs = sandboxSetup.fs;
 
     if (typeof selector === "string") {
       this.selector = selector;
@@ -80,7 +100,7 @@ export class SandpackRuntime extends SandpackClient {
     if (!this.iframe.getAttribute("sandbox")) {
       this.iframe.setAttribute(
         "sandbox",
-        "allow-forms allow-modals allow-popups allow-presentation allow-same-origin allow-scripts allow-downloads allow-pointer-lock",
+        "allow-forms allow-modals allow-popups allow-presentation allow-scripts allow-downloads allow-pointer-lock",
       );
 
       this.iframe.setAttribute(
@@ -98,8 +118,8 @@ export class SandpackRuntime extends SandpackClient {
         if (mes.type !== "initialized" || !this.iframe.contentWindow) {
           return;
         }
-
-        this.iframeProtocol.register();
+        this.initFSMessageChannel();
+        this.iframeProtocol.register(this.messageChannel!.port1);
 
         /**
          * Lazy file resolution over the iframe protocol, backed by the
@@ -109,9 +129,9 @@ export class SandpackRuntime extends SandpackClient {
           "fs",
           async (data) => {
             if (data.method === "isFile") {
-              return this.sandboxSetup.files.exists(data.params[0]);
+              return this.sandboxSetup.fs.exists(data.params[0]);
             } else if (data.method === "readFile") {
-              return this.sandboxSetup.files.readFile(data.params[0]);
+              return this.sandboxSetup.fs.readFile(data.params[0]);
             } else {
               throw new Error("Method not supported");
             }
@@ -249,8 +269,8 @@ export class SandpackRuntime extends SandpackClient {
       const headers: Record<string, string> = {};
 
       let body: string | undefined;
-      if (await this.sandboxSetup.files.exists(filepath)) {
-        body = await this.sandboxSetup.files.readFile(filepath);
+      if (await this.sandboxSetup.fs.exists(filepath)) {
+        body = await this.sandboxSetup.fs.readFile(filepath);
       } else {
         const modulesFromManager = await this.getTranspiledFiles();
         const match = modulesFromManager.find((item) =>
@@ -328,7 +348,7 @@ export class SandpackRuntime extends SandpackClient {
   private async dispatchCompile(
     isInitializationCompile?: boolean,
   ): Promise<void> {
-    const fs = this.sandboxSetup.files;
+    const fs = this.sandboxSetup.fs;
 
     await addPackageJSONIfNeeded(
       fs,
@@ -424,7 +444,7 @@ export class SandpackRuntime extends SandpackClient {
     editorUrl: string;
     embedUrl: string;
   }> {
-    const snapshot = await snapshotFS(this.sandboxSetup.files);
+    const snapshot = await snapshotFS(this.sandboxSetup.fs);
 
     const paramFiles = Object.keys(snapshot).reduce(
       (prev, next) => ({

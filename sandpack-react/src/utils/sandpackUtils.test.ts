@@ -105,9 +105,9 @@ describe(createSandpackFS, () => {
   });
 
   it("throws when no template and no files", async () => {
-    await expect(
-      createSandpackFS({ customSetup: {} }),
-    ).rejects.toThrow("[sandpack-react]: without a template, you must pass at least one file");
+    await expect(createSandpackFS({ customSetup: {} })).rejects.toThrow(
+      "[sandpack-react]: without a template, you must pass at least one file",
+    );
   });
 
   it("throws for an invalid template", async () => {

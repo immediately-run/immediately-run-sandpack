@@ -60,10 +60,7 @@ export const SandpackFileExplorer = ({
     [status], // eslint-disable-line react-hooks/exhaustive-deps
   );
 
-  const orderedFileList = React.useMemo(
-    () => [...fileList].sort(),
-    [fileList],
-  );
+  const orderedFileList = React.useMemo(() => [...fileList].sort(), [fileList]);
 
   return (
     <div

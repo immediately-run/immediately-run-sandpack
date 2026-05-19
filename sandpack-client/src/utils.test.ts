@@ -1,4 +1,4 @@
-import { SandpackFS } from "./fs/SandpackFS";
+import { bindContext, InMemory, mount, resolveMountConfig } from "@zenfs/core";
 import { addPackageJSONIfNeeded, normalizePath } from "./utils";
 
 const baseFiles = {
@@ -12,10 +12,17 @@ const baseFiles = {
   },
 };
 
-async function mkFs(
-  files: Parameters<typeof SandpackFS.fromFiles>[0] = baseFiles,
-) {
-  return SandpackFS.fromFiles(files);
+async function mkFs(files?: Record<string, { code: string }>) {
+  const dir = `/${(Math.random() * 100000).toString(16)}`;
+  const fs = await resolveMountConfig({ backend: InMemory, label: dir });
+  mount(dir, fs);
+  const context = bindContext({ root: dir }).fs;
+  if (files) {
+    for (const [path, { code }] of Object.entries(files)) {
+      await context.promises.writeFile(path, code);
+    }
+  }
+  return context;
 }
 
 describe(addPackageJSONIfNeeded, () => {
@@ -28,25 +35,28 @@ describe(addPackageJSONIfNeeded, () => {
   test("it merges the package.json - dependencies", async () => {
     const fs = await mkFs();
     await addPackageJSONIfNeeded(fs, { foo: "*" });
-    const pkg = JSON.parse(await fs.readFile("/package.json"));
+    const pkg = JSON.parse(
+      await fs.promises.readFile("/package.json", "utf-8"),
+    );
     expect(pkg.dependencies).toEqual({ baz: "*", foo: "*" });
-    fs.dispose();
   });
 
   test("it merges the package.json - dev-dependencies", async () => {
     const fs = await mkFs();
     await addPackageJSONIfNeeded(fs, undefined, { foo: "*" });
-    const pkg = JSON.parse(await fs.readFile("/package.json"));
+    const pkg = JSON.parse(
+      await fs.promises.readFile("/package.json", "utf-8"),
+    );
     expect(pkg.devDependencies).toEqual({ baz: "*", foo: "*" });
-    fs.dispose();
   });
 
   test("it merges the package.json - entry", async () => {
     const fs = await mkFs();
     await addPackageJSONIfNeeded(fs, undefined, undefined, "new-entry.js");
-    const pkg = JSON.parse(await fs.readFile("/package.json"));
+    const pkg = JSON.parse(
+      await fs.promises.readFile("/package.json", "utf-8"),
+    );
     expect(pkg.main).toEqual("new-entry.js");
-    fs.dispose();
   });
 
   test("it set the entry file into package.json", async () => {
@@ -60,9 +70,10 @@ describe(addPackageJSONIfNeeded, () => {
       },
     });
     await addPackageJSONIfNeeded(fs, undefined, undefined, "new-entry.js");
-    const pkg = JSON.parse(await fs.readFile("/package.json"));
+    const pkg = JSON.parse(
+      await fs.promises.readFile("/package.json", "utf-8"),
+    );
     expect(pkg.main).toEqual("new-entry.js");
-    fs.dispose();
   });
 
   test("it returns an error when there is not dependencies at all", async () => {
@@ -71,8 +82,6 @@ describe(addPackageJSONIfNeeded, () => {
     await expect(addPackageJSONIfNeeded(fs)).rejects.toThrow(
       '[sandpack-client]: "entry" was not specified',
     );
-
-    fs.dispose();
   });
 });
 

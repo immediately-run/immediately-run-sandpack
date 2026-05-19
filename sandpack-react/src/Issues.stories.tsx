@@ -113,10 +113,7 @@ export const FileTab = (): JSX.Element | null => {
   const fs = useSandpackFS({ template: "react" });
   if (!fs) return null;
   return (
-    <Sandpack
-      fs={fs}
-      options={{ visibleFiles: ["/App.js", "/styles.css"] }}
-    />
+    <Sandpack fs={fs} options={{ visibleFiles: ["/App.js", "/styles.css"] }} />
   );
 };
 
@@ -198,7 +195,5 @@ function Dashboard() {
     },
   });
   if (!fs) return null;
-  return (
-    <Sandpack fs={fs} options={{ showNavigator: true }} />
-  );
+  return <Sandpack fs={fs} options={{ showNavigator: true }} />;
 };

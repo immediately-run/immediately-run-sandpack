@@ -10,6 +10,10 @@ import { useFiles } from "./utils/useFiles";
 
 const Sandpack = React.createContext<SandpackContext | null>(null);
 
+export {
+  SandpackFS
+} from "@codesandbox/sandpack-client";
+
 export const SandpackProvider: React.FC<SandpackProviderProps> = (props) => {
   const { children, options, style, className, theme } = props;
 

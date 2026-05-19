@@ -20,6 +20,7 @@ import type { ClientPropsOverride } from "./contexts/utils/useClient";
 import type { SANDBOX_TEMPLATES } from "./templates";
 
 import type { CodeEditorProps } from ".";
+import type { BoundContext } from "@zenfs/core";
 
 /**
  * ------------------------ Public documentation ------------------------
@@ -405,8 +406,7 @@ interface SandpackInternalProps extends SandpackRootProps {
 }
 
 export interface SandpackProviderProps
-  extends SandpackRootProps,
-    React.HTMLAttributes<HTMLDivElement> {
+  extends SandpackRootProps, React.HTMLAttributes<HTMLDivElement> {
   options?: SandpackInternalOptions;
   children?: React.ReactNode;
 }

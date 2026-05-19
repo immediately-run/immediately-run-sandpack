@@ -112,7 +112,7 @@ export class SandpackNode extends SandpackClient {
    */
   private async createShellProcessFromTask(): Promise<{ id: string }> {
     const packageJsonContent =
-      await this.sandboxSetup.files.readFile("/package.json");
+      await this.sandboxSetup.fs.readFile("/package.json");
 
     this.emulatorCommand = findStartScriptPackageJson(packageJsonContent);
     this.emulatorShellProcess = this.emulator.shell.create();

@@ -49,7 +49,7 @@ export const useActiveCode = (): {
 
     return () => {
       cancelled = true;
-      unsub();
+      if (typeof unsub === "function") unsub();
     };
   }, [fs, activeFile, isLoading]);
 

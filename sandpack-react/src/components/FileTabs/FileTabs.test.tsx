@@ -31,7 +31,10 @@ describe("FileTabs", () => {
 
     it("renders unique tab names", async () => {
       render(
-        <SandpackProvider fs={fs} options={{ visibleFiles: ["/foo/App.js", "/App.js", "/baz/App.js"] }}>
+        <SandpackProvider
+          fs={fs}
+          options={{ visibleFiles: ["/foo/App.js", "/App.js", "/baz/App.js"] }}
+        >
           <SandpackCodeEditor />
         </SandpackProvider>,
       );

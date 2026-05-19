@@ -110,7 +110,8 @@ export const UsingMultipleEditor: React.FC = () => {
                     filePath={fileList[0] ?? "/index.html"}
                     initMode="immediate"
                     onCodeUpdate={(newCode) => {
-                      if (fileList[0]) updateFile(fileList[0], newCode, autoReload);
+                      if (fileList[0])
+                        updateFile(fileList[0], newCode, autoReload);
                     }}
                   />
                 </SandpackStack>
@@ -121,7 +122,8 @@ export const UsingMultipleEditor: React.FC = () => {
                     filePath={fileList[1] ?? "/styles.css"}
                     initMode="immediate"
                     onCodeUpdate={(newCode) => {
-                      if (fileList[1]) updateFile(fileList[1], newCode, autoReload);
+                      if (fileList[1])
+                        updateFile(fileList[1], newCode, autoReload);
                     }}
                   />
                 </SandpackStack>
@@ -396,10 +398,7 @@ export const MultiplePreviewsAndListeners: React.FC = () => {
 
   return (
     <>
-      <SandpackProvider
-        fs={fs}
-        options={{ autorun: true, autoReload: true }}
-      >
+      <SandpackProvider fs={fs} options={{ autorun: true, autoReload: true }}>
         {new Array(listenersCount).fill(" ").map((_pr, index) => (
           <SandpackListener key={index} />
         ))}

@@ -59,13 +59,13 @@ export const useAppState: UseAppState = (_props, fs, fileList) => {
     };
 
     void refresh();
-    const unsub = fs.watch(() => {
+    const unsub = fs.fs.watch(() => {
       void refresh();
     });
 
     return () => {
       cancelled = true;
-      unsub();
+      if (typeof unsub === "function") unsub();
     };
     // re-run when fs changes (new provider mount or legacy -> fs swap)
   }, [fs, fileList.length]);

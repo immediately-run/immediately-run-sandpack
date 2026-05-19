@@ -34,7 +34,8 @@ function collectExportNames(code) {
   const names = new Set();
   let hasDefault = false;
 
-  const constRe = /\bexport\s+(?:const|let|var|function|class|type|interface)\s+([A-Za-z_$][\w$]*)/g;
+  const constRe =
+    /\bexport\s+(?:const|let|var|function|class|type|interface)\s+([A-Za-z_$][\w$]*)/g;
   let match;
   while ((match = constRe.exec(code)) !== null) {
     names.add(match[1]);

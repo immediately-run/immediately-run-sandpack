@@ -177,7 +177,7 @@ export const useClient: UseClient = (
       const client = await loadSandpackClient(
         iframe,
         {
-          files: filesState.fs,
+          fs: filesState.fs,
           template: filesState.environment,
         },
         {
@@ -557,7 +557,7 @@ export const useClient: UseClient = (
       });
 
       return () => {
-        unsub();
+        if (typeof unsub === "function") unsub();
         window.clearTimeout(debounceHook.current);
       };
     },

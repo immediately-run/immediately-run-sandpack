@@ -12,6 +12,7 @@ import type {
   SandpackPredefinedTemplate,
   SandpackSetup,
 } from "../types";
+import { BoundContext } from "@zenfs/core";
 
 export interface SandboxTemplate {
   files: SandpackFilesInput;
@@ -143,6 +144,10 @@ export const resolveFile = (
 
   return resolvedPath;
 };
+
+export const createSandpackFromFS = (fs: BoundContext['fs']): Promise<SandpackFS> => {
+  return SandpackFS.fromFileSystem(fs);
+}
 
 /**
  * Build a fully-initialized {@link SandpackFS} from the JS-object convenience

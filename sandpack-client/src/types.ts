@@ -76,7 +76,7 @@ export interface SandboxSetup {
    * UI metadata. Create one via {@link SandpackFS.fromFiles} or
    * {@link SandpackFS.fromFileSystem}.
    */
-  files: SandpackFS;
+  fs: SandpackFS;
   dependencies?: Dependencies;
   devDependencies?: Dependencies;
   entry?: string;

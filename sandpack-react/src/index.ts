@@ -17,5 +17,8 @@ export * from "./types";
 export * from "./templates";
 
 // Helpers
-export { createSandpackFS, resolveFile } from "./utils/createSandpackFS";
-export type { CreateSandpackFSOptions, SandboxTemplate } from "./utils/createSandpackFS";
+export { createSandpackFS, resolveFile, createSandpackFromFS } from "./utils/createSandpackFS";
+export type {
+  CreateSandpackFSOptions,
+  SandboxTemplate,
+} from "./utils/createSandpackFS";

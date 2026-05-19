@@ -1,6 +1,9 @@
 import * as React from "react";
 
-import { roundedButtonClassName, buttonClassName } from "../../styles/shared.css";
+import {
+  roundedButtonClassName,
+  buttonClassName,
+} from "../../styles/shared.css";
 import { useClassNames } from "../../utils/classNames";
 import { ConsoleIcon } from "../icons";
 
@@ -52,9 +55,7 @@ export const Header: React.FC<Props> = ({
       className={classNames("test-header", [wrapperClassName, flexClassName])}
     >
       <div className={classNames("test-header-wrapper", [flexClassName])}>
-        <p
-          className={classNames("test-header-title", [headerTitleClassName])}
-        >
+        <p className={classNames("test-header-title", [headerTitleClassName])}>
           <ConsoleIcon />
           Tests
         </p>

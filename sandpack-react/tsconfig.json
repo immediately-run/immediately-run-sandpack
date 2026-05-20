@@ -12,7 +12,8 @@
     "jsx": "react-jsx",
     "types": ["node", "jest", "@testing-library/jest-dom"],
     "outDir": "dist",
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "declarationMap": true
   },
   "include": ["src"],
   "exclude": [

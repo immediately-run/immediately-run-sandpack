@@ -29,6 +29,11 @@
       "import": "./dist/clients/static/index.mjs",
       "require": "./dist/clients/static/index.js"
     },
+    "./utils": {
+      "types": "./dist/utils.d.ts",
+      "import": "./dist/utils.mjs",
+      "require": "./dist/utils.js"
+    },
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.mjs",

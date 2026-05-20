@@ -1,9 +1,9 @@
 import type { SandpackFilesInput } from "@codesandbox/sandpack-client";
+import { SandpackFS } from "@codesandbox/sandpack-client";
 import {
-  SandpackFS,
   addPackageJSONIfNeededToMap,
   normalizePath,
-} from "@codesandbox/sandpack-client";
+} from "@codesandbox/sandpack-client/utils";
 
 import { SANDBOX_TEMPLATES } from "../templates";
 import type {

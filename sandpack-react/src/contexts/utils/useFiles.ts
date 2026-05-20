@@ -1,8 +1,9 @@
 import type { FileMetaMap, SandpackFS } from "@codesandbox/sandpack-client";
-import { normalizePath } from "@codesandbox/sandpack-client";
+import { normalizePath } from "@codesandbox/sandpack-client/utils";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import type { SandboxEnvironment, SandpackProviderProps } from "../..";
+import { BoundContext } from "@zenfs/core";
 
 export interface FilesState {
   fs: SandpackFS;
@@ -98,12 +99,13 @@ export const useFiles: UseFiles = (props) => {
     let cancelled = false;
 
     async function init() {
+      const asyncfs = fs.fs.promises as BoundContext["fs"]["promises"];
       try {
-        const paths = await fs.promises.readdir("/", { recursive: true });
+        const paths = await asyncfs.readdir("/", { recursive: true });
         const snap: Record<string, string> = {};
         await Promise.all(
           paths.map(async (p) => {
-            snap[p] = await fs.promises.readFile(p, "utf-8");
+            snap[p] = await asyncfs.readFile(p, "utf-8");
           }),
         );
         if (cancelled) return;

@@ -61,7 +61,6 @@ const normalize = (path: string): string =>
  * `useSyncExternalStore`.
  */
 export class SandpackFS {
-  /** Virtual mount point inside the global ZenFS tree, e.g. `/sandpack-42`. */
   fs: BoundContext["fs"];
   private readonly listeners = new Set<SandpackFSListener>();
   private metaCache: FileMetaMap = {};

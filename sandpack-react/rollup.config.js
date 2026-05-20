@@ -11,6 +11,7 @@ const pkg = require("./package.json");
 const generateUnstyledTypes = require("./scripts/rollup-generate-unstyled-types");
 const inlineCssText = require("./scripts/rollup-inline-css-text");
 const stubCss = require("./scripts/rollup-stub-css");
+const dts = require("rollup-plugin-dts").dts;
 
 const basePlugins = [commonjs({ requireReturnsDefault: "preferred" })];
 
@@ -111,6 +112,16 @@ const configBase = [
       },
     ],
   },
+
+{
+  input: "./dist/src/index.d.ts", 
+  output: {
+    file: "./dist/index.d.ts",
+    format: "es",
+  },
+  plugins: [dts()],
+}
+
 ];
 
 module.exports = configBase;

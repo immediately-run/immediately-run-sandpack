@@ -59,13 +59,15 @@ export class SandpackRuntime extends SandpackClient {
     // destroy existing channel if exists
     this.destroyFSMessageChannel();
     this.messageChannel = new MessageChannel();
+    this.messageChannel!.port2.start();
     attachFS(this.messageChannel!.port2, this.sandboxSetup.fs.fs);
   }
 
   private destroyFSMessageChannel() {
     if (this.messageChannel) {
       detachFS(this.messageChannel.port2, this.sandboxSetup.fs.fs);
-      this.messageChannel.port1.close();
+      // ownership of port1 is transferred to the iframe protocol, so we only need to close port2 here
+      // this.messageChannel.port1.close();
       this.messageChannel.port2.close();
     }
   }
@@ -115,11 +117,12 @@ export class SandpackRuntime extends SandpackClient {
 
     this.unsubscribeGlobalListener = this.iframeProtocol.globalListen(
       (mes: SandpackMessage) => {
+        console.log("[SandpackRuntime] Global message listener received message", mes);
         if (mes.type !== "initialized" || !this.iframe.contentWindow) {
           return;
         }
         this.initFSMessageChannel();
-        this.iframeProtocol.register(this.messageChannel!.port1);
+        this.iframeProtocol.register(this.messageChannel?.port1);
 
         /**
          * Lazy file resolution over the iframe protocol, backed by the

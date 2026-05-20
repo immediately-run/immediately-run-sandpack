@@ -1136,7 +1136,7 @@
     "@codemirror/language" "^6.10.6"
     "@codemirror/state" "^6.5.0"
     "@codemirror/view" "^6.35.3"
-    "@codesandbox/sandpack-client" "^2.19.8"
+    "@codesandbox/sandpack-client" "file:../sandpack-client"
     "@lezer/highlight" "^1.2.1"
     "@react-hook/intersection-observer" "^3.1.2"
     "@vanilla-extract/dynamic" "^2.1.5"
@@ -7823,7 +7823,7 @@ magic-string@^0.27.0:
   dependencies:
     "@jridgewell/sourcemap-codec" "^1.4.13"
 
-magic-string@^0.30.0, magic-string@^0.30.17, magic-string@^0.30.3:
+magic-string@^0.30.0, magic-string@^0.30.17, magic-string@^0.30.21, magic-string@^0.30.3:
   version "0.30.21"
   resolved "https://registry.npmjs.org/magic-string/-/magic-string-0.30.21.tgz"
   integrity sha512-vd2F4YUyEXKGcLHoq+TEyCjxueSeHnFxyyjNp80yg0XV4vUhnDer/lvvlqM/arB5bXQN5K2/3oinyCRyx8T2CQ==
@@ -9940,6 +9940,18 @@ rolldown@1.0.0-rc.16:
     "@rolldown/binding-win32-arm64-msvc" "1.0.0-rc.16"
     "@rolldown/binding-win32-x64-msvc" "1.0.0-rc.16"
 
+rollup-plugin-dts@^6.4.1:
+  version "6.4.1"
+  resolved "https://registry.npmjs.org/rollup-plugin-dts/-/rollup-plugin-dts-6.4.1.tgz"
+  integrity sha512-l//F3Zf7ID5GoOfLfD8kroBjQKEKpy1qfhtAdnpibFZMffPaylrg1CoDC2vGkPeTeyxUe4bVFCln2EFuL7IGGg==
+  dependencies:
+    "@jridgewell/remapping" "^2.3.5"
+    "@jridgewell/sourcemap-codec" "^1.5.5"
+    convert-source-map "^2.0.0"
+    magic-string "^0.30.21"
+  optionalDependencies:
+    "@babel/code-frame" "^7.29.0"
+
 rollup-plugin-filesize@^10.0.0:
   version "10.0.0"
   resolved "https://registry.npmjs.org/rollup-plugin-filesize/-/rollup-plugin-filesize-10.0.0.tgz"
@@ -9968,7 +9980,7 @@ rollup-pluginutils@^2.4.1:
   dependencies:
     estree-walker "^0.6.1"
 
-rollup@^1.20.0||^2.0.0||^3.0.0||^4.0.0, "rollup@^2.0.0 || ^3.0.0 || ^4.0.0", rollup@^2.0.0||^3.0.0||^4.0.0, rollup@^2.14.0||^3.0.0||^4.0.0, rollup@^2.68.0||^3.0.0||^4.0.0, rollup@^2.78.0||^3.0.0||^4.0.0, rollup@^4.28.1, rollup@^4.34.9:
+rollup@^1.20.0||^2.0.0||^3.0.0||^4.0.0, "rollup@^2.0.0 || ^3.0.0 || ^4.0.0", rollup@^2.0.0||^3.0.0||^4.0.0, rollup@^2.14.0||^3.0.0||^4.0.0, rollup@^2.68.0||^3.0.0||^4.0.0, rollup@^2.78.0||^3.0.0||^4.0.0, "rollup@^3.29.4 || ^4", rollup@^4.28.1, rollup@^4.34.9:
   version "4.60.2"
   resolved "https://registry.npmjs.org/rollup/-/rollup-4.60.2.tgz"
   integrity sha512-J9qZyW++QK/09NyN/zeO0dG/1GdGfyp9lV8ajHnRVLfo/uFsbji5mHnDgn/qYdUHyCkM2N+8VyspgZclfAh0eQ==
@@ -11139,15 +11151,15 @@ typedarray@^0.0.6:
   resolved "https://registry.npmjs.org/typedarray/-/typedarray-0.0.6.tgz"
   integrity sha512-/aCDEGatGvZ2BIk+HmLf4ifCJFwvKFNb9/JeZPMulfgFracn9QFcAf5GO8B/mweUjSoblS5In0cWhqpfs/5PQA==
 
+"typescript@^4.5 || ^5.0 || ^6.0", "typescript@>= 4.2.x", "typescript@>= 4.3.x", typescript@>=3.7.0, typescript@>=4.8.4, "typescript@>=4.8.4 <6.1.0", typescript@>=4.9.5:
+  version "6.0.3"
+  resolved "https://registry.npmjs.org/typescript/-/typescript-6.0.3.tgz"
+  integrity sha512-y2TvuxSZPDyQakkFRPZHKFm+KKVqIisdg9/CZwm9ftvKXLP8NRWj38/ODjNbr43SsoXqNuAisEf1GdCxqWcdBw==
+
 typescript@^5.7.2:
   version "5.9.3"
   resolved "https://registry.npmjs.org/typescript/-/typescript-5.9.3.tgz"
   integrity sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw==
-
-"typescript@>= 4.2.x", "typescript@>= 4.3.x", typescript@>=3.7.0, typescript@>=4.8.4, "typescript@>=4.8.4 <6.1.0", typescript@>=4.9.5:
-  version "6.0.3"
-  resolved "https://registry.npmjs.org/typescript/-/typescript-6.0.3.tgz"
-  integrity sha512-y2TvuxSZPDyQakkFRPZHKFm+KKVqIisdg9/CZwm9ftvKXLP8NRWj38/ODjNbr43SsoXqNuAisEf1GdCxqWcdBw==
 
 "typescript@>=3 < 6":
   version "5.9.3"

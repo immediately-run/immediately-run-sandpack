@@ -42,6 +42,7 @@ const configs = [
   {
     input: {
       index: "src/index.ts",
+      utils: "src/utils.ts",
       "clients/node/index": "src/clients/node/index.ts",
       "clients/runtime/index": "src/clients/runtime/index.ts",
     },

@@ -21,7 +21,7 @@ export class IFrameProtocol {
 
   constructor(iframe: HTMLIFrameElement, origin: string) {
     this.frameWindow = iframe.contentWindow;
-    this.origin = origin;
+    this.origin = '*'; //origin;
     this.globalListeners = [];
     this.channelListeners = [];
 
@@ -42,10 +42,12 @@ export class IFrameProtocol {
 
   // Sends the channelId and triggers an iframeHandshake promise to resolve,
   // so the iframe can start listening for messages (based on the id)
-  register(port: MessagePort): void {
+  register(port?: MessagePort): void {
     if (!this.frameWindow) {
       return;
     }
+
+    console.log("[IFrameProtocol] Registering iframe with channelId", this.channelId, this);
 
     this.frameWindow.postMessage(
       {
@@ -54,7 +56,7 @@ export class IFrameProtocol {
         id: this.channelId,
       },
       this.origin,
-      [port],
+      port ? [port] : [],
     );
   }
 

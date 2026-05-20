@@ -7,10 +7,8 @@ import type {
   UnsubscribeFunction,
   SandpackClient,
 } from "@codesandbox/sandpack-client";
-import {
-  loadSandpackClient,
-  extractErrorDetails,
-} from "@codesandbox/sandpack-client";
+import { loadSandpackClient } from "@codesandbox/sandpack-client";
+import { extractErrorDetails } from "@codesandbox/sandpack-client/utils";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import type {
@@ -135,6 +133,8 @@ export const useClient: UseClient = (
       if (clients.current[clientId]) {
         clients.current[clientId].destroy();
       }
+
+      console.log("[Sandpack] Creating client", { iframe, clientId, clientPropsOverride });
 
       options ??= {};
 

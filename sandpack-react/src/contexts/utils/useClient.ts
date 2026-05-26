@@ -18,6 +18,7 @@ import type {
 } from "../..";
 import { generateRandomId } from "../../utils/stringUtils";
 import { useAsyncSandpackId } from "../../utils/useAsyncSandpackId";
+import { watchFs } from "../../utils/watchFs";
 
 import type { FilesState } from "./useFiles";
 
@@ -544,7 +545,7 @@ export const useClient: UseClient = (
        * Subscribe to the filesystem directly so we re-bundle on every
        * mutation, debounced or immediate as configured.
        */
-      const unsub = fs.fsContext.fs.watch(() => {
+      const unsub = watchFs(fs, () => {
         if (recompileMode === "immediate") {
           recompile();
           return;
@@ -557,7 +558,7 @@ export const useClient: UseClient = (
       });
 
       return () => {
-        if (typeof unsub === "function") unsub();
+        unsub();
         window.clearTimeout(debounceHook.current);
       };
     },

@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 
+import { watchFs } from "../utils/watchFs";
+
 import { useSandpack } from "./useSandpack";
 
 /**
@@ -26,30 +28,32 @@ export const useActiveCode = (): {
   useEffect(() => {
     if (isLoading || !activeFile) return;
     let cancelled = false;
+    // Guards against out-of-order reads clobbering newer content: only the most
+    // recently started load is allowed to commit its result.
+    let generation = 0;
 
     const load = async () => {
+      const current = ++generation;
       setLoadingContent(true);
       try {
         const body = await fs.readFile(activeFile);
-        if (!cancelled) setCode(body);
+        if (!cancelled && current === generation) setCode(body);
       } catch {
-        if (!cancelled) setCode("");
+        if (!cancelled && current === generation) setCode("");
       } finally {
-        if (!cancelled) setLoadingContent(false);
+        if (!cancelled && current === generation) setLoadingContent(false);
       }
     };
 
     void load();
 
-    // Refresh whenever the filesystem mutates (includes this file or not - we
-    // pay the extra read to stay consistent with external writers).
-    const unsub = fs.fsContext.fs.watch(() => {
-      void load();
-    });
+    // Refresh whenever the filesystem mutates so writes that bypass SandpackFS
+    // (e.g. from a worker on the shared filesystem) still update the editor.
+    const unsub = watchFs(fs, () => void load());
 
     return () => {
       cancelled = true;
-      if (typeof unsub === "function") unsub();
+      unsub();
     };
   }, [fs, activeFile, isLoading]);
 

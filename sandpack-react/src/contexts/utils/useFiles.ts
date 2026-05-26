@@ -3,7 +3,7 @@ import { normalizePath } from "@codesandbox/sandpack-client/utils";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import type { SandboxEnvironment, SandpackProviderProps } from "../..";
-import { BoundContext } from "@zenfs/core";
+import { watchFs } from "../../utils/watchFs";
 
 export interface FilesState {
   fs: SandpackFS;
@@ -99,13 +99,16 @@ export const useFiles: UseFiles = (props) => {
     let cancelled = false;
 
     async function init() {
-      const asyncfs = fs.fsContext.fs.promises as BoundContext["fs"]["promises"];
       try {
-        const paths = await asyncfs.readdir("/", { recursive: true });
+        // Use the SandpackFS listing (leading-slash paths, internal
+        // `/.sandpack` metadata excluded) rather than a raw recursive
+        // readdir, which would surface relative paths and the metadata
+        // directory — and pick `/.sandpack` as the active file.
+        const paths = await fs.list();
         const snap: Record<string, string> = {};
         await Promise.all(
           paths.map(async (p) => {
-            snap[p] = await asyncfs.readFile(p, "utf-8");
+            snap[p] = await fs.readFile(p);
           }),
         );
         if (cancelled) return;
@@ -191,13 +194,13 @@ export const useFiles: UseFiles = (props) => {
       }
     };
 
-    const unsub = fs.fsContext.fs.watch(() => {
-      void refresh();
-    });
+    // Refresh the file list on any mutation, incl. writes that bypass
+    // SandpackFS (e.g. a worker on the shared filesystem).
+    const unsub = watchFs(fs, () => void refresh());
 
     return () => {
       cancelled = true;
-      if (typeof unsub === "function") unsub();
+      unsub();
     };
   }, [fs, fsState.isLoading]);
 

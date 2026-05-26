@@ -1,9 +1,7 @@
 import {
   InMemory,
-  fs as zenFs,
   resolveMountConfig,
   mount,
-  umount,
   BoundContext,
   bindContext,
 } from "@zenfs/core";
@@ -61,15 +59,16 @@ const normalize = (path: string): string =>
  * `useSyncExternalStore`.
  */
 export class SandpackFS {
-  fs: BoundContext["fs"];
   private readonly listeners = new Set<SandpackFSListener>();
   private metaCache: FileMetaMap = {};
   private sidecarEnvironment: string | undefined = undefined;
   private sidecarMode: string | undefined = undefined;
   private disposed = false;
 
-  private constructor(fs: BoundContext["fs"]) {
-    this.fs = fs;
+  private constructor(
+    public readonly fsContext: BoundContext,
+    public readonly remotePortFactory: () => Promise<MessagePort>
+  ) {
   }
 
   /**
@@ -79,6 +78,7 @@ export class SandpackFS {
   static async fromFiles(
     files: SandpackFilesInput = {},
     options: { environment?: string; mode?: string } = {},
+    remotePortFactory: () => Promise<MessagePort>
   ): Promise<SandpackFS> {
     const id = ++mountCounter;
     const prefix = `/__sandpack_${id}`;
@@ -87,7 +87,7 @@ export class SandpackFS {
     mount(prefix, backend);
     const ctxt = bindContext({ root: prefix });
 
-    const instance = new SandpackFS(ctxt.fs);
+    const instance = new SandpackFS(ctxt, remotePortFactory);
     if (options.environment !== undefined) {
       instance.sidecarEnvironment = options.environment;
     }
@@ -104,11 +104,12 @@ export class SandpackFS {
    * lifecycle - {@link dispose} will unmount but not destroy the underlying
    * store.
    */
-  static async fromFileSystem(
+  static async fromFileSystemContext(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    fs: BoundContext["fs"],
+    fsContext: BoundContext,
+    remotePortFactory: () => Promise<MessagePort>
   ): Promise<SandpackFS> {
-    const instance = new SandpackFS(fs);
+    const instance = new SandpackFS(fsContext, remotePortFactory);
     await instance.ensureMetaDir();
     await instance.refreshMetaCache();
 
@@ -131,18 +132,18 @@ export class SandpackFS {
   }
 
   async readFile(path: string): Promise<string> {
-    return (await zenFs.promises.readFile(this.toAbs(path), "utf8")) as string;
+    return (await this.fsContext.fs.promises.readFile(this.toAbs(path), "utf8")) as string;
   }
 
   async writeFile(path: string, content: string): Promise<void> {
     const abs = this.toAbs(path);
     await this.ensureParent(abs);
-    await zenFs.promises.writeFile(abs, content);
+    await this.fsContext.fs.promises.writeFile(abs, content);
     this.notify();
   }
 
   async unlink(path: string): Promise<void> {
-    await zenFs.promises.unlink(this.toAbs(path));
+    await this.fsContext.fs.promises.unlink(this.toAbs(path));
 
     const normalized = normalize(path);
     if (normalized in this.metaCache) {
@@ -155,7 +156,7 @@ export class SandpackFS {
 
   async exists(path: string): Promise<boolean> {
     try {
-      await zenFs.promises.stat(this.toAbs(path));
+      await this.fsContext.fs.promises.stat(this.toAbs(path));
       return true;
     } catch {
       return false;
@@ -244,7 +245,7 @@ export class SandpackFS {
 
   private async ensureMetaDir(): Promise<void> {
     try {
-      await zenFs.promises.mkdir(META_DIR, {
+      await this.fsContext.fs.promises.mkdir(META_DIR, {
         recursive: true,
       });
     } catch {
@@ -258,7 +259,7 @@ export class SandpackFS {
     const dir = absPath.slice(0, lastSlash);
     if (!dir || dir === "/") return;
     try {
-      await zenFs.promises.mkdir(dir, { recursive: true });
+      await this.fsContext.fs.promises.mkdir(dir, { recursive: true });
     } catch {
       // exists
     }
@@ -268,7 +269,7 @@ export class SandpackFS {
     const absDir = this.toAbs(relDir);
     let entries: string[];
     try {
-      entries = (await zenFs.promises.readdir(absDir)) as string[];
+      entries = (await this.fsContext.fs.promises.readdir(absDir)) as string[];
     } catch {
       return;
     }
@@ -280,7 +281,7 @@ export class SandpackFS {
       const absEntry = this.toAbs(relPath);
       let isDir = false;
       try {
-        const stat = await zenFs.promises.stat(absEntry);
+        const stat = await this.fsContext.fs.promises.stat(absEntry);
         isDir = stat.isDirectory();
       } catch {
         continue;
@@ -303,7 +304,7 @@ export class SandpackFS {
       const abs = this.toAbs(path);
       await this.ensureParent(abs);
 
-      await zenFs.promises.writeFile(abs, entry.code);
+      await this.fsContext.fs.promises.writeFile(abs, entry.code);
 
       const fileMeta: FileMeta = {};
       if (entry.hidden !== undefined) fileMeta.hidden = entry.hidden;
@@ -325,7 +326,7 @@ export class SandpackFS {
     if (this.sidecarMode !== undefined) {
       sidecar.mode = this.sidecarMode;
     }
-    await zenFs.promises.writeFile(
+    await this.fsContext.fs.promises.writeFile(
       this.toAbs(META_PATH),
       JSON.stringify(sidecar),
     );
@@ -333,15 +334,15 @@ export class SandpackFS {
 
   private async refreshMetaCache(): Promise<void> {
     try {
-      const raw = (await zenFs.promises.readFile(
+      const raw = (await this.fsContext.fs.promises.readFile(
         this.toAbs(META_PATH),
         "utf8",
       )) as string;
       const parsed = JSON.parse(raw) as MetaSidecar | FileMetaMap;
       if ("files" in parsed && typeof parsed.files === "object") {
-        this.metaCache = parsed.files;
-        this.sidecarEnvironment = parsed.environment;
-        this.sidecarMode = parsed.mode;
+        this.metaCache = parsed.files as FileMetaMap;
+        this.sidecarEnvironment = parsed.environment as string;
+        this.sidecarMode = parsed.mode as string;
       } else {
         // Legacy format: plain FileMetaMap
         this.metaCache = parsed as FileMetaMap;

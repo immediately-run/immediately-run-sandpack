@@ -544,7 +544,7 @@ export const useClient: UseClient = (
        * Subscribe to the filesystem directly so we re-bundle on every
        * mutation, debounced or immediate as configured.
        */
-      const unsub = fs.watch(() => {
+      const unsub = fs.fsContext.fs.watch(() => {
         if (recompileMode === "immediate") {
           recompile();
           return;

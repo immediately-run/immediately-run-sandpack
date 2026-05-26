@@ -43,7 +43,7 @@ export const useActiveCode = (): {
 
     // Refresh whenever the filesystem mutates (includes this file or not - we
     // pay the extra read to stay consistent with external writers).
-    const unsub = fs.watch(() => {
+    const unsub = fs.fsContext.fs.watch(() => {
       void load();
     });
 

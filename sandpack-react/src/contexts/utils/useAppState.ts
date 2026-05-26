@@ -59,7 +59,7 @@ export const useAppState: UseAppState = (_props, fs, fileList) => {
     };
 
     void refresh();
-    const unsub = fs.fs.watch(() => {
+    const unsub = fs.fsContext.fs.watch(() => {
       void refresh();
     });
 

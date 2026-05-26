@@ -99,7 +99,7 @@ export const useFiles: UseFiles = (props) => {
     let cancelled = false;
 
     async function init() {
-      const asyncfs = fs.fs.promises as BoundContext["fs"]["promises"];
+      const asyncfs = fs.fsContext.fs.promises as BoundContext["fs"]["promises"];
       try {
         const paths = await asyncfs.readdir("/", { recursive: true });
         const snap: Record<string, string> = {};
@@ -191,7 +191,7 @@ export const useFiles: UseFiles = (props) => {
       }
     };
 
-    const unsub = fs.watch(() => {
+    const unsub = fs.fsContext.fs.watch(() => {
       void refresh();
     });
 

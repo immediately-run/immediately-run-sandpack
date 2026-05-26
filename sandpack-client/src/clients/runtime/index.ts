@@ -26,8 +26,6 @@ import { EXTENSIONS_MAP } from "./mime";
 import type { IPreviewRequestMessage, IPreviewResponseMessage } from "./types";
 import { CHANNEL_NAME, type SandpackRuntimeMessage } from "./types";
 import { getExtension, getTemplate } from "./utils";
-import { attachFS, detachFS } from "@zenfs/core";
-import { channel } from "diagnostics_channel";
 
 const SUFFIX_PLACEHOLDER = "-{{suffix}}";
 
@@ -47,7 +45,6 @@ export class SandpackRuntime extends SandpackClient {
 
   selector!: string;
   element: Element;
-  messageChannel?: MessageChannel;
 
   unsubscribeGlobalListener: UnsubscribeFunction;
   unsubscribeChannelListener: UnsubscribeFunction;
@@ -55,22 +52,6 @@ export class SandpackRuntime extends SandpackClient {
   iframeProtocol: IFrameProtocol;
   fs: SandpackFS;
 
-  private initFSMessageChannel() {
-    // destroy existing channel if exists
-    this.destroyFSMessageChannel();
-    this.messageChannel = new MessageChannel();
-    this.messageChannel!.port2.start();
-    attachFS(this.messageChannel!.port2, this.sandboxSetup.fs.fs);
-  }
-
-  private destroyFSMessageChannel() {
-    if (this.messageChannel) {
-      detachFS(this.messageChannel.port2, this.sandboxSetup.fs.fs);
-      // ownership of port1 is transferred to the iframe protocol, so we only need to close port2 here
-      // this.messageChannel.port1.close();
-      this.messageChannel.port2.close();
-    }
-  }
 
   constructor(
     selector: string | HTMLIFrameElement,
@@ -102,7 +83,7 @@ export class SandpackRuntime extends SandpackClient {
     if (!this.iframe.getAttribute("sandbox")) {
       this.iframe.setAttribute(
         "sandbox",
-        "allow-forms allow-modals allow-popups allow-presentation allow-scripts allow-downloads allow-pointer-lock",
+        "allow-forms allow-modals allow-popups allow-presentation allow-same-origin allow-scripts allow-downloads allow-pointer-lock",
       );
 
       this.iframe.setAttribute(
@@ -121,28 +102,31 @@ export class SandpackRuntime extends SandpackClient {
         if (mes.type !== "initialized" || !this.iframe.contentWindow) {
           return;
         }
-        this.initFSMessageChannel();
-        this.iframeProtocol.register(this.messageChannel?.port1);
+        // this may not work with a boundedcontext, it may require an actual FS instance
+        const remotePortPromise = this.fs.remotePortFactory();
+        remotePortPromise.then(remotePort => {
+          this.iframeProtocol.register(remotePort);
+          /**
+           * Lazy file resolution over the iframe protocol, backed by the
+           * {@link SandpackFS} passed on construction.
+           */
+          this.fileResolverProtocol = new Protocol(
+            "fs",
+            async (data) => {
+              if (data.method === "isFile") {
+                return this.sandboxSetup.fs.exists(data.params[0]);
+              } else if (data.method === "readFile") {
+                return this.sandboxSetup.fs.readFile(data.params[0]);
+              } else {
+                throw new Error("Method not supported");
+              }
+            },
+            this.iframeProtocol,
+          );
 
-        /**
-         * Lazy file resolution over the iframe protocol, backed by the
-         * {@link SandpackFS} passed on construction.
-         */
-        this.fileResolverProtocol = new Protocol(
-          "fs",
-          async (data) => {
-            if (data.method === "isFile") {
-              return this.sandboxSetup.fs.exists(data.params[0]);
-            } else if (data.method === "readFile") {
-              return this.sandboxSetup.fs.readFile(data.params[0]);
-            } else {
-              throw new Error("Method not supported");
-            }
-          },
-          this.iframeProtocol,
-        );
+          this.updateSandbox(this.sandboxSetup, true);
 
-        this.updateSandbox(this.sandboxSetup, true);
+        })
       },
     );
 

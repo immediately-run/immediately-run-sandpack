@@ -145,8 +145,11 @@ export const resolveFile = (
   return resolvedPath;
 };
 
-export const createSandpackFromFS = (fs: BoundContext['fs']): Promise<SandpackFS> => {
-  return SandpackFS.fromFileSystem(fs);
+export const createSandpackFromFS = (
+  fsContext: BoundContext,
+  remotePortFactory: () => Promise<MessagePort>
+): Promise<SandpackFS> => {
+  return SandpackFS.fromFileSystemContext(fsContext, remotePortFactory);
 }
 
 /**

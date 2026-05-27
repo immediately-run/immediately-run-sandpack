@@ -147,7 +147,9 @@ export const resolveFile = (
 
 export const createSandpackFromFS = (
   fsContext: BoundContext,
-  remotePortFactory: () => Promise<MessagePort>
+  remotePortFactory: (
+    onRemoteChange: (path: string) => void,
+  ) => Promise<MessagePort>,
 ): Promise<SandpackFS> => {
   return SandpackFS.fromFileSystemContext(fsContext, remotePortFactory);
 }

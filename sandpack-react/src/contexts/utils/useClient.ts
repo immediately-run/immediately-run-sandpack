@@ -18,7 +18,6 @@ import type {
 } from "../..";
 import { generateRandomId } from "../../utils/stringUtils";
 import { useAsyncSandpackId } from "../../utils/useAsyncSandpackId";
-import { watchFs } from "../../utils/watchFs";
 
 import type { FilesState } from "./useFiles";
 
@@ -564,11 +563,11 @@ export const useClient: UseClient = (
       };
 
       /**
-       * Subscribe to the filesystem directly so we re-bundle on every
-       * mutation, debounced or immediate as configured.
+       * Re-bundle on any filesystem mutation — local edits and iframe writes
+       * both need a recompile — debounced or immediate as configured.
        */
-      const unsub = watchFs(fs, (paths) => {
-        paths.forEach((p) => pendingPaths.add(p));
+      const unsub = fs.onChange(({ path }) => {
+        pendingPaths.add(path);
 
         if (recompileMode === "immediate") {
           flush();

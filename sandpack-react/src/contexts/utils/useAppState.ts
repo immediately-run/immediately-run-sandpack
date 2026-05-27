@@ -2,7 +2,6 @@ import type { SandpackFS } from "@codesandbox/sandpack-client";
 import { useEffect, useRef, useState } from "react";
 
 import type { SandpackProviderProps } from "../..";
-import { watchFs } from "../../utils/watchFs";
 
 interface SandpackAppState {
   editorState: "pristine" | "dirty";
@@ -74,9 +73,8 @@ export const useAppState: UseAppState = (_props, fs, fileList) => {
     };
 
     void refresh();
-    // Recompute dirty/pristine on any mutation, incl. writes that bypass
-    // SandpackFS (e.g. a worker on the shared filesystem).
-    const unsub = watchFs(fs, () => void refresh());
+    // Recompute dirty/pristine on any mutation (local edits or iframe writes).
+    const unsub = fs.onChange(() => void refresh());
 
     return () => {
       cancelled = true;

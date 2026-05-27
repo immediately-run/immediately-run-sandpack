@@ -11,7 +11,7 @@ import {
 import { syntaxHighlighting } from "@codemirror/language";
 import { bracketMatching } from "@codemirror/language";
 import type { Extension } from "@codemirror/state";
-import { EditorState, EditorSelection, StateEffect } from "@codemirror/state";
+import { EditorState, StateEffect } from "@codemirror/state";
 import { Annotation } from "@codemirror/state";
 import {
   highlightSpecialChars,
@@ -400,31 +400,45 @@ export const CodeMirror = React.forwardRef<CodeMirrorRef, CodeMirrorProps>(
       if (!view || typeof code !== "string") return;
 
       // Compare against the editor's *actual* current document — not a lagging
-      // React copy. While the user types, the optimistic update in
-      // `useActiveCode` keeps `code` equal to what the editor already holds, so
-      // this is a no-op and we avoid a needless full-document replacement that
-      // would reset the selection (and, if `code`/`view.state` momentarily
-      // disagree, reference an out-of-range position).
-      if (code === view.state.doc.toString()) return;
+      // React copy. While the user types `code` stays equal to what the editor
+      // already holds, so this is a no-op.
+      const oldText = view.state.doc.toString();
+      if (code === oldText) return;
 
-      // Clamp the existing selection into the incoming document's bounds so the
-      // transaction can never reference a position past the new length.
-      const max = code.length;
-      const selection = EditorSelection.create(
-        view.state.selection.ranges.map((range) =>
-          EditorSelection.range(
-            Math.min(range.anchor, max),
-            Math.min(range.head, max),
-          ),
-        ),
-        view.state.selection.mainIndex,
-      );
+      // Apply a *minimal* change (skip the common prefix/suffix) rather than
+      // replacing the whole document. A full-document replace forces CM to
+      // recompute its viewport/height map against a possibly-stale scroll
+      // position, which can throw; a minimal edit keeps positions valid and
+      // lets CM map the existing selection through it.
+      let start = 0;
+      const minLen = Math.min(oldText.length, code.length);
+      while (
+        start < minLen &&
+        oldText.charCodeAt(start) === code.charCodeAt(start)
+      ) {
+        start++;
+      }
+      let endOld = oldText.length;
+      let endNew = code.length;
+      while (
+        endOld > start &&
+        endNew > start &&
+        oldText.charCodeAt(endOld - 1) === code.charCodeAt(endNew - 1)
+      ) {
+        endOld--;
+        endNew--;
+      }
 
-      view.dispatch({
-        changes: { from: 0, to: view.state.doc.length, insert: code },
-        selection,
-        annotations: externalSync.of(true),
-      });
+      try {
+        view.dispatch({
+          changes: { from: start, to: endOld, insert: code.slice(start, endNew) },
+          annotations: externalSync.of(true),
+        });
+      } catch (err) {
+        // A failed sync must never take down the host app.
+        // eslint-disable-next-line no-console
+        console.error("[sandpack] code-prop sync failed", { err: String(err) });
+      }
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [code]);
 

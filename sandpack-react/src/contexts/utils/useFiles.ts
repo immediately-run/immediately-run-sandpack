@@ -3,7 +3,6 @@ import { normalizePath } from "@codesandbox/sandpack-client/utils";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import type { SandboxEnvironment, SandpackProviderProps } from "../..";
-import { watchFs } from "../../utils/watchFs";
 
 export interface FilesState {
   fs: SandpackFS;
@@ -194,9 +193,9 @@ export const useFiles: UseFiles = (props) => {
       }
     };
 
-    // Refresh the file list on any mutation, incl. writes that bypass
-    // SandpackFS (e.g. a worker on the shared filesystem).
-    const unsub = watchFs(fs, () => void refresh());
+    // Refresh the file list on any mutation (local edits or iframe writes),
+    // so create/delete/rename are reflected in the tree.
+    const unsub = fs.onChange(() => void refresh());
 
     return () => {
       cancelled = true;

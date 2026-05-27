@@ -35,11 +35,10 @@
   },
   "scripts": {
     "clean": "rm -rf dist",
-    "prebuild": "yarn run clean",
     "test": "TZ=UTC TEST_ENV=true jest . --transformIgnorePatterns \"node_modules/(?!(@codemirror|@zenfs))/\" --modulePathIgnorePatterns \"e2e\"",
     "lint": "eslint '**/*.ts?(x)' --fix",
     "build": "rollup -c",
-    "build:publish": "yarn build",
+    "build:publish": "yarn clean && yarn build",
     "dev": "storybook dev -p 6006 --quiet",
     "typecheck": "tsc",
     "format": "prettier --write '**/*.{ts,tsx,js,jsx}'",

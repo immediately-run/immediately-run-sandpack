@@ -33,7 +33,19 @@ interface MetaSidecar {
 export const META_PATH = "/.sandpack/meta.json";
 const META_DIR = "/.sandpack";
 
-export type SandpackFSListener = () => void;
+/**
+ * A filesystem change. `external` is `true` when the change originated from the
+ * child iframe (relayed through the ZenFS `Port` / `attachFS` boundary) and
+ * `false` for local edits made through this `SandpackFS`. The editor reacts
+ * only to `external` changes — that origin tag is what prevents the editor from
+ * reacting to its own writes.
+ */
+export interface SandpackFSChange {
+  path: string;
+  external: boolean;
+}
+
+export type SandpackFSListener = (change: SandpackFSChange) => void;
 
 /**
  * Shape Sandpack accepts at the public boundary. Each entry carries the
@@ -67,8 +79,20 @@ export class SandpackFS {
 
   private constructor(
     public readonly fsContext: BoundContext,
-    public readonly remotePortFactory: () => Promise<MessagePort>
+    public readonly remotePortFactory: (
+      onRemoteChange: (path: string) => void
+    ) => Promise<MessagePort>
   ) {
+  }
+
+  /**
+   * Create the `MessagePort` shared with the child iframe, wiring the iframe's
+   * write notifications back into this instance. The host's factory forwards
+   * `onRemoteChange` to `exportZenFS`, which calls it whenever the iframe writes
+   * a file over the Port — surfaced here as an `external` change.
+   */
+  connectRemote(): Promise<MessagePort> {
+    return this.remotePortFactory((path) => this.handleRemoteChange(path));
   }
 
   /**
@@ -78,7 +102,9 @@ export class SandpackFS {
   static async fromFiles(
     files: SandpackFilesInput = {},
     options: { environment?: string; mode?: string } = {},
-    remotePortFactory: () => Promise<MessagePort>
+    remotePortFactory: (
+      onRemoteChange: (path: string) => void
+    ) => Promise<MessagePort>
   ): Promise<SandpackFS> {
     const id = ++mountCounter;
     const prefix = `/__sandpack_${id}`;
@@ -107,7 +133,9 @@ export class SandpackFS {
   static async fromFileSystemContext(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     fsContext: BoundContext,
-    remotePortFactory: () => Promise<MessagePort>
+    remotePortFactory: (
+      onRemoteChange: (path: string) => void
+    ) => Promise<MessagePort>
   ): Promise<SandpackFS> {
     const instance = new SandpackFS(fsContext, remotePortFactory);
     await instance.ensureMetaDir();
@@ -139,7 +167,7 @@ export class SandpackFS {
     const abs = this.toAbs(path);
     await this.ensureParent(abs);
     await this.fsContext.fs.promises.writeFile(abs, content);
-    this.notify();
+    this.notify({ path: normalize(path), external: false });
   }
 
   async unlink(path: string): Promise<void> {
@@ -151,7 +179,7 @@ export class SandpackFS {
       await this.persistMeta();
     }
 
-    this.notify();
+    this.notify({ path: normalized, external: false });
   }
 
   async exists(path: string): Promise<boolean> {
@@ -192,7 +220,7 @@ export class SandpackFS {
     }
 
     await this.persistMeta();
-    this.notify();
+    this.notify({ path: key, external: false });
   }
 
   getEnvironment(): string | undefined {
@@ -217,12 +245,26 @@ export class SandpackFS {
   // Change detection
   // ------------------------------------------------------------------
 
-  /** Subscribe to any mutation (writeFile/unlink/metadata). */
-  watch(cb: SandpackFSListener): () => void {
+  /**
+   * Subscribe to any mutation. Each change carries its `path` and an `external`
+   * flag (`true` = written by the child iframe, `false` = a local edit). See
+   * {@link SandpackFSChange}.
+   */
+  onChange(cb: SandpackFSListener): () => void {
     this.listeners.add(cb);
     return () => {
       this.listeners.delete(cb);
     };
+  }
+
+  /**
+   * Record a write made by the child iframe (relayed from the `attachFS`
+   * boundary in the host). Surfaces as an `external` change so the editor can
+   * reflect it — distinct from local edits, which never reach here.
+   */
+  handleRemoteChange(path: string): void {
+    if (this.disposed) return;
+    this.notify({ path: normalize(path), external: true });
   }
 
   // ------------------------------------------------------------------
@@ -233,10 +275,10 @@ export class SandpackFS {
     return normalize(path);
   }
 
-  private notify(): void {
+  private notify(change: SandpackFSChange): void {
     this.listeners.forEach((listener) => {
       try {
-        listener();
+        listener(change);
       } catch (err) {
         console.error("[sandpack-client]: SandpackFS listener threw", err);
       }

@@ -103,7 +103,7 @@ export class SandpackRuntime extends SandpackClient {
           return;
         }
         // this may not work with a boundedcontext, it may require an actual FS instance
-        const remotePortPromise = this.fs.remotePortFactory();
+        const remotePortPromise = this.fs.connectRemote();
         remotePortPromise.then(async (remotePort) => {
           /**
            * Lazy file resolution over the iframe protocol, backed by the

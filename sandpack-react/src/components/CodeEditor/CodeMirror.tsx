@@ -61,6 +61,15 @@ export type Decorators = Array<{
   elementAttributes?: Record<string, string>;
 }>;
 
+/**
+ * Marks transactions that replace the document to sync it with the external
+ * `code` prop (e.g. the file changed on disk / in the shared filesystem). The
+ * update listener must NOT treat these as user edits — writing them back to the
+ * filesystem would echo against the fs→`code` reload in `useActiveCode` and
+ * create an infinite edit/recompile loop.
+ */
+const externalSync = Annotation.define<boolean>();
+
 interface CodeMirrorProps {
   code: string;
   filePath?: string;
@@ -125,7 +134,6 @@ export const CodeMirror = React.forwardRef<CodeMirrorRef, CodeMirrorProps>(
 
     const cmView = React.useRef<EditorView | undefined>(undefined);
     const { theme, themeId } = useSandpackTheme();
-    const [internalCode, setInternalCode] = React.useState<string>(code);
     const [shouldInitEditor, setShouldInitEditor] = React.useState(
       initMode === "immediate",
     );
@@ -293,8 +301,15 @@ export const CodeMirror = React.forwardRef<CodeMirrorRef, CodeMirrorProps>(
             if (update.docChanged) {
               const newCode = update.state.doc.toString();
 
-              setInternalCode(newCode);
-              onCodeUpdate?.(newCode);
+              // Skip the fs write when the change came from syncing the external
+              // `code` prop into the editor — that content originated from the
+              // filesystem, so writing it back would create a feedback loop.
+              const isExternalSync = update.transactions.some((tr) =>
+                tr.annotation(externalSync),
+              );
+              if (!isExternalSync) {
+                onCodeUpdate?.(newCode);
+              }
             }
           }),
         ];
@@ -381,19 +396,35 @@ export const CodeMirror = React.forwardRef<CodeMirrorRef, CodeMirrorProps>(
 
     // Update editor when code passed as prop from outside sandpack changes
     React.useEffect(() => {
-      if (cmView.current && typeof code === "string" && code !== internalCode) {
-        const view = cmView.current;
+      const view = cmView.current;
+      if (!view || typeof code !== "string") return;
 
-        const selection = view.state.selection.ranges.some(
-          ({ to, from }) => to > code.length || from > code.length,
-        )
-          ? EditorSelection.cursor(code.length)
-          : view.state.selection;
+      // Compare against the editor's *actual* current document — not a lagging
+      // React copy. While the user types, the optimistic update in
+      // `useActiveCode` keeps `code` equal to what the editor already holds, so
+      // this is a no-op and we avoid a needless full-document replacement that
+      // would reset the selection (and, if `code`/`view.state` momentarily
+      // disagree, reference an out-of-range position).
+      if (code === view.state.doc.toString()) return;
 
-        const changes = { from: 0, to: view.state.doc.length, insert: code };
+      // Clamp the existing selection into the incoming document's bounds so the
+      // transaction can never reference a position past the new length.
+      const max = code.length;
+      const selection = EditorSelection.create(
+        view.state.selection.ranges.map((range) =>
+          EditorSelection.range(
+            Math.min(range.anchor, max),
+            Math.min(range.head, max),
+          ),
+        ),
+        view.state.selection.mainIndex,
+      );
 
-        view.dispatch({ changes, selection });
-      }
+      view.dispatch({
+        changes: { from: 0, to: view.state.doc.length, insert: code },
+        selection,
+        annotations: externalSync.of(true),
+      });
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [code]);
 

@@ -35,9 +35,23 @@ export const useAppState: UseAppState = (_props, fs, fileList) => {
     const refresh = async () => {
       const paths = await fs.list();
       const entries = await Promise.all(
-        paths.map(async (p) => [p, await fs.readFile(p)] as const),
+        paths.map(async (p) => {
+          let content = undefined;
+          try {
+            content = await fs.readFile(p);
+          } catch (error) {
+            // there can be errors reading the file, eg: if it doesn't exist.
+            console.error(`Error reading file: ${p}`, error);
+          }
+          return [p, content] as const;
+        })
       );
-      const current = Object.fromEntries(entries);
+      const current = Object.fromEntries(
+        entries.filter(
+          // filter out files which could not be read (probably because they don't exist)
+          ([_, content]) => content !== undefined
+        )
+      );
 
       if (cancelled) return;
 

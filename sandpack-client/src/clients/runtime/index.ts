@@ -104,11 +104,12 @@ export class SandpackRuntime extends SandpackClient {
         }
         // this may not work with a boundedcontext, it may require an actual FS instance
         const remotePortPromise = this.fs.remotePortFactory();
-        remotePortPromise.then(remotePort => {
-          this.iframeProtocol.register(remotePort);
+        remotePortPromise.then(async (remotePort) => {
           /**
            * Lazy file resolution over the iframe protocol, backed by the
-           * {@link SandpackFS} passed on construction.
+           * {@link SandpackFS} passed on construction. Created before `register`
+           * so it's ready for the bundler's lazy file reads as soon as the
+           * bundler has the fs port.
            */
           this.fileResolverProtocol = new Protocol(
             "fs",
@@ -124,8 +125,12 @@ export class SandpackRuntime extends SandpackClient {
             this.iframeProtocol,
           );
 
-          this.updateSandbox(this.sandboxSetup, true);
-
+          // The bundler watches the shared filesystem itself and self-triggers
+          // its initial build and every rebuild — there is no `compile` message
+          // anymore. It only needs the template/logLevel/recompileDelay once,
+          // delivered here alongside the transferred fs port.
+          const config = await this.computeInitConfig();
+          this.iframeProtocol.register(remotePort, config);
         })
       },
     );
@@ -320,21 +325,29 @@ export class SandpackRuntime extends SandpackClient {
     }
   }
 
-  updateSandbox(
-    sandboxSetup = this.sandboxSetup,
-    isInitializationCompile?: boolean,
-  ): void {
+  /**
+   * Updates the local sandbox state. The bundler watches the shared filesystem
+   * itself, so there is nothing to push to the iframe here — a file mutation
+   * triggers a rebuild on the bundler side without a `compile` message. A
+   * template/environment change is handled by re-registering the client (see
+   * `useClient`'s `watchFileChanges` effect), which re-runs `computeInitConfig`.
+   */
+  updateSandbox(sandboxSetup = this.sandboxSetup): void {
     this.sandboxSetup = {
       ...this.sandboxSetup,
       ...sandboxSetup,
     };
-
-    void this.dispatchCompile(isInitializationCompile);
   }
 
-  private async dispatchCompile(
-    isInitializationCompile?: boolean,
-  ): Promise<void> {
+  /**
+   * Computes the bundler's bootstrap config. Delivered once via the
+   * `register-frame` handshake (see the `initialized` handler) instead of a
+   * `compile` message, since the bundler now self-watches the filesystem.
+   */
+  private async computeInitConfig(): Promise<{
+    template?: string;
+    logLevel: SandpackLogLevel;
+  }> {
     const fs = this.sandboxSetup.fs;
 
     await addPackageJSONIfNeeded(
@@ -374,31 +387,25 @@ export class SandpackRuntime extends SandpackClient {
       fileNames.map((p) => [p, true] as const),
     );
 
-    this.dispatch({
-      ...this.options,
-      type: "compile",
-      codesandbox: true,
-      version: 3,
-      isInitializationCompile,
-      reactDevTools: this.options.reactDevTools,
-      externalResources: this.options.externalResources || [],
-      hasFileResolver: true,
-      disableDependencyPreprocessing:
-        this.sandboxSetup.disableDependencyPreprocessing,
-      experimental_enableServiceWorker:
-        this.options.experimental_enableServiceWorker,
+    return {
       template:
         this.sandboxSetup.template || getTemplate(packageJSON, fileNameMap),
-      showOpenInCodeSandbox: this.options.showOpenInCodeSandbox ?? true,
-      showErrorScreen: this.options.showErrorScreen ?? true,
-      showLoadingScreen: this.options.showLoadingScreen ?? false,
-      skipEval: this.options.skipEval || false,
-      clearConsoleDisabled: !this.options.clearConsoleOnFirstCompile,
       logLevel: this.options.logLevel ?? SandpackLogLevel.Info,
-      customNpmRegistries: this.options.customNpmRegistries,
-      teamId: this.options.teamId,
-      sandboxId: this.options.sandboxId,
-    });
+    };
+  }
+
+  /**
+   * Relays the set of changed file paths to the bundler so it can re-bundle.
+   * The bundler can't observe parent-side writes to the shared filesystem on
+   * its own: zenfs's `Port` backend doesn't forward watch events across the
+   * iframe boundary. This lightweight signal replaces the old per-change
+   * `compile` message — it carries only paths, not template/options/config.
+   */
+  public notifyFilesChanged(paths: string[]): void {
+    if (!paths.length) {
+      return;
+    }
+    this.dispatch({ type: "fs-change", paths });
   }
 
   public dispatch(message: SandpackRuntimeMessage): void {

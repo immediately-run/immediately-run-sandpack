@@ -12,18 +12,35 @@ import type { SandpackFS } from "@codesandbox/sandpack-client";
  * (and its awaited promise chain) has settled. Deferring also coalesces the
  * several events a single write emits into one callback.
  *
+ * The callback receives the set of changed paths (leading `/`) observed since
+ * the last invocation so they can be relayed to the bundler.
+ *
  * @returns an unsubscribe function.
  */
-export const watchFs = (fs: SandpackFS, callback: () => void): (() => void) => {
+export const watchFs = (
+  fs: SandpackFS,
+  callback: (paths: string[]) => void,
+): (() => void) => {
   let pending: ReturnType<typeof setTimeout> | undefined;
+  let changed = new Set<string>();
 
-  const watcher = fs.fsContext.fs.watch("/", { recursive: true }, () => {
-    if (pending !== undefined) clearTimeout(pending);
-    pending = setTimeout(() => {
-      pending = undefined;
-      callback();
-    }, 0);
-  });
+  const watcher = fs.fsContext.fs.watch(
+    "/",
+    { recursive: true },
+    (_eventType, filename) => {
+      if (filename) {
+        const path = filename.toString();
+        changed.add(path.startsWith("/") ? path : `/${path}`);
+      }
+      if (pending !== undefined) clearTimeout(pending);
+      pending = setTimeout(() => {
+        pending = undefined;
+        const paths = Array.from(changed);
+        changed = new Set();
+        callback(paths);
+      }, 0);
+    },
+  );
 
   return () => {
     if (pending !== undefined) clearTimeout(pending);

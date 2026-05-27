@@ -41,8 +41,11 @@ export class IFrameProtocol {
   }
 
   // Sends the channelId and triggers an iframeHandshake promise to resolve,
-  // so the iframe can start listening for messages (based on the id)
-  register(port?: MessagePort): void {
+  // so the iframe can start listening for messages (based on the id).
+  // `config` carries the bundler's bootstrap configuration (template/logLevel/
+  // recompileDelay) — the bundler watches the shared filesystem itself and no
+  // longer receives a `compile` message, so it needs this delivered once here.
+  register(port?: MessagePort, config?: Record<string, unknown>): void {
     if (!this.frameWindow) {
       return;
     }
@@ -54,6 +57,7 @@ export class IFrameProtocol {
         type: "register-frame",
         origin: document.location.origin,
         id: this.channelId,
+        ...config,
       },
       this.origin,
       port ? [port] : [],

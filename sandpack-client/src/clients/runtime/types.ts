@@ -93,6 +93,7 @@ export type SandpackRuntimeMessage = BaseSandpackMessage &
         type: "get-transpiler-context";
       }
     | { type: "get-modules" }
+    | { type: "fs-change"; paths: string[] }
     | { type: "all-modules"; data: Array<{ path: string; code: string }> }
     | {
         type: "activate-react-devtools";

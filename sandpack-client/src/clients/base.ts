@@ -50,6 +50,16 @@ export class SandpackClient {
     throw Error("Method not implemented");
   }
 
+  /**
+   * Notify the bundler that the given paths changed in the shared filesystem.
+   * Only the runtime client needs this (its bundler can't observe parent writes
+   * itself); other clients re-bundle via {@link updateSandbox}, so this is a
+   * no-op for them.
+   */
+  public notifyFilesChanged(_paths: string[]): void {
+    // no-op by default
+  }
+
   public destroy(): void {
     throw Error("Method not implemented");
   }

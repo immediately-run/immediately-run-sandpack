@@ -527,10 +527,21 @@ export const useClient: UseClient = (
         });
       }
 
-      const recompile = () => {
+      const recompile = (paths: string[]) => {
         Object.values(clients.current).forEach((client) => {
           /**
-           * Avoid concurrency
+           * The runtime bundler can't observe parent-side writes to the shared
+           * filesystem itself (zenfs's Port backend doesn't forward watch
+           * events), so relay the changed paths. Sent unconditionally: the
+           * bundler debounces and accumulates pending changes, so a relay that
+           * arrives mid-compile is still picked up by the next compile. No-op
+           * for other client types, which re-bundle via `updateSandbox` below.
+           */
+          client.notifyFilesChanged(paths);
+
+          /**
+           * Avoid concurrency for the legacy compile-message clients
+           * (static/node); the runtime client's `updateSandbox` is a no-op.
            */
           if (client.status === "done") {
             client.updateSandbox({
@@ -542,18 +553,31 @@ export const useClient: UseClient = (
       };
 
       /**
+       * Accumulate changed paths across the debounce window so a single
+       * recompile relays the full set.
+       */
+      const pendingPaths = new Set<string>();
+      const flush = (): void => {
+        const paths = Array.from(pendingPaths);
+        pendingPaths.clear();
+        recompile(paths);
+      };
+
+      /**
        * Subscribe to the filesystem directly so we re-bundle on every
        * mutation, debounced or immediate as configured.
        */
-      const unsub = watchFs(fs, () => {
+      const unsub = watchFs(fs, (paths) => {
+        paths.forEach((p) => pendingPaths.add(p));
+
         if (recompileMode === "immediate") {
-          recompile();
+          flush();
           return;
         }
 
         if (recompileMode === "delayed" && typeof window !== "undefined") {
           window.clearTimeout(debounceHook.current);
-          debounceHook.current = window.setTimeout(recompile, recompileDelay);
+          debounceHook.current = window.setTimeout(flush, recompileDelay);
         }
       });
 

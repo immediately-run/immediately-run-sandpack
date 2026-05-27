@@ -51,6 +51,8 @@ export class SandpackRuntime extends SandpackClient {
   unsubscribeFsWatcher?: () => void;
   iframeProtocol: IFrameProtocol;
   fs: SandpackFS;
+  /** Parent-owned Babel transpiler worker, connected to the iframe by port. */
+  private babelWorker: Worker | null = null;
 
 
   constructor(
@@ -81,9 +83,14 @@ export class SandpackRuntime extends SandpackClient {
       this.iframe = selector;
     }
     if (!this.iframe.getAttribute("sandbox")) {
+      // No `allow-same-origin`: the iframe runs untrusted code at an opaque
+      // origin so it can't read domain-scoped cookies, register service
+      // workers, or touch shared storage on the bundler origin. The Babel
+      // worker that used to require same-origin is now owned by the parent and
+      // reached over a transferred `MessagePort` (see `createBabelWorkerPort`).
       this.iframe.setAttribute(
         "sandbox",
-        "allow-forms allow-modals allow-popups allow-presentation allow-same-origin allow-scripts allow-downloads allow-pointer-lock",
+        "allow-forms allow-modals allow-popups allow-presentation allow-scripts allow-downloads allow-pointer-lock",
       );
 
       this.iframe.setAttribute(
@@ -130,7 +137,12 @@ export class SandpackRuntime extends SandpackClient {
           // anymore. It only needs the template/logLevel/recompileDelay once,
           // delivered here alongside the transferred fs port.
           const config = await this.computeInitConfig();
-          this.iframeProtocol.register(remotePort, config);
+
+          // Spawn the Babel worker on the parent (real origin) and hand the
+          // iframe the other end of the channel. Transferred alongside the fs
+          // port as the second port in the handshake.
+          const babelPort = this.createBabelWorkerPort();
+          this.iframeProtocol.register(remotePort, config, babelPort);
         })
       },
     );
@@ -198,6 +210,40 @@ export class SandpackRuntime extends SandpackClient {
     }
 
     return bundlerURL;
+  }
+
+  /**
+   * Creates (or recreates) the parent-owned Babel transpiler worker and returns
+   * the `MessagePort` to transfer into the iframe. The iframe can no longer run
+   * its own worker — without `allow-same-origin` it has an opaque origin, and a
+   * same-origin worker script won't load there — so transpilation happens in
+   * this worker on the parent's real origin. Per-transform traffic then flows
+   * iframe<->worker directly over the entangled ports; the parent doesn't relay.
+   */
+  private createBabelWorkerPort(): MessagePort | undefined {
+    const workerURL = this.options.babelWorkerURL;
+    if (!workerURL) {
+      console.warn(
+        "[SandpackRuntime] No `babelWorkerURL` configured — the bundler cannot transpile without a Babel worker.",
+      );
+      return undefined;
+    }
+
+    // A reload re-runs this handshake; terminate the previous worker first so
+    // we don't leak one per reload.
+    this.babelWorker?.terminate();
+
+    // Classic (not module) worker: the bundled worker lazily loads its Babel
+    // plugin/preset chunks via importScripts(), which a `{ type: "module" }`
+    // worker forbids. The worker artifact is built with outputFormat "global"
+    // to match (see sandpack-bundler's babelWorker Parcel target).
+    const worker = new Worker(workerURL);
+    this.babelWorker = worker;
+
+    const channel = new MessageChannel();
+    // Hand the worker one end; it binds its message bus to this port on receipt.
+    worker.postMessage({ type: "connect" }, [channel.port1]);
+    return channel.port2;
   }
 
   private serviceWorkerHandshake() {
@@ -315,6 +361,7 @@ export class SandpackRuntime extends SandpackClient {
     this.unsubscribeChannelListener();
     this.unsubscribeGlobalListener();
     this.unsubscribeFsWatcher?.();
+    this.babelWorker?.terminate();
     this.iframeProtocol.cleanup();
   }
 

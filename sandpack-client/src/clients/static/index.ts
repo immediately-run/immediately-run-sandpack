@@ -90,9 +90,11 @@ export class SandpackStatic extends SandpackClient {
       this.iframe = selector;
     }
     if (!this.iframe.getAttribute("sandbox")) {
+      // No `allow-same-origin`: untrusted preview content runs at an opaque
+      // origin (see the runtime client for rationale).
       this.iframe.setAttribute(
         "sandbox",
-        "allow-forms allow-modals allow-popups allow-presentation allow-same-origin allow-scripts allow-downloads allow-pointer-lock",
+        "allow-forms allow-modals allow-popups allow-presentation allow-scripts allow-downloads allow-pointer-lock",
       );
 
       this.iframe.setAttribute(

@@ -183,6 +183,7 @@ export const useClient: UseClient = (
         {
           externalResources: options.externalResources,
           bundlerURL: options.bundlerURL,
+          babelWorkerURL: options.babelWorkerURL,
           startRoute: clientPropsOverride?.startRoute ?? options.startRoute,
           skipEval: options.skipEval ?? false,
           logLevel: options.logLevel,

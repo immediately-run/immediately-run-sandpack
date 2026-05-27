@@ -12,6 +12,14 @@ export interface ClientOptions {
    */
   bundlerURL?: string;
   /**
+   * URL of the Babel transpiler worker script, served **same-origin with the
+   * parent page** (not the bundler origin). The runtime client spawns this
+   * worker itself and connects it to the sandboxed iframe over a `MessagePort`,
+   * so the iframe no longer needs to load a worker (and can drop
+   * `allow-same-origin`). Required for the runtime client to transpile.
+   */
+  babelWorkerURL?: string;
+  /**
    * Level of logging to do in the bundler
    */
   logLevel?: SandpackLogLevel;

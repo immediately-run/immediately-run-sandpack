@@ -161,6 +161,7 @@ export interface SandpackOptions {
   id?: string;
   logLevel?: SandpackLogLevel;
   bundlerURL?: string;
+  babelWorkerURL?: string;
   startRoute?: string;
   skipEval?: boolean;
   externalResources?: string[];
@@ -359,6 +360,7 @@ export interface SandpackInternalOptions {
   id?: string;
   logLevel?: SandpackLogLevel;
   bundlerURL?: string;
+  babelWorkerURL?: string;
   bundlerTimeOut?: number;
   startRoute?: string;
   skipEval?: boolean;

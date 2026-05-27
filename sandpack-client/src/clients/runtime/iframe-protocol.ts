@@ -45,12 +45,23 @@ export class IFrameProtocol {
   // `config` carries the bundler's bootstrap configuration (template/logLevel/
   // recompileDelay) — the bundler watches the shared filesystem itself and no
   // longer receives a `compile` message, so it needs this delivered once here.
-  register(port?: MessagePort, config?: Record<string, unknown>): void {
+  register(
+    port?: MessagePort,
+    config?: Record<string, unknown>,
+    babelPort?: MessagePort,
+  ): void {
     if (!this.frameWindow) {
       return;
     }
 
     console.log("[IFrameProtocol] Registering iframe with channelId", this.channelId, this);
+
+    // Order matters: the bundler reads ports[0] as the fs port and ports[1] as
+    // the Babel worker port. `filter` keeps that order as long as the fs port
+    // is always present (it is, in normal operation).
+    const ports = [port, babelPort].filter(
+      (p): p is MessagePort => p != null,
+    );
 
     this.frameWindow.postMessage(
       {
@@ -60,7 +71,7 @@ export class IFrameProtocol {
         ...config,
       },
       this.origin,
-      port ? [port] : [],
+      ports,
     );
   }
 

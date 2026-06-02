@@ -94,6 +94,13 @@ export type SandpackRuntimeMessage = BaseSandpackMessage &
       }
     | { type: "get-modules" }
     | { type: "fs-change"; paths: string[] }
+    | {
+        // Announce a filesystem mount to the sandbox. The mount's fs is shared
+        // over a `MessagePort` passed via `_transfer` (see `BaseSandpackMessage`).
+        type: "mount-add";
+        mount: { path: string; type: string; id?: string };
+      }
+    | { type: "mount-remove"; id?: string; path?: string }
     | { type: "all-modules"; data: Array<{ path: string; code: string }> }
     | {
         type: "activate-react-devtools";

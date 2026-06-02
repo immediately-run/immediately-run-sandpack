@@ -81,13 +81,18 @@ export class IFrameProtocol {
       return;
     }
 
+    // `_transfer` (e.g. a MessagePort for a mount's filesystem) must be passed
+    // as the postMessage transfer list, not as a serialized payload field.
+    const { _transfer, ...payload } = message;
+
     this.frameWindow.postMessage(
       {
         $id: this.channelId,
         codesandbox: true,
-        ...message,
+        ...payload,
       },
       this.origin,
+      _transfer ?? [],
     );
   }
 

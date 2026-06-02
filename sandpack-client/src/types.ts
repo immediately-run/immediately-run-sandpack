@@ -228,6 +228,13 @@ export interface BaseSandpackMessage {
   type: string;
   $id?: number;
   codesandbox?: boolean;
+  /**
+   * Transferable objects (e.g. a `MessagePort`) to hand to the iframe alongside
+   * this message. Stripped from the payload and passed as the `postMessage`
+   * transfer list by `IFrameProtocol.dispatch`. Used by `mount-add` to share a
+   * mount's filesystem port with the sandbox.
+   */
+  _transfer?: Transferable[];
 }
 
 export interface BaseProtocolMessage {

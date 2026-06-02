@@ -158,9 +158,16 @@ export const createSandpackFromFS = (
  * Build a fully-initialized {@link SandpackFS} from the JS-object convenience
  * inputs (template, customSetup, files). Consumers call this once and pass the
  * result as the `fs` prop to `SandpackProvider`.
+ *
+ * `remotePortFactory` is supplied by the host app (it owns the port handoff to
+ * the preview iframe, e.g. site-main's `exportZenFS`), mirroring
+ * {@link createSandpackFromFS}.
  */
 export const createSandpackFS = async (
   options: CreateSandpackFSOptions = {},
+  remotePortFactory: (
+    onRemoteChange: (path: string) => void,
+  ) => Promise<MessagePort>,
 ): Promise<SandpackFS> => {
   const projectSetup = combineTemplateFiles(options);
 
@@ -173,8 +180,12 @@ export const createSandpackFS = async (
     entry ?? projectSetup.main,
   );
 
-  return SandpackFS.fromFiles(files, {
-    environment: projectSetup.environment,
-    mode: projectSetup.mode,
-  });
+  return SandpackFS.fromFiles(
+    files,
+    {
+      environment: projectSetup.environment,
+      mode: projectSetup.mode,
+    },
+    remotePortFactory,
+  );
 };

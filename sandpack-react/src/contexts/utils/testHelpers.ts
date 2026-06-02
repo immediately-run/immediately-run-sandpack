@@ -11,6 +11,9 @@ export async function createTestFilesState(
 ): Promise<FilesState & { visibleFilesFromProps: string[] }> {
   const fs = await SandpackFS.fromFiles(
     Object.fromEntries(Object.entries(files).map(([k, v]) => [k, { code: v }])),
+    {},
+    // Tests have no live preview iframe; hand back an unconnected port.
+    () => Promise.resolve(new MessageChannel().port1),
   );
   const list = await fs.list();
   return {

@@ -48,7 +48,7 @@ export const useAppState: UseAppState = (_props, fs, fileList) => {
       const current = Object.fromEntries(
         entries.filter(
           // filter out files which could not be read (probably because they don't exist)
-          ([_, content]) => content !== undefined
+          (entry): entry is readonly [string, string] => entry[1] !== undefined
         )
       );
 

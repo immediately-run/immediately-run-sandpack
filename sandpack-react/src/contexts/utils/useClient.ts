@@ -545,7 +545,7 @@ export const useClient: UseClient = (
            */
           if (client.status === "done") {
             client.updateSandbox({
-              files: fs,
+              fs,
               template: filesState.environment,
             });
           }

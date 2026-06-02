@@ -49,7 +49,7 @@ export const LoadingOverlay: React.FC<
   style,
   showOpenInCodeSandbox,
   ...props
-}): JSX.Element | null => {
+}): React.JSX.Element | null => {
   const classNames = useClassNames();
   const {
     sandpack: { runSandpack, environment },

@@ -24,7 +24,7 @@ export const Navigator = ({
   className,
   startRoute,
   ...props
-}: NavigatorProps & React.HTMLAttributes<HTMLDivElement>): JSX.Element => {
+}: NavigatorProps & React.HTMLAttributes<HTMLDivElement>): React.JSX.Element => {
   const [baseUrl, setBaseUrl] = React.useState<string>("");
   const { sandpack, dispatch, listen } = useSandpack();
 

@@ -40,7 +40,7 @@ export const FileTabs = ({
   className,
   activeFileUniqueId,
   ...props
-}: FileTabsProps & React.HTMLAttributes<HTMLDivElement>): JSX.Element => {
+}: FileTabsProps & React.HTMLAttributes<HTMLDivElement>): React.JSX.Element => {
   const { sandpack } = useSandpack();
   const classNames = useClassNames();
 

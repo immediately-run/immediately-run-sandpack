@@ -15,7 +15,7 @@ export const Loading = ({
   ...props
 }: React.HTMLAttributes<HTMLDivElement> & {
   showOpenInCodeSandbox: boolean;
-}): JSX.Element => {
+}): React.JSX.Element => {
   const classNames = useClassNames();
 
   return (

@@ -32,7 +32,7 @@ interface SandpackConsoleProps {
   onLogsChange?: (logs: SandpackConsoleData) => void;
   resetOnPreviewRestart?: boolean;
   standalone?: boolean;
-  actionsChildren?: JSX.Element;
+  actionsChildren?: React.JSX.Element;
 }
 
 export interface SandpackConsoleRef {

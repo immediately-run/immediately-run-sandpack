@@ -34,7 +34,7 @@ export const File: React.FC<Props> = ({
 
   const fileName = path.split("/").filter(Boolean).pop();
 
-  const getIcon = (): JSX.Element => {
+  const getIcon = (): React.JSX.Element => {
     if (selectFile) return <FileIcon />;
 
     return isDirOpen ? <DirectoryIconOpen /> : <DirectoryIconClosed />;

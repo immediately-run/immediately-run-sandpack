@@ -43,8 +43,8 @@ export interface PreviewProps {
    */
   showSandpackErrorOverlay?: boolean;
   showOpenNewtab?: boolean;
-  actionsChildren?: JSX.Element;
-  children?: JSX.Element;
+  actionsChildren?: React.JSX.Element;
+  children?: React.JSX.Element;
   startRoute?: string;
 }
 

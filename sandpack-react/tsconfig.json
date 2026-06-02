@@ -6,6 +6,8 @@
     "emitDeclarationOnly": true,
     "declaration": true,
     "allowSyntheticDefaultImports": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
     "noImplicitAny": true,
@@ -20,6 +22,8 @@
     "src/**/*.stories.tsx",
     "src/**/*.test.tsx",
     "src/**/*.test.ts",
+    "src/contexts/utils/testHelpers.ts",
+    "src/utils/storyHelpers.tsx",
     "node_modules"
   ]
 }

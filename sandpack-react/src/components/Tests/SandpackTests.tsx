@@ -51,7 +51,7 @@ export const SandpackTests: React.FC<
     verbose?: boolean;
     watchMode?: boolean;
     onComplete?: (specs: Record<string, Spec>) => void;
-    actionsChildren?: JSX.Element;
+    actionsChildren?: React.JSX.Element;
     showVerboseButton?: boolean;
     showWatchButton?: boolean;
     /**

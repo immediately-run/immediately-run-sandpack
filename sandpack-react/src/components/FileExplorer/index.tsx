@@ -25,7 +25,7 @@ export const SandpackFileExplorer = ({
   initialCollapsedFolder = [],
   ...props
 }: SandpackFileExplorerProp &
-  React.HTMLAttributes<HTMLDivElement>): JSX.Element | null => {
+  React.HTMLAttributes<HTMLDivElement>): React.JSX.Element | null => {
   const {
     sandpack: {
       status,

@@ -15,7 +15,7 @@ export const SandpackReactDevTools = ({
 }: {
   clientId?: string;
   theme?: DevToolsTheme;
-} & React.HTMLAttributes<HTMLDivElement>): JSX.Element | null => {
+} & React.HTMLAttributes<HTMLDivElement>): React.JSX.Element | null => {
   const { listen, sandpack } = useSandpack();
   const { themeMode } = useSandpackTheme();
   const classNames = useClassNames();

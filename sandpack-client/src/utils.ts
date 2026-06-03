@@ -62,6 +62,12 @@ export async function addPackageJSONIfNeeded(
 
   const existing = await fs.readFile("/package.json");
   const packageJsonContent = JSON.parse(existing);
+  // This runs on every register-frame handshake. Only write the file back if
+  // the merge below actually changed something: an unconditional rewrite fires
+  // the shared filesystem's change watcher, which relays an `fs-change` to the
+  // bundler right after it booted — forcing a reload whose handshake rewrites
+  // package.json again, i.e. an infinite reload loop.
+  const beforeMerge = JSON.stringify(packageJsonContent);
 
   if (!dependencies && !packageJsonContent.dependencies) {
     throw new Error(createError(ENTRY_ERROR_MESSAGE));
@@ -83,6 +89,10 @@ export async function addPackageJSONIfNeeded(
 
   if (entry) {
     packageJsonContent.main = entry;
+  }
+
+  if (JSON.stringify(packageJsonContent) === beforeMerge) {
+    return;
   }
 
   await fs.writeFile(

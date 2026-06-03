@@ -21,6 +21,7 @@ import {
 import { SandpackClient } from "../base";
 
 import Protocol from "./file-resolver-protocol";
+import { handleImmutableFetch } from "./immutable-fetch-protocol";
 import { IFrameProtocol } from "./iframe-protocol";
 import { EXTENSIONS_MAP } from "./mime";
 import type { IPreviewRequestMessage, IPreviewResponseMessage } from "./types";
@@ -39,6 +40,7 @@ const BUNDLER_URL =
 
 export class SandpackRuntime extends SandpackClient {
   fileResolverProtocol?: Protocol;
+  immutableFetchProtocol?: Protocol;
   bundlerURL: string;
   bundlerState?: BundlerState;
   errors: SandpackError[];
@@ -128,6 +130,22 @@ export class SandpackRuntime extends SandpackClient {
               } else {
                 throw new Error("Method not supported");
               }
+            },
+            this.iframeProtocol,
+          );
+
+          /**
+           * Parent-side fetch + persistent cache for immutable module URLs.
+           * The iframe's opaque origin has no storage, so it forwards these
+           * here (see immutable-fetch-protocol.ts for the allowlist).
+           */
+          this.immutableFetchProtocol = new Protocol(
+            "immutable-fetch",
+            async (data) => {
+              if (data.method !== "fetch") {
+                throw new Error("Method not supported");
+              }
+              return handleImmutableFetch(data.params[0]);
             },
             this.iframeProtocol,
           );
@@ -361,6 +379,8 @@ export class SandpackRuntime extends SandpackClient {
     this.unsubscribeChannelListener();
     this.unsubscribeGlobalListener();
     this.unsubscribeFsWatcher?.();
+    this.fileResolverProtocol?.dispose();
+    this.immutableFetchProtocol?.dispose();
     this.babelWorker?.terminate();
     this.iframeProtocol.cleanup();
   }

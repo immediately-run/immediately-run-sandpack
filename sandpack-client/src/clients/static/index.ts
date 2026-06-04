@@ -12,6 +12,7 @@ import type {
 // @ts-ignore
 import consoleHook from "../../inject-scripts/dist/consoleHook.js";
 import { SandpackClient } from "../base";
+import { createSandboxedIframe, ensureSandboxed } from "../iframe-factory";
 import { EventEmitter } from "../event-emitter";
 import { generateRandomId } from "../node/client.utils";
 import type { SandpackNodeMessage } from "../node/types";
@@ -84,24 +85,15 @@ export class SandpackStatic extends SandpackClient {
       const element = document.querySelector(selector);
 
       this.element = element!;
-      this.iframe = document.createElement("iframe");
+      // Opaque-origin app iframe via the single factory (G1/T1) — untrusted
+      // preview content runs at an opaque origin (see the runtime client).
+      this.iframe = createSandboxedIframe();
     } else {
       this.element = selector;
       this.iframe = selector;
     }
-    if (!this.iframe.getAttribute("sandbox")) {
-      // No `allow-same-origin`: untrusted preview content runs at an opaque
-      // origin (see the runtime client for rationale).
-      this.iframe.setAttribute(
-        "sandbox",
-        "allow-forms allow-modals allow-popups allow-presentation allow-scripts allow-downloads allow-pointer-lock",
-      );
-
-      this.iframe.setAttribute(
-        "allow",
-        "accelerometer; camera; encrypted-media; geolocation; gyroscope; hid; microphone; midi; clipboard-read; clipboard-write; xr-spatial-tracking;",
-      );
-    }
+    // Set-and-assert: harden a host-provided iframe; verify no allow-same-origin.
+    ensureSandboxed(this.iframe);
 
     this.eventListener = this.eventListener.bind(this);
     if (typeof window !== "undefined") {

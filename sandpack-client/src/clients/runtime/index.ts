@@ -19,6 +19,7 @@ import {
   addPackageJSONIfNeeded,
 } from "../../utils";
 import { SandpackClient } from "../base";
+import { createSandboxedIframe, ensureSandboxed } from "../iframe-factory";
 
 import Protocol from "./file-resolver-protocol";
 import { handleImmutableFetch } from "./immutable-fetch-protocol";
@@ -78,28 +79,21 @@ export class SandpackRuntime extends SandpackClient {
       nullthrows(element, `The element '${selector}' was not found`);
 
       this.element = element!;
-      this.iframe = document.createElement("iframe");
+      // Opaque-origin app iframe via the single factory (G1/T1). No
+      // `allow-same-origin`: the iframe runs untrusted code at an opaque origin
+      // so it can't read domain-scoped cookies, register service workers, or
+      // touch shared storage on the bundler origin. The Babel worker that used
+      // to require same-origin is now owned by the parent and reached over a
+      // transferred `MessagePort` (see `createBabelWorkerPort`).
+      this.iframe = createSandboxedIframe();
       this.initializeElement();
     } else {
       this.element = selector;
       this.iframe = selector;
     }
-    if (!this.iframe.getAttribute("sandbox")) {
-      // No `allow-same-origin`: the iframe runs untrusted code at an opaque
-      // origin so it can't read domain-scoped cookies, register service
-      // workers, or touch shared storage on the bundler origin. The Babel
-      // worker that used to require same-origin is now owned by the parent and
-      // reached over a transferred `MessagePort` (see `createBabelWorkerPort`).
-      this.iframe.setAttribute(
-        "sandbox",
-        "allow-forms allow-modals allow-popups allow-presentation allow-scripts allow-downloads allow-pointer-lock",
-      );
-
-      this.iframe.setAttribute(
-        "allow",
-        "accelerometer; camera; encrypted-media; geolocation; gyroscope; hid; microphone; midi; clipboard-read; clipboard-write; xr-spatial-tracking;",
-      );
-    }
+    // Set-and-assert: a host-provided iframe is hardened here, and any iframe
+    // (created or passed) is verified to carry no `allow-same-origin`.
+    ensureSandboxed(this.iframe);
 
     this.setLocationURLIntoIFrame();
 

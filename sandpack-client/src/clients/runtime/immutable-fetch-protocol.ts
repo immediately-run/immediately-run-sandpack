@@ -26,6 +26,12 @@ const IMMUTABLE_URL_ALLOWLIST = [
   "https://sandpack-cdn-staging.blazingly.io/package/",
   // unpkg files, requested by the bundler at registry-resolved exact versions.
   "https://unpkg.com/",
+  // Self-hosted, versioned @immediately-run/sdk builds (SDK_PACKAGING_SPEC
+  // §5/§11, Option A). The /v/<version>/ path encodes the exact version, so
+  // responses are immutable; the bundler fetches these when an app opts the SDK
+  // into immediately.run.resolveFromRegistry. Keep in sync with the prefix the
+  // bundler registers via registerImmutableUrlPrefix (sandbox bundler.ts).
+  "https://immediately-run.github.io/immediately-run-sdk/v/",
 ];
 
 const IMMUTABLE_CACHE_NAME = "sandpack-immutable-fetch-v1";

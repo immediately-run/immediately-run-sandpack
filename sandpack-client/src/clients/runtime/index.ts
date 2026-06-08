@@ -408,6 +408,7 @@ export class SandpackRuntime extends SandpackClient {
   private async computeInitConfig(): Promise<{
     template?: string;
     logLevel: SandpackLogLevel;
+    sdkIntegrity?: unknown;
   }> {
     const fs = this.sandboxSetup.fs;
 
@@ -452,6 +453,10 @@ export class SandpackRuntime extends SandpackClient {
       template:
         this.sandboxSetup.template || getTemplate(packageJSON, fileNameMap),
       logLevel: this.options.logLevel ?? SandpackLogLevel.Info,
+      // Host-pinned SDK integrity hashes (SDK_PACKAGING_SPEC §5.2), forwarded
+      // verbatim into register-frame for the bundler to verify against. The host
+      // sets it via client options; absent → the bundler skips verification.
+      sdkIntegrity: (this.options as { sdkIntegrity?: unknown }).sdkIntegrity,
     };
   }
 

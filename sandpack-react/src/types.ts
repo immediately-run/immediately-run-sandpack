@@ -11,6 +11,7 @@ import type {
   SandpackError,
   SandpackFS,
   SandpackMessage,
+  SdkIntegrity,
   UnsubscribeFunction,
   SandpackLogLevel,
 } from "@codesandbox/sandpack-client";
@@ -368,6 +369,12 @@ export interface SandpackInternalOptions {
   classes?: Record<string, string>;
   experimental_enableServiceWorker?: boolean;
   experimental_enableStableServiceWorkerId?: boolean;
+  /**
+   * Host-pinned SDK artifact integrity hashes (SDK_PACKAGING_SPEC §5.2),
+   * forwarded to the runtime client and on to the bundler for verify-before-
+   * evaluate. Absent ⇒ verification skipped.
+   */
+  sdkIntegrity?: SdkIntegrity;
 }
 
 interface SandpackInternalProps extends SandpackRootProps {

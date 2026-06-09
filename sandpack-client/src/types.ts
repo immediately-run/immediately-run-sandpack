@@ -2,6 +2,20 @@ import type { SandpackNodeMessage } from "./clients/node/types";
 import type { SandpackRuntimeMessage } from "./clients/runtime/types";
 import type { SandpackFS } from "./fs/SandpackFS";
 
+/**
+ * Host-pinned SDK artifact integrity (SDK_PACKAGING_SPEC §5.2), keyed
+ * module → concrete version → `{ relPath: 'sha384-<base64>' }`. The host (the
+ * TCB) supplies it; the runtime client forwards it verbatim into the
+ * register-frame handshake, and the bundler verifies fetched SDK bytes against
+ * it BEFORE evaluation, failing the boot closed on any mismatch. Absent ⇒
+ * verification is skipped (the pin is not wired) rather than self-attesting
+ * against the origin's own manifest.
+ */
+export type SdkIntegrity = Record<
+  string,
+  Record<string, Record<string, string>>
+>;
+
 export interface ClientOptions {
   /**
    * Paths to external resources
@@ -76,6 +90,14 @@ export interface ClientOptions {
    */
   experimental_enableServiceWorker?: boolean;
   experimental_stableServiceWorkerId?: string;
+
+  /**
+   * Host-pinned SDK artifact integrity hashes (SDK_PACKAGING_SPEC §5.2).
+   * Forwarded verbatim into the register-frame handshake; the bundler verifies
+   * fetched SDK bytes against it before evaluation. Absent ⇒ verification
+   * skipped.
+   */
+  sdkIntegrity?: SdkIntegrity;
 }
 
 export interface SandboxSetup {

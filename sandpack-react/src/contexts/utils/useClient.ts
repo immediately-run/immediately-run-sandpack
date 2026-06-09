@@ -187,6 +187,10 @@ export const useClient: UseClient = (
           startRoute: clientPropsOverride?.startRoute ?? options.startRoute,
           skipEval: options.skipEval ?? false,
           logLevel: options.logLevel,
+          // Host-pinned SDK integrity (SDK_PACKAGING_SPEC §5.2): forward the pin
+          // so the runtime client can deliver it on the register-frame
+          // handshake. Absent ⇒ the bundler skips verification.
+          sdkIntegrity: options.sdkIntegrity,
           showOpenInCodeSandbox: false,
           showErrorScreen: true,
           showLoadingScreen: false,

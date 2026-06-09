@@ -10,6 +10,7 @@ import type {
   ListenerFunction,
   SandboxSetup,
   SandpackError,
+  SdkIntegrity,
   UnsubscribeFunction,
 } from "../../types";
 import { SandpackLogLevel } from "../../types";
@@ -408,7 +409,7 @@ export class SandpackRuntime extends SandpackClient {
   private async computeInitConfig(): Promise<{
     template?: string;
     logLevel: SandpackLogLevel;
-    sdkIntegrity?: unknown;
+    sdkIntegrity?: SdkIntegrity;
   }> {
     const fs = this.sandboxSetup.fs;
 
@@ -456,7 +457,7 @@ export class SandpackRuntime extends SandpackClient {
       // Host-pinned SDK integrity hashes (SDK_PACKAGING_SPEC §5.2), forwarded
       // verbatim into register-frame for the bundler to verify against. The host
       // sets it via client options; absent → the bundler skips verification.
-      sdkIntegrity: (this.options as { sdkIntegrity?: unknown }).sdkIntegrity,
+      sdkIntegrity: this.options.sdkIntegrity,
     };
   }
 

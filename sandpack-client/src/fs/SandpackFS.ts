@@ -81,7 +81,12 @@ export class SandpackFS {
     public readonly fsContext: BoundContext,
     public readonly remotePortFactory: (
       onRemoteChange: (path: string) => void
-    ) => Promise<MessagePort>
+    ) => Promise<MessagePort>,
+    // Invoked after a LOCAL editor write (writeFile) lands in the backing fs,
+    // with the normalized repo-relative path. The host uses it to record overlay
+    // provenance (COW_OVERLAY_PROVENANCE_SPEC §5 — the writer declares intent);
+    // iframe writes go through `remotePortFactory`/`handleRemoteChange` instead.
+    private readonly onWrite?: (path: string) => void
   ) {
   }
 
@@ -104,7 +109,8 @@ export class SandpackFS {
     options: { environment?: string; mode?: string } = {},
     remotePortFactory: (
       onRemoteChange: (path: string) => void
-    ) => Promise<MessagePort>
+    ) => Promise<MessagePort>,
+    onWrite?: (path: string) => void
   ): Promise<SandpackFS> {
     const id = ++mountCounter;
     const prefix = `/__sandpack_${id}`;
@@ -113,7 +119,7 @@ export class SandpackFS {
     mount(prefix, backend);
     const ctxt = bindContext({ root: prefix });
 
-    const instance = new SandpackFS(ctxt, remotePortFactory);
+    const instance = new SandpackFS(ctxt, remotePortFactory, onWrite);
     if (options.environment !== undefined) {
       instance.sidecarEnvironment = options.environment;
     }
@@ -135,9 +141,10 @@ export class SandpackFS {
     fsContext: BoundContext,
     remotePortFactory: (
       onRemoteChange: (path: string) => void
-    ) => Promise<MessagePort>
+    ) => Promise<MessagePort>,
+    onWrite?: (path: string) => void
   ): Promise<SandpackFS> {
-    const instance = new SandpackFS(fsContext, remotePortFactory);
+    const instance = new SandpackFS(fsContext, remotePortFactory, onWrite);
     await instance.ensureMetaDir();
     await instance.refreshMetaCache();
 
@@ -167,7 +174,10 @@ export class SandpackFS {
     const abs = this.toAbs(path);
     await this.ensureParent(abs);
     await this.fsContext.fs.promises.writeFile(abs, content);
-    this.notify({ path: normalize(path), external: false });
+    const normalized = normalize(path);
+    this.notify({ path: normalized, external: false });
+    // A local editor write — declare it to the host's provenance recorder.
+    this.onWrite?.(normalized);
   }
 
   async unlink(path: string): Promise<void> {

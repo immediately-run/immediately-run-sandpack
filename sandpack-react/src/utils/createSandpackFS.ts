@@ -150,8 +150,12 @@ export const createSandpackFromFS = (
   remotePortFactory: (
     onRemoteChange: (path: string) => void,
   ) => Promise<MessagePort>,
+  // Invoked after each local editor write, with the normalized repo-relative
+  // path — the host records overlay provenance from it (COW_OVERLAY_PROVENANCE
+  // _SPEC §5). Optional; omitting it preserves prior behavior.
+  onWrite?: (path: string) => void,
 ): Promise<SandpackFS> => {
-  return SandpackFS.fromFileSystemContext(fsContext, remotePortFactory);
+  return SandpackFS.fromFileSystemContext(fsContext, remotePortFactory, onWrite);
 }
 
 /**

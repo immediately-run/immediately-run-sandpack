@@ -162,6 +162,10 @@ export interface SandpackOptions {
   logLevel?: SandpackLogLevel;
   bundlerURL?: string;
   babelWorkerURL?: string;
+  /** Host-pinned SDK artifact integrity (SDK_PACKAGING_SPEC §5.2), forwarded to
+   *  the client and on into the `register-frame` handshake for the bundler to
+   *  verify the self-hosted SDK bytes before evaluation. */
+  sdkIntegrity?: Record<string, Record<string, Record<string, string>>>;
   startRoute?: string;
   skipEval?: boolean;
   externalResources?: string[];
@@ -361,6 +365,10 @@ export interface SandpackInternalOptions {
   logLevel?: SandpackLogLevel;
   bundlerURL?: string;
   babelWorkerURL?: string;
+  /** Host-pinned SDK artifact integrity (SDK_PACKAGING_SPEC §5.2), forwarded to
+   *  the client and on into the `register-frame` handshake for the bundler to
+   *  verify the self-hosted SDK bytes before evaluation. */
+  sdkIntegrity?: Record<string, Record<string, Record<string, string>>>;
   bundlerTimeOut?: number;
   startRoute?: string;
   skipEval?: boolean;

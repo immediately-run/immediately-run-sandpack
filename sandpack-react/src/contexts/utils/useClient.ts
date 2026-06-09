@@ -184,6 +184,9 @@ export const useClient: UseClient = (
           externalResources: options.externalResources,
           bundlerURL: options.bundlerURL,
           babelWorkerURL: options.babelWorkerURL,
+          // Host-pinned SDK integrity (SDK_PACKAGING_SPEC §5.2) → client →
+          // register-frame → bundler verification.
+          sdkIntegrity: options.sdkIntegrity,
           startRoute: clientPropsOverride?.startRoute ?? options.startRoute,
           skipEval: options.skipEval ?? false,
           logLevel: options.logLevel,

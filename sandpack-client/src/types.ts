@@ -24,6 +24,16 @@ export interface ClientOptions {
    */
   logLevel?: SandpackLogLevel;
   /**
+   * Host-pinned SDK artifact integrity (SDK_PACKAGING_SPEC §5.2), keyed
+   * module → version → { fileRel: 'sha384-<b64>' }. Forwarded verbatim into the
+   * `register-frame` handshake (see `computeInitConfig`) so the bundler can
+   * verify the self-hosted SDK bytes it fetches against these hashes before
+   * evaluation. Supplied by the host (the TCB); absent → the bundler skips
+   * verification (the guarantee is inactive — it must come from the host, not
+   * the self-hosting origin).
+   */
+  sdkIntegrity?: Record<string, Record<string, Record<string, string>>>;
+  /**
    * Relative path that the iframe loads (eg: /about)
    */
   startRoute?: string;

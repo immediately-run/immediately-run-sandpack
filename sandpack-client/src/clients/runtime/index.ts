@@ -140,7 +140,9 @@ export class SandpackRuntime extends SandpackClient {
               if (data.method !== "fetch") {
                 throw new Error("Method not supported");
               }
-              return handleImmutableFetch(data.params[0]);
+              // params[1] is an optional `sha384-…` integrity the caller pins
+              // for this URL (SDK files); the cache verifies against it.
+              return handleImmutableFetch(data.params[0], data.params[1]);
             },
             this.iframeProtocol,
           );

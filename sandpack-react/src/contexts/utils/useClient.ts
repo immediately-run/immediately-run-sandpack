@@ -211,6 +211,33 @@ export const useClient: UseClient = (
       unsubscribeClientListeners.current[clientId] =
         unsubscribeClientListeners.current[clientId] || {};
 
+      // Clear the global bundler timeout as soon as THIS client reports a
+      // successful compile. `handleMessage` (above) is bound to the FIRST client
+      // ONLY, so a separate, later client — e.g. the self-routed file-explorer
+      // panel, its own SandpackProvider — would otherwise never clear the timer
+      // and hit a spurious TIME_OUT after loading fine (the #4 panel race): the
+      // app loaded but its "done" was never registered against the timeout.
+      // Belt-and-braces: (a) a per-client listener so any client's "done"/"connected"
+      // clears it, and (b) a status reconcile for a "done" that already landed
+      // before this listener attached (a fast warm-cache load).
+      const clearTimeoutOnReady = (msg: SandpackMessage): void => {
+        if (
+          ((msg.type === "done" && !msg.compilatonError) ||
+            msg.type === "connected") &&
+          timeoutHook.current
+        ) {
+          clearTimeout(timeoutHook.current);
+          timeoutHook.current = null;
+        }
+      };
+      unsubscribeClientListeners.current[clientId]["__sp_timeout_reconcile__"] =
+        client.listen(clearTimeoutOnReady) as () => void;
+      if (client.status === "done" && timeoutHook.current) {
+        clearTimeout(timeoutHook.current);
+        timeoutHook.current = null;
+        setState((prev) => ({ ...prev, error: null }));
+      }
+
       /**
        * Register any potential listeners that subscribed before sandpack ran
        */

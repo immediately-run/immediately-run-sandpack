@@ -375,6 +375,13 @@ export interface SandpackInternalOptions {
    * evaluate. Absent ⇒ verification skipped.
    */
   sdkIntegrity?: SdkIntegrity;
+  /**
+   * The dirty set (PRETRANSPILED_ARTIFACTS_SPEC §5.2): repo-relative paths in the
+   * COW writable layer + the journal's deleted set, forwarded to the runtime
+   * client and on to the bundler so seeding skips artifacts for paths edited in a
+   * previous session. Absent ⇒ nothing dirty.
+   */
+  dirtyPaths?: string[];
 }
 
 interface SandpackInternalProps extends SandpackRootProps {

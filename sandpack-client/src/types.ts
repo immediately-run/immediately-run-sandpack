@@ -98,6 +98,15 @@ export interface ClientOptions {
    * skipped.
    */
   sdkIntegrity?: SdkIntegrity;
+
+  /**
+   * The dirty set (PRETRANSPILED_ARTIFACTS_SPEC §5.2): repo-relative paths in the
+   * COW writable layer (edited in a previous session) plus the journal's deleted
+   * set. Forwarded verbatim into the register-frame handshake so the bundler
+   * never seeds a pre-transpiled artifact for a path whose `/app` content no
+   * longer matches the zip. Absent ⇒ nothing dirty.
+   */
+  dirtyPaths?: string[];
 }
 
 export interface SandboxSetup {

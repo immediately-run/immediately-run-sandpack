@@ -191,6 +191,10 @@ export const useClient: UseClient = (
           // so the runtime client can deliver it on the register-frame
           // handshake. Absent ⇒ the bundler skips verification.
           sdkIntegrity: options.sdkIntegrity,
+          // The §5.2 dirty set: forward so the runtime client delivers it on
+          // register-frame and the bundler skips seeding edited-in-a-prior-session
+          // paths. Absent ⇒ nothing dirty.
+          dirtyPaths: options.dirtyPaths,
           showOpenInCodeSandbox: false,
           showErrorScreen: true,
           showLoadingScreen: false,

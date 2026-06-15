@@ -412,6 +412,7 @@ export class SandpackRuntime extends SandpackClient {
     template?: string;
     logLevel: SandpackLogLevel;
     sdkIntegrity?: SdkIntegrity;
+    dirtyPaths?: string[];
   }> {
     const fs = this.sandboxSetup.fs;
 
@@ -460,6 +461,10 @@ export class SandpackRuntime extends SandpackClient {
       // verbatim into register-frame for the bundler to verify against. The host
       // sets it via client options; absent → the bundler skips verification.
       sdkIntegrity: this.options.sdkIntegrity,
+      // The §5.2 dirty set, forwarded verbatim into register-frame so the bundler
+      // skips seeding artifacts for paths edited in a previous session. Absent ⇒
+      // nothing dirty.
+      dirtyPaths: this.options.dirtyPaths,
     };
   }
 

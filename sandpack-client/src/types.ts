@@ -107,7 +107,20 @@ export interface ClientOptions {
    * longer matches the zip. Absent ⇒ nothing dirty.
    */
   dirtyPaths?: string[];
+
+  /**
+   * R3-49b ZenFS batch hydration: a bulk snapshot of the mounted tree (`/app`
+   * source + bundled `/node_modules` package msgpack) forwarded verbatim into the
+   * register-frame handshake. The bundler hydrates its read caches before the first
+   * compile so reads come from memory instead of one Port round-trip per file
+   * (`loadNodeModules` — ~99% of cold boot). Absent ⇒ reads cross the Port as before.
+   */
+  fsSnapshot?: FsSnapshot;
 }
+
+/** A batch-hydration snapshot entry list: each entry is a sandbox `/app`-rooted path
+ *  + its content (text for source, bytes for the bundled package msgpack). R3-49b. */
+export type FsSnapshot = Array<{ path: string; content: string | Uint8Array }>;
 
 export interface SandboxSetup {
   /**

@@ -195,6 +195,10 @@ export const useClient: UseClient = (
           // register-frame and the bundler skips seeding edited-in-a-prior-session
           // paths. Absent ⇒ nothing dirty.
           dirtyPaths: options.dirtyPaths,
+          // R3-49b batch-hydration snapshot: forward so the runtime client delivers
+          // it on register-frame and the bundler hydrates its read caches before the
+          // first compile. Absent ⇒ reads cross the Port as before.
+          fsSnapshot: options.fsSnapshot,
           showOpenInCodeSandbox: false,
           showErrorScreen: true,
           showLoadingScreen: false,

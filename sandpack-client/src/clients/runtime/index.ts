@@ -7,6 +7,7 @@ import type { SandpackFS } from "../../fs/SandpackFS";
 import type {
   BundlerState,
   ClientOptions,
+  FsSnapshot,
   ListenerFunction,
   SandboxSetup,
   SandpackError,
@@ -413,6 +414,7 @@ export class SandpackRuntime extends SandpackClient {
     logLevel: SandpackLogLevel;
     sdkIntegrity?: SdkIntegrity;
     dirtyPaths?: string[];
+    fsSnapshot?: FsSnapshot;
   }> {
     const fs = this.sandboxSetup.fs;
 
@@ -465,6 +467,10 @@ export class SandpackRuntime extends SandpackClient {
       // skips seeding artifacts for paths edited in a previous session. Absent ⇒
       // nothing dirty.
       dirtyPaths: this.options.dirtyPaths,
+      // R3-49b batch-hydration snapshot, forwarded verbatim into register-frame so
+      // the bundler hydrates its read caches before the first compile. Absent ⇒
+      // reads cross the Port as before.
+      fsSnapshot: this.options.fsSnapshot,
     };
   }
 

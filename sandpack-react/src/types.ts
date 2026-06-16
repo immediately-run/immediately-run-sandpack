@@ -12,6 +12,7 @@ import type {
   SandpackFS,
   SandpackMessage,
   SdkIntegrity,
+  FsSnapshot,
   UnsubscribeFunction,
   SandpackLogLevel,
 } from "@codesandbox/sandpack-client";
@@ -382,6 +383,13 @@ export interface SandpackInternalOptions {
    * previous session. Absent ⇒ nothing dirty.
    */
   dirtyPaths?: string[];
+  /**
+   * R3-49b ZenFS batch hydration: a bulk snapshot of the mounted tree, forwarded to
+   * the runtime client and on to the bundler, which hydrates its read caches before
+   * the first compile so reads come from memory instead of per-file Port round-trips.
+   * Absent ⇒ reads cross the Port as before.
+   */
+  fsSnapshot?: FsSnapshot;
 }
 
 interface SandpackInternalProps extends SandpackRootProps {

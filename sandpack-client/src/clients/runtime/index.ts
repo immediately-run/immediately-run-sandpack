@@ -415,6 +415,7 @@ export class SandpackRuntime extends SandpackClient {
     sdkIntegrity?: SdkIntegrity;
     dirtyPaths?: string[];
     fsSnapshot?: FsSnapshot;
+    region?: string;
   }> {
     const fs = this.sandboxSetup.fs;
 
@@ -471,6 +472,10 @@ export class SandpackRuntime extends SandpackClient {
       // the bundler hydrates its read caches before the first compile. Absent ⇒
       // reads cross the Port as before.
       fsSnapshot: this.options.fsSnapshot,
+      // The chrome region this frame occupies (R3-114), forwarded verbatim into
+      // register-frame so the bundler surfaces it on the runtime global for the
+      // SDK's getRegion(). Absent ⇒ the app reads no region.
+      region: this.options.region,
     };
   }
 

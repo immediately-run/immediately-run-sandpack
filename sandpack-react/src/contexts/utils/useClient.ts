@@ -199,6 +199,10 @@ export const useClient: UseClient = (
           // it on register-frame and the bundler hydrates its read caches before the
           // first compile. Absent ⇒ reads cross the Port as before.
           fsSnapshot: options.fsSnapshot,
+          // The chrome region this frame occupies (R3-114): forward so the runtime
+          // client delivers it on register-frame and the bundler surfaces it on the
+          // runtime global for the SDK's getRegion(). Absent ⇒ the app reads no region.
+          region: options.region,
           showOpenInCodeSandbox: false,
           showErrorScreen: true,
           showLoadingScreen: false,

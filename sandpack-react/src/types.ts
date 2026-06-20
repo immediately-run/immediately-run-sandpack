@@ -390,6 +390,14 @@ export interface SandpackInternalOptions {
    * Absent ⇒ reads cross the Port as before.
    */
   fsSnapshot?: FsSnapshot;
+  /**
+   * The chrome region this app instance occupies, e.g. `"panel.agent"` or
+   * `"stage.conversation"` (R3-114). Forwarded to the runtime client and on to the
+   * bundler, which surfaces it on the `__immediatelyRun__` runtime global for the
+   * SDK's `getRegion()`/`useRegion()`. Descriptive only — grants and gates nothing.
+   * Absent ⇒ the app reads no region.
+   */
+  region?: string;
 }
 
 interface SandpackInternalProps extends SandpackRootProps {

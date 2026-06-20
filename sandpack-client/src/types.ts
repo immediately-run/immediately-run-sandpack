@@ -116,6 +116,15 @@ export interface ClientOptions {
    * (`loadNodeModules` — ~99% of cold boot). Absent ⇒ reads cross the Port as before.
    */
   fsSnapshot?: FsSnapshot;
+
+  /**
+   * The chrome region this app instance occupies, e.g. `"panel.agent"` or
+   * `"stage.conversation"` (R3-114). Forwarded verbatim into the register-frame
+   * handshake so the bundler can surface it on the `__immediatelyRun__` runtime
+   * global for the SDK's `getRegion()`/`useRegion()`. Descriptive only — it grants
+   * and gates nothing. Absent ⇒ the app reads no region (`getRegion()` → null).
+   */
+  region?: string;
 }
 
 /** A batch-hydration snapshot entry list: each entry is a sandbox `/app`-rooted path

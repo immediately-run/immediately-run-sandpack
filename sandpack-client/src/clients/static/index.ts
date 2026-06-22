@@ -1,4 +1,8 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
+// DEAD-CANDIDATE(2026-06): inherited upstream — the static-HTML client (no transpilation)
+// is not used by immediately.run's live-bundled flow. Not in the site-main import closure.
+// See DEPRECATION_CANDIDATES.md. Flag-only, do NOT remove: clients/index.ts dispatches to it
+// and no-raw-app-iframe.test.ts asserts this file is present in its scan path.
 import type { FileContent } from "static-browser-server";
 import { PreviewController } from "static-browser-server";
 

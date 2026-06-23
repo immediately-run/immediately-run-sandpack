@@ -23,8 +23,8 @@ import { SandpackClient } from "../base";
 import { createSandboxedIframe, ensureSandboxed } from "../iframe-factory";
 
 import Protocol from "./file-resolver-protocol";
-import { handleImmutableFetch } from "./immutable-fetch-protocol";
 import { IFrameProtocol } from "./iframe-protocol";
+import { handleImmutableFetch } from "./immutable-fetch-protocol";
 import { EXTENSIONS_MAP } from "./mime";
 import type { IPreviewRequestMessage, IPreviewResponseMessage } from "./types";
 import { CHANNEL_NAME, type SandpackRuntimeMessage } from "./types";
@@ -102,7 +102,6 @@ export class SandpackRuntime extends SandpackClient {
 
     this.unsubscribeGlobalListener = this.iframeProtocol.globalListen(
       (mes: SandpackMessage) => {
-        console.log("[SandpackRuntime] Global message listener received message", mes);
         if (mes.type !== "initialized" || !this.iframe.contentWindow) {
           return;
         }

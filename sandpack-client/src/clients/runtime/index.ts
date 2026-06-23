@@ -18,14 +18,13 @@ import { SandpackLogLevel } from "../../types";
 import {
   extractErrorDetails,
   createPackageJSON,
-  addPackageJSONIfNeeded,
 } from "../../utils";
 import { SandpackClient } from "../base";
 import { createSandboxedIframe, ensureSandboxed } from "../iframe-factory";
 
 import Protocol from "./file-resolver-protocol";
-import { handleImmutableFetch } from "./immutable-fetch-protocol";
 import { IFrameProtocol } from "./iframe-protocol";
+import { handleImmutableFetch } from "./immutable-fetch-protocol";
 import { EXTENSIONS_MAP } from "./mime";
 import type { IPreviewRequestMessage, IPreviewResponseMessage } from "./types";
 import { CHANNEL_NAME, type SandpackRuntimeMessage } from "./types";
@@ -103,7 +102,6 @@ export class SandpackRuntime extends SandpackClient {
 
     this.unsubscribeGlobalListener = this.iframeProtocol.globalListen(
       (mes: SandpackMessage) => {
-        console.log("[SandpackRuntime] Global message listener received message", mes);
         if (mes.type !== "initialized" || !this.iframe.contentWindow) {
           return;
         }
@@ -416,20 +414,15 @@ export class SandpackRuntime extends SandpackClient {
     dirtyPaths?: string[];
     fsSnapshot?: FsSnapshot;
     region?: string;
+    packageJSON?: Record<string, unknown>;
   }> {
     const fs = this.sandboxSetup.fs;
 
-    await addPackageJSONIfNeeded(
-      fs,
-      this.sandboxSetup.dependencies,
-      this.sandboxSetup.devDependencies,
-      this.sandboxSetup.entry,
-    ).catch(() => {
-      // addPackageJSONIfNeeded throws when it can't infer a package.json. At
-      // this point we've already accepted whatever the user provided, so we
-      // log and move on.
-    });
-
+    // BOOT_SCAFFOLDING_SPEC §3 — the resolved package.json is delivered to the
+    // bundler OUT-OF-BAND in this config (`packageJSON` below), so we no longer
+    // write a synthesized copy into the shared filesystem. (The old
+    // `addPackageJSONIfNeeded(fs, …)` write is what put `package.json` into the
+    // CoW writable layer and forced the rewrite-loop guard.)
     let packageJSON = JSON.parse(
       createPackageJSON(
         this.sandboxSetup.dependencies,
@@ -476,6 +469,12 @@ export class SandpackRuntime extends SandpackClient {
       // register-frame so the bundler surfaces it on the runtime global for the
       // SDK's getRegion(). Absent ⇒ the app reads no region.
       region: this.options.region,
+      // BOOT_SCAFFOLDING_SPEC §3 — the resolved root package.json, forwarded
+      // out-of-band so the bundler reads it from config instead of the FS and no
+      // synthesized `package.json` is written into the CoW writable layer. This
+      // is the same object `getTemplate` consumes above (the repo's file when
+      // present, else the setup-derived default).
+      packageJSON,
     };
   }
 

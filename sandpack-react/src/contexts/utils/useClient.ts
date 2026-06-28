@@ -17,7 +17,10 @@ import type {
   SandpackStatus,
 } from "../..";
 import { generateRandomId } from "../../utils/stringUtils";
-import { useAsyncSandpackId } from "../../utils/useAsyncSandpackId";
+import {
+  cheapSandpackId,
+  useAsyncSandpackId,
+} from "../../utils/useAsyncSandpackId";
 
 import type { FilesState } from "./useFiles";
 
@@ -159,6 +162,14 @@ export const useClient: UseClient = (
       }
 
       const getStableServiceWorkerId = async () => {
+        // The bundler only consumes this id when the service worker is enabled.
+        // Deriving it hashes the WHOLE filesystem — it walks the maintained file
+        // list and reads every file. When the SW is off that work is pure waste
+        // (the id is ignored), so hand back a cheap throwaway id and skip the read.
+        if (!options?.experimental_enableServiceWorker) {
+          return cheapSandpackId();
+        }
+
         if (options?.experimental_enableStableServiceWorkerId) {
           const key = `SANDPACK_INTERNAL:URL-CONSISTENT-ID`;
           let fixedId = localStorage.getItem(key);

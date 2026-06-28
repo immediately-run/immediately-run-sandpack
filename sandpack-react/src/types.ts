@@ -544,8 +544,6 @@ export interface SandpackState {
   closeFile: (path: string) => void;
   deleteFile: (path: string, shouldUpdatePreview?: boolean) => Promise<void>;
   setActiveFile: (path: string) => void;
-  resetFile: (path: string) => Promise<void>;
-  resetAllFiles: () => Promise<void>;
   registerReactDevTools: (value: ReactDevToolsMode) => void;
   /**
    * Element refs

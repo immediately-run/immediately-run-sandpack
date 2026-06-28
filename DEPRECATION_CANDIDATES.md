@@ -34,6 +34,17 @@ forked bundler — register-frame handshake, immutable-fetch, file-resolver), `s
 (the G1/T1 chokepoint), `src/fs/SandpackFS.ts` (site-main imports `SandpackFS`), `src/clients/base.ts`,
 `src/clients/event-emitter.ts`, `src/types.ts`, `src/utils.ts`.
 
+**Method-level candidate inside a USED file:** `RuntimeSandboxClient.getCodeSandboxURL()` and its
+`snapshotFS()` helper (`src/clients/runtime/index.ts`). These read the **entire** filesystem (walk the
+maintained file list + `readFile` every entry) to POST the project to `codesandbox.io/api/v1/sandboxes/define`
+for "Open in CodeSandbox." The only caller is the upstream-branded `OpenInCodeSandboxButton` (flagged
+below), which site-main gates off via `showOpenInCodeSandbox: false`. So this whole-tree read is **dead in
+immediately.run** — it never fires — but it's carried inherited surface. Flag-only: the runtime client file
+itself is USED, and `getCodeSandboxURL` is part of the upstream `SandpackClient` shape, so removing it would
+diverge the client interface from upstream. (Active per-edit/per-mount whole-tree reads — `useAppState`,
+`useFiles`' reset snapshot, and the SW-id hash — were *removed* in this same change set, R3 sandpack
+unnecessary-reads; this one stays flagged because it costs nothing at runtime.)
+
 ---
 
 ## sandpack-react — components (`src/components/*`)

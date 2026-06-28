@@ -19,7 +19,8 @@
   "scripts": {
     "clean": "rm -rf sandpack*/dist/*",
     "test": "turbo run test --filter=\"@codesandbox/**\"",
-    "build": "turbo run build --filter=\"@codesandbox/**\"",
+    "build": "turbo run build --filter=\"@codesandbox/**\" && node scripts/build-stamp.mjs",
+    "stamp": "node scripts/build-stamp.mjs",
     "build:client": "turbo run build --filter=\"@codesandbox/sandpack-client\"",
     "build:react": "turbo run build --filter=\"@codesandbox/sandpack-react\"",
     "typecheck": "turbo run typecheck --filter=\"@codesandbox/**\"",

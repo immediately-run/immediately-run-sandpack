@@ -1,11 +1,15 @@
 {
-  "name": "@codesandbox/sandpack-react",
+  "name": "@immediately-run/sandpack-react",
   "version": "2.20.0",
   "description": "",
   "keywords": [],
   "repository": {
     "type": "git",
-    "url": "https://github.com/codesandbox/sandpack"
+    "url": "git+https://github.com/immediately-run/immediately-run-sandpack.git",
+    "directory": "sandpack-react"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "license": "Apache-2.0",
   "author": "CodeSandbox",
@@ -58,7 +62,7 @@
     "@codemirror/language": "^6.10.6",
     "@codemirror/state": "^6.5.0",
     "@codemirror/view": "^6.35.3",
-    "@codesandbox/sandpack-client": "^2.19.8",
+    "@immediately-run/sandpack-client": "^2.19.8",
     "@lezer/highlight": "^1.2.1",
     "@zenfs/core": "~2.3.11",
     "@react-hook/intersection-observer": "^3.1.2",
@@ -76,7 +80,7 @@
     "@babel/core": "^7.26.0",
     "@codemirror/lang-python": "^6.1.6",
     "@codemirror/legacy-modes": "^6.4.1",
-    "@codesandbox/sandpack-themes": "^2.0.21",
+    "@immediately-run/sandpack-themes": "^2.0.21",
     "@storybook/react": "^8.4.7",
     "@storybook/react-vite": "^8.4.7",
     "@testing-library/dom": "^10.4.0",

@@ -1,0 +1,47 @@
+name: publish-immediately-run
+
+# Publish the three forked packages to npm under the @immediately-run org via npm
+# trusted publishing (OIDC) on push to main — mirroring preauth-core / the SDK release job.
+# site-main consumes these as ordinary pinned npm deps (R3-105: no `file:`, no upstream
+# `@codesandbox/sandpack-*`). Each package is skipped if its current version is already
+# published, so a no-version-bump push is a no-op.
+#
+# OPERATOR PREREQUISITE: configure an npm "trusted publisher" for EACH of
+# @immediately-run/sandpack-client, @immediately-run/sandpack-react,
+# @immediately-run/sandpack-themes pointing at this repo + this workflow, before the first
+# publish. Until then the build/typecheck steps still run; only the publish step needs the trust link.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build-publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # npm trusted publishing (OIDC)
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          registry-url: 'https://registry.npmjs.org'
+          package-manager-cache: false
+      - run: npm install -g npm@latest # trusted publishing needs npm >= 11.5.1
+      - run: yarn install --frozen-lockfile
+      - run: yarn build
+      - name: Publish each package (skip if its version is already published)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          NODE_AUTH_TOKEN: "" # force OIDC trusted publishing, not (empty) token auth
+        run: |
+          for pkg in sandpack-client sandpack-react sandpack-themes; do
+            name=$(node -p "require('./$pkg/package.json').name")
+            ver=$(node -p "require('./$pkg/package.json').version")
+            if npm view "$name@$ver" version >/dev/null 2>&1; then
+              echo "::notice::$name@$ver already published — skipping."
+            else
+              (cd "$pkg" && npm publish)
+            fi
+          done

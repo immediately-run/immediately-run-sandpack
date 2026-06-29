@@ -1,4 +1,4 @@
-// DEAD-CANDIDATE(2026-06): the entire @codesandbox/sandpack-themes package is inherited upstream
+// DEAD-CANDIDATE(2026-06): the entire @immediately-run/sandpack-themes package is inherited upstream
 // and unused by immediately.run — site-main themes Sandpack via SandpackProvider props + its own
 // design-token theme (site-main/src/editor/chrome/sandpackTheme.ts), importing nothing from here.
 // Flag-only, do NOT remove: the package is still built by `yarn build` and shipped as a file: dep;

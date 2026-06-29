@@ -1,4 +1,4 @@
-import type { SandpackFS } from "@codesandbox/sandpack-client";
+import type { SandpackFS } from "@immediately-run/sandpack-client";
 import React from "react";
 
 import type { CreateSandpackFSOptions } from "./createSandpackFS";

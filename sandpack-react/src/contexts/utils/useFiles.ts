@@ -1,5 +1,5 @@
-import type { FileMetaMap, SandpackFS } from "@codesandbox/sandpack-client";
-import { normalizePath } from "@codesandbox/sandpack-client/utils";
+import type { FileMetaMap, SandpackFS } from "@immediately-run/sandpack-client";
+import { normalizePath } from "@immediately-run/sandpack-client/utils";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import type { SandboxEnvironment, SandpackProviderProps } from "../..";

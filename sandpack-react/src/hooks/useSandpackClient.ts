@@ -3,7 +3,7 @@ import type {
   SandpackClient,
   SandpackMessage,
   UnsubscribeFunction,
-} from "@codesandbox/sandpack-client";
+} from "@immediately-run/sandpack-client";
 import * as React from "react";
 
 import type { ClientPropsOverride } from "../contexts/utils/useClient";

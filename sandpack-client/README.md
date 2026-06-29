@@ -6,7 +6,7 @@ This is a small foundation package that sits on top of the bundler. It is
 framework agnostic and facilitates the handshake between your context and the bundler iframe.
 
 ```js
-import { loadSandpackClient } from "@codesandbox/sandpack-client";
+import { loadSandpackClient } from "@immediately-run/sandpack-client";
 
 const main = async () => {
   const client = await loadSandpackClient("#preview", {

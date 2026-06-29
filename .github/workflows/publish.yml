@@ -1,0 +1,62 @@
+name: Publish to npm
+
+# Publishes the @immediately-run/sandpack-* packages to the public npm registry.
+#
+# Trigger: push a tag like `v2.20.1`, or run manually (workflow_dispatch).
+# The version that gets published is whatever is in each package's package.json
+# at that commit — bump versions and commit BEFORE tagging. `npm publish` fails
+# if the version already exists, which is the intended guard against a re-publish.
+#
+# Requires an `NPM_TOKEN` repo secret: an npm automation token for the
+# @immediately-run org with publish rights. setup-node wires it into .npmrc via
+# NODE_AUTH_TOKEN; the token is never exposed to package code.
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+jobs:
+  publish:
+    name: Build and publish
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Install
+        run: yarn install
+
+      - name: Build
+        run: yarn build
+
+      # Publish in dependency order: sandpack-react depends on the client and
+      # themes, so those must exist on the registry first.
+      - name: Publish @immediately-run/sandpack-client
+        working-directory: sandpack-client
+        run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Publish @immediately-run/sandpack-themes
+        working-directory: sandpack-themes
+        run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Publish @immediately-run/sandpack-react
+        working-directory: sandpack-react
+        run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

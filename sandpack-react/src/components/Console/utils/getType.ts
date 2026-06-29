@@ -1,4 +1,4 @@
-import type { SandpackMessageConsoleMethods } from "@codesandbox/sandpack-client";
+import type { SandpackMessageConsoleMethods } from "@immediately-run/sandpack-client";
 
 export const getType = (
   message: SandpackMessageConsoleMethods,

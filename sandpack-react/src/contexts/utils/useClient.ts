@@ -6,9 +6,9 @@ import type {
   SandpackMessage,
   UnsubscribeFunction,
   SandpackClient,
-} from "@codesandbox/sandpack-client";
-import { loadSandpackClient } from "@codesandbox/sandpack-client";
-import { extractErrorDetails } from "@codesandbox/sandpack-client/utils";
+} from "@immediately-run/sandpack-client";
+import { loadSandpackClient } from "@immediately-run/sandpack-client";
+import { extractErrorDetails } from "@immediately-run/sandpack-client/utils";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import type {

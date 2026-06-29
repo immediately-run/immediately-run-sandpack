@@ -5,7 +5,7 @@
 React components that give you the power of editable sandboxes that run in the browser.
 
 ```jsx
-import { Sandpack } from "@codesandbox/sandpack-react";
+import { Sandpack } from "@immediately-run/sandpack-react";
 
 <Sandpack template="react" />;
 ```
@@ -49,7 +49,7 @@ for you, but a few things changed that you should know about:
 You can also pass a pre-built `SandpackFS` to `SandpackProvider`:
 
 ```tsx
-import { SandpackFS } from "@codesandbox/sandpack-client";
+import { SandpackFS } from "@immediately-run/sandpack-client";
 
 const fs = await SandpackFS.fromFiles({
   "/index.js": { code: "console.log('hi')" },

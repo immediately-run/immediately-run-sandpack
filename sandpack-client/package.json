@@ -1,6 +1,6 @@
 {
   "name": "@immediately-run/sandpack-client",
-  "version": "2.19.8",
+  "version": "2.19.9",
   "description": "",
   "keywords": [],
   "repository": {
@@ -65,7 +65,6 @@
   ],
   "dependencies": {
     "@codesandbox/nodebox": "0.1.8",
-    "@zenfs/core": "~2.3.11",
     "buffer": "^6.0.3",
     "dequal": "^2.0.3",
     "mime-db": "^1.53.0",
@@ -75,8 +74,12 @@
   "devDependencies": {
     "@types/mime-db": "^1.43.6",
     "@types/node": "^22.10.2",
+    "@zenfs/core": "~2.3.11",
     "del": "^6.1.1",
     "gulp": "^5.0.0",
     "typescript": "^5.7.2"
+  },
+  "peerDependencies": {
+    "@zenfs/core": "^2.3.11"
   }
 }

@@ -206,6 +206,10 @@ export const useClient: UseClient = (
           // register-frame and the bundler skips seeding edited-in-a-prior-session
           // paths. Absent ⇒ nothing dirty.
           dirtyPaths: options.dirtyPaths,
+          // The §5.7 per-commit distrust mark: forward so the runtime client delivers
+          // it on register-frame and the bundler ignores the zip's artifact section
+          // when a prior session caught a tampered artifact. Absent/false ⇒ trusted.
+          distrustArtifacts: options.distrustArtifacts,
           // R3-49b batch-hydration snapshot: forward so the runtime client delivers
           // it on register-frame and the bundler hydrates its read caches before the
           // first compile. Absent ⇒ reads cross the Port as before.

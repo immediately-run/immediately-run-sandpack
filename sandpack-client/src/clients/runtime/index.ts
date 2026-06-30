@@ -412,6 +412,7 @@ export class SandpackRuntime extends SandpackClient {
     logLevel: SandpackLogLevel;
     sdkIntegrity?: SdkIntegrity;
     dirtyPaths?: string[];
+    distrustArtifacts?: boolean;
     fsSnapshot?: FsSnapshot;
     region?: string;
     packageJSON?: Record<string, unknown>;
@@ -461,6 +462,10 @@ export class SandpackRuntime extends SandpackClient {
       // skips seeding artifacts for paths edited in a previous session. Absent ⇒
       // nothing dirty.
       dirtyPaths: this.options.dirtyPaths,
+      // The §5.7 per-commit distrust mark, forwarded verbatim into register-frame so
+      // the bundler ignores the zip's artifact section when a prior session caught a
+      // tampered artifact for this commit. Absent/false ⇒ artifacts trusted.
+      distrustArtifacts: this.options.distrustArtifacts,
       // R3-49b batch-hydration snapshot, forwarded verbatim into register-frame so
       // the bundler hydrates its read caches before the first compile. Absent ⇒
       // reads cross the Port as before.

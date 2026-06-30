@@ -109,6 +109,15 @@ export interface ClientOptions {
   dirtyPaths?: string[];
 
   /**
+   * The parent's per-commit distrust mark (PRETRANSPILED_ARTIFACTS_SPEC §5.7).
+   * When `true`, the host has recorded — keyed `(repo coords, commitSha)` — that a
+   * prior session's spot-verification caught a tampered artifact for this commit;
+   * forwarded verbatim into the register-frame handshake so the bundler treats the
+   * zip's artifact section as absent and transpiles live. Absent/false ⇒ trusted.
+   */
+  distrustArtifacts?: boolean;
+
+  /**
    * R3-49b ZenFS batch hydration: a bulk snapshot of the mounted tree (`/app`
    * source + bundled `/node_modules` package msgpack) forwarded verbatim into the
    * register-frame handshake. The bundler hydrates its read caches before the first

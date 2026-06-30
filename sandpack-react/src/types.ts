@@ -384,6 +384,14 @@ export interface SandpackInternalOptions {
    */
   dirtyPaths?: string[];
   /**
+   * The parent's per-commit distrust mark (PRETRANSPILED_ARTIFACTS_SPEC §5.7),
+   * forwarded to the runtime client and on to the bundler. When `true`, a prior
+   * session's spot-verification caught a tampered artifact for this commit, so the
+   * bundler treats the zip's artifact section as absent and transpiles live.
+   * Absent/false ⇒ artifacts trusted.
+   */
+  distrustArtifacts?: boolean;
+  /**
    * R3-49b ZenFS batch hydration: a bulk snapshot of the mounted tree, forwarded to
    * the runtime client and on to the bundler, which hydrates its read caches before
    * the first compile so reads come from memory instead of per-file Port round-trips.

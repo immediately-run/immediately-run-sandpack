@@ -36,5 +36,9 @@ export function useSandpackSelector<T>(
   }
 
   const getSelection = (): T => selector(store.getState());
-  return React.useSyncExternalStore(store.subscribe, getSelection, getSelection);
+  return React.useSyncExternalStore(
+    store.subscribe,
+    getSelection,
+    getSelection,
+  );
 }

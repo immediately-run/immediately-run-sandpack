@@ -15,9 +15,7 @@ import { useFiles } from "./utils/useFiles";
 
 const Sandpack = React.createContext<SandpackContext | null>(null);
 
-export {
-  SandpackFS
-} from "@immediately-run/sandpack-client";
+export { SandpackFS } from "@immediately-run/sandpack-client";
 
 export const SandpackProvider: React.FC<SandpackProviderProps> = (props) => {
   const { children, options, style, className, theme } = props;

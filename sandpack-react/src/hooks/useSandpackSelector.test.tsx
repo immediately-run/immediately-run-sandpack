@@ -92,8 +92,12 @@ describe("useSandpackSelector — fine-grained subscriptions (R3-108)", () => {
       return null;
     };
     // Silence the expected React error boundary console noise.
-    const spy = jest.spyOn(console, "error").mockImplementation(() => undefined);
-    expect(() => render(<Bad />)).toThrow(/must be wrapped by a "SandpackProvider"/);
+    const spy = jest
+      .spyOn(console, "error")
+      .mockImplementation(() => undefined);
+    expect(() => render(<Bad />)).toThrow(
+      /must be wrapped by a "SandpackProvider"/,
+    );
     spy.mockRestore();
   });
 });

@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 import type { LanguageSupport } from "@codemirror/language";
 import type {
   BundlerState,
@@ -22,7 +20,6 @@ import type { ClientPropsOverride } from "./contexts/utils/useClient";
 import type { SANDBOX_TEMPLATES } from "./templates";
 
 import type { CodeEditorProps } from ".";
-import type { BoundContext } from "@zenfs/core";
 
 /**
  * ------------------------ Public documentation ------------------------

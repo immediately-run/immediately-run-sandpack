@@ -16,7 +16,8 @@ import { transpiledCodeClassName } from "./TranspiledCode.css";
 export const SandpackTranspiledCode = ({
   className,
   ...props
-}: CodeViewerProps & React.HTMLAttributes<HTMLDivElement>): React.JSX.Element => {
+}: CodeViewerProps &
+  React.HTMLAttributes<HTMLDivElement>): React.JSX.Element => {
   const { sandpack } = useSandpack();
   const transpiledCode = useTranspiledCode();
   const classNames = useClassNames();

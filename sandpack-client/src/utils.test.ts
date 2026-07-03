@@ -41,7 +41,12 @@ describe(addPackageJSONIfNeededToMap, () => {
   });
 
   test("creates a package.json when absent, given deps + entry", () => {
-    const out = addPackageJSONIfNeededToMap({}, { react: "*" }, undefined, "/index.js");
+    const out = addPackageJSONIfNeededToMap(
+      {},
+      { react: "*" },
+      undefined,
+      "/index.js",
+    );
     const pkg = parsePkg(out);
     expect(pkg.dependencies).toEqual({ react: "*" });
     expect(pkg.main).toEqual("/index.js");
@@ -54,9 +59,9 @@ describe(addPackageJSONIfNeededToMap, () => {
   });
 
   test("throws when there are no dependencies at all", () => {
-    expect(() => addPackageJSONIfNeededToMap({ "/package.json": { code: `{}` } })).toThrow(
-      '[sandpack-client]: "entry" was not specified',
-    );
+    expect(() =>
+      addPackageJSONIfNeededToMap({ "/package.json": { code: `{}` } }),
+    ).toThrow('[sandpack-client]: "entry" was not specified');
   });
 });
 

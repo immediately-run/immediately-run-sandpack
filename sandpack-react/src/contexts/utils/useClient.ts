@@ -137,7 +137,12 @@ export const useClient: UseClient = (
         clients.current[clientId].destroy();
       }
 
-      console.log("[Sandpack] Creating client", { iframe, clientId, clientPropsOverride });
+      // eslint-disable-next-line no-console -- dev client-creation trace
+      console.log("[Sandpack] Creating client", {
+        iframe,
+        clientId,
+        clientPropsOverride,
+      });
 
       options ??= {};
 

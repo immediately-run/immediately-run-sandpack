@@ -125,7 +125,7 @@ export async function handleImmutableFetch(
         return serializeResponse(hit);
       }
       // Stale/poisoned entry: drop it and fall through to a fresh fetch.
-      await cache.delete(url).catch(() => {});
+      await cache.delete(url).catch(() => undefined);
     }
   }
 
@@ -137,8 +137,14 @@ export async function handleImmutableFetch(
   if (cache && (await matchesIntegrity(result.body, expected))) {
     // Only persist verified bytes. A failed put (quota) only costs the entry.
     await cache
-      .put(url, new Response(result.body.slice(0), { status: result.status, headers: { "content-type": result.contentType } }))
-      .catch(() => {});
+      .put(
+        url,
+        new Response(result.body.slice(0), {
+          status: result.status,
+          headers: { "content-type": result.contentType },
+        }),
+      )
+      .catch(() => undefined);
   }
   return result;
 }

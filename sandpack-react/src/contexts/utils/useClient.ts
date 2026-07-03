@@ -22,6 +22,11 @@ import {
   useAsyncSandpackId,
 } from "../../utils/useAsyncSandpackId";
 
+import {
+  createPreConnectDispatchQueue,
+  type PreConnectDispatchQueue,
+  type QueuedDispatch,
+} from "./preConnectDispatchQueue";
 import type { FilesState } from "./useFiles";
 
 type SandpackClientType = InstanceType<typeof SandpackClient>;
@@ -116,6 +121,18 @@ export const useClient: UseClient = (
   >({ global: {} });
   const debounceHook = useRef<number | undefined>(undefined);
   const prevEnvironment = useRef(filesState.environment);
+
+  // Pre-connect dispatch buffer (R3-109 / sandpack-seam-hardening Phase 2):
+  // `dispatch` calls made before the bundler client connects are held here in
+  // FIFO order and replayed exactly once on the first "connected"/"done", so the
+  // host can announce mount/fs state eagerly instead of re-announcing it after
+  // connect. `connectedRef` selects buffer (pre-connect) vs. direct (connected)
+  // delivery; both are reset on a full client teardown so nothing stale replays.
+  const preConnectQueue = useRef<PreConnectDispatchQueue | null>(null);
+  if (preConnectQueue.current === null) {
+    preConnectQueue.current = createPreConnectDispatchQueue();
+  }
+  const connectedRef = useRef(false);
 
   const asyncSandpackId = useAsyncSandpackId(
     filesState.fileList,
@@ -312,6 +329,12 @@ export const useClient: UseClient = (
       unsubscribe.current();
       unsubscribe.current = undefined;
     }
+
+    // Re-arm the pre-connect buffer (R3-109): the next runSandpack() begins a
+    // fresh connect cycle, so early dispatches must be buffered again and any
+    // stale buffered state must not replay into it.
+    connectedRef.current = false;
+    preConnectQueue.current?.reset();
   }, []);
 
   const runSandpack = useCallback(async (): Promise<void> => {
@@ -436,7 +459,32 @@ export const useClient: UseClient = (
     setState((prev) => ({ ...prev, status }));
   };
 
+  // Deliver a dispatch to the addressed client, or broadcast to all. A missing
+  // client is skipped rather than throwing — a client can unregister between a
+  // message being buffered and the flush.
+  const deliverDispatch = ({ message, clientId }: QueuedDispatch): void => {
+    if (clientId) {
+      clients.current[clientId]?.dispatch(message);
+    } else {
+      Object.values(clients.current).forEach((client) => {
+        client.dispatch(message);
+      });
+    }
+  };
+
   const handleMessage = (msg: SandpackMessage): void => {
+    // First connect: replay every dispatch buffered before the client could
+    // receive it, in FIFO order, exactly once. The queue empties on drain, so
+    // the repeated "done"s of later recompiles are no-ops, and from here on
+    // `dispatchMessage` delivers directly.
+    if (
+      !connectedRef.current &&
+      (msg.type === "connected" || (msg.type === "done" && !msg.compilatonError))
+    ) {
+      connectedRef.current = true;
+      preConnectQueue.current!.flush(deliverDispatch);
+    }
+
     if (msg.type === "start") {
       setState((prev) => ({ ...prev, error: null }));
     } else if (msg.type === "state") {
@@ -479,20 +527,16 @@ export const useClient: UseClient = (
     message: SandpackMessage,
     clientId?: string,
   ): void => {
-    if (state.status !== "running") {
-      console.warn(
-        `[sandpack-react]: dispatch cannot be called while in idle mode`,
-      );
+    // Before the client connects, buffer instead of dropping (R3-109): the
+    // message replays in FIFO order on connect. The gate is `connectedRef`, not
+    // `state.status`, because a client is created ("running") a moment before it
+    // actually connects, and delivery needs the live connection.
+    if (!connectedRef.current) {
+      preConnectQueue.current!.enqueue({ message, clientId });
       return;
     }
 
-    if (clientId) {
-      clients.current[clientId].dispatch(message);
-    } else {
-      Object.values(clients.current).forEach((client) => {
-        client.dispatch(message);
-      });
-    }
+    deliverDispatch({ message, clientId });
   };
 
   const addListener = (

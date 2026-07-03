@@ -15,10 +15,7 @@ import type {
   UnsubscribeFunction,
 } from "../../types";
 import { SandpackLogLevel } from "../../types";
-import {
-  extractErrorDetails,
-  createPackageJSON,
-} from "../../utils";
+import { extractErrorDetails, createPackageJSON } from "../../utils";
 import { SandpackClient } from "../base";
 import { createSandboxedIframe, ensureSandboxed } from "../iframe-factory";
 
@@ -57,7 +54,6 @@ export class SandpackRuntime extends SandpackClient {
   fs: SandpackFS;
   /** Parent-owned Babel transpiler worker, connected to the iframe by port. */
   private babelWorker: Worker | null = null;
-
 
   constructor(
     selector: string | HTMLIFrameElement,
@@ -157,7 +153,7 @@ export class SandpackRuntime extends SandpackClient {
           // port as the second port in the handshake.
           const babelPort = this.createBabelWorkerPort();
           this.iframeProtocol.register(remotePort, config, babelPort);
-        })
+        });
       },
     );
 

@@ -16,8 +16,8 @@ import type {
 // @ts-ignore
 import consoleHook from "../../inject-scripts/dist/consoleHook.js";
 import { SandpackClient } from "../base";
-import { createSandboxedIframe, ensureSandboxed } from "../iframe-factory";
 import { EventEmitter } from "../event-emitter";
+import { createSandboxedIframe, ensureSandboxed } from "../iframe-factory";
 import { generateRandomId } from "../node/client.utils";
 import type { SandpackNodeMessage } from "../node/types";
 

@@ -483,7 +483,8 @@ export const useClient: UseClient = (
     // `dispatchMessage` delivers directly.
     if (
       !connectedRef.current &&
-      (msg.type === "connected" || (msg.type === "done" && !msg.compilatonError))
+      (msg.type === "connected" ||
+        (msg.type === "done" && !msg.compilatonError))
     ) {
       connectedRef.current = true;
       preConnectQueue.current!.flush(deliverDispatch);

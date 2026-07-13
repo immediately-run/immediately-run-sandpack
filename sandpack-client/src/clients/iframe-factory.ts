@@ -38,8 +38,7 @@ const APP_SANDBOX_BASELINE =
 // remaining bulk-egress channels (fetch/XHR/WebSocket/beacon, pixels) are shut by
 // the per-frame M3 CSP delivered with the frame's document (R3-195 sandbox repo),
 // not by a sandbox flag. `allow-same-origin` remains absent.
-const APP_SANDBOX_M3 =
-  "allow-scripts allow-downloads allow-pointer-lock";
+const APP_SANDBOX_M3 = "allow-scripts allow-downloads allow-pointer-lock";
 
 // Baseline delegated features (the `allow` / Permissions-Policy attribute).
 const APP_ALLOW_BASELINE =

@@ -93,7 +93,11 @@ describe("iframe factory — M3 stance containment (§G1a / R3-195)", () => {
       expect(m3.has(gone)).toBe(false);
     }
     // the app must still run + its harmless capabilities remain
-    for (const kept of ["allow-scripts", "allow-downloads", "allow-pointer-lock"]) {
+    for (const kept of [
+      "allow-scripts",
+      "allow-downloads",
+      "allow-pointer-lock",
+    ]) {
       expect(m3.has(kept)).toBe(true);
     }
     // the load-bearing invariant is never regressed

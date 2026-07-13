@@ -13,6 +13,7 @@ import type {
   FsSnapshot,
   UnsubscribeFunction,
   SandpackLogLevel,
+  FrameStance,
 } from "@immediately-run/sandpack-client";
 import type React from "react";
 
@@ -162,6 +163,13 @@ export interface SandpackOptions {
   bundlerURL?: string;
   babelWorkerURL?: string;
   startRoute?: string;
+  /**
+   * The app's resolved trust stance (TRUST_MODES_SPEC §3 / R3-195). Forwarded to
+   * the client so an `"M3"` (stranger) app is emitted with the hardened iframe
+   * sandbox/allow attributes; absent or M0–M2 keeps the exact baseline. Host-
+   * resolved only — an app never sets its own stance.
+   */
+  stance?: FrameStance;
   skipEval?: boolean;
   externalResources?: string[];
 }
@@ -362,6 +370,13 @@ export interface SandpackInternalOptions {
   babelWorkerURL?: string;
   bundlerTimeOut?: number;
   startRoute?: string;
+  /**
+   * The app's resolved trust stance (TRUST_MODES_SPEC §3 / R3-195). Forwarded to
+   * the client so an `"M3"` (stranger) app is emitted with the hardened iframe
+   * sandbox/allow attributes; absent or M0–M2 keeps the exact baseline. Host-
+   * resolved only — an app never sets its own stance.
+   */
+  stance?: FrameStance;
   skipEval?: boolean;
   externalResources?: string[];
   classes?: Record<string, string>;

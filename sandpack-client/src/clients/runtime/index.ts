@@ -82,7 +82,7 @@ export class SandpackRuntime extends SandpackClient {
       // touch shared storage on the bundler origin. The Babel worker that used
       // to require same-origin is now owned by the parent and reached over a
       // transferred `MessagePort` (see `createBabelWorkerPort`).
-      this.iframe = createSandboxedIframe();
+      this.iframe = createSandboxedIframe(document, this.options.stance);
       this.initializeElement();
     } else {
       this.element = selector;
@@ -90,7 +90,7 @@ export class SandpackRuntime extends SandpackClient {
     }
     // Set-and-assert: a host-provided iframe is hardened here, and any iframe
     // (created or passed) is verified to carry no `allow-same-origin`.
-    ensureSandboxed(this.iframe);
+    ensureSandboxed(this.iframe, this.options.stance);
 
     this.setLocationURLIntoIFrame();
 

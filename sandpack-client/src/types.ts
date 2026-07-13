@@ -1,3 +1,4 @@
+import type { FrameStance } from "./clients/iframe-factory";
 import type { SandpackNodeMessage } from "./clients/node/types";
 import type { SandpackRuntimeMessage } from "./clients/runtime/types";
 import type { SandpackFS } from "./fs/SandpackFS";
@@ -21,6 +22,14 @@ export interface ClientOptions {
    * Paths to external resources
    */
   externalResources?: string[];
+  /**
+   * The app's resolved trust stance (TRUST_MODES_SPEC §3 / R3-195). Only `"M3"`
+   * (a stranger's app) hardens the emitted iframe (sandbox flags + delegated
+   * features); absent or `"M0"`/`"M1"`/`"M2"` keeps the exact baseline. The host
+   * resolves this; the client never derives it. The per-frame M3 CSP is delivered
+   * with the frame's document (via `bundlerURL`), not here.
+   */
+  stance?: FrameStance;
   /**
    * Location of the bundler.
    */

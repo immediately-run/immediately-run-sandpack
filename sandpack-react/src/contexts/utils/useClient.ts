@@ -217,6 +217,10 @@ export const useClient: UseClient = (
           externalResources: options.externalResources,
           bundlerURL: options.bundlerURL,
           babelWorkerURL: options.babelWorkerURL,
+          // R3-195: forward the host-resolved trust stance so the client emits the
+          // M3-hardened iframe (sandbox flags + delegated features); absent/M0–M2
+          // keeps the exact baseline.
+          stance: options.stance,
           startRoute: clientPropsOverride?.startRoute ?? options.startRoute,
           skipEval: options.skipEval ?? false,
           logLevel: options.logLevel,

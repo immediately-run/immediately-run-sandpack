@@ -91,13 +91,13 @@ export class SandpackStatic extends SandpackClient {
       this.element = element!;
       // Opaque-origin app iframe via the single factory (G1/T1) — untrusted
       // preview content runs at an opaque origin (see the runtime client).
-      this.iframe = createSandboxedIframe();
+      this.iframe = createSandboxedIframe(document, this.options.stance);
     } else {
       this.element = selector;
       this.iframe = selector;
     }
     // Set-and-assert: harden a host-provided iframe; verify no allow-same-origin.
-    ensureSandboxed(this.iframe);
+    ensureSandboxed(this.iframe, this.options.stance);
 
     this.eventListener = this.eventListener.bind(this);
     if (typeof window !== "undefined") {

@@ -2,6 +2,7 @@ import {
   InMemory,
   resolveMountConfig,
   mount,
+  umount,
   type BoundContext,
   bindContext,
 } from "@zenfs/core";
@@ -152,6 +153,10 @@ export class SandpackFS {
   private sidecarEnvironment: string | undefined = undefined;
   private sidecarMode: string | undefined = undefined;
   private disposed = false;
+  /** The ZenFS mount point this instance created and is therefore allowed to
+   *  unmount in {@link dispose}. Unset for an adopted context, whose lifecycle
+   *  belongs to the caller. */
+  private ownedMountPoint: string | undefined = undefined;
 
   // Raw (unguarded) fs write methods captured at construction, bound to this
   // instance's bound-context `promises`. SandpackFS's own writes go through these
@@ -217,6 +222,9 @@ export class SandpackFS {
     const ctxt = bindContext({ root: prefix });
 
     const instance = new SandpackFS(ctxt, remotePortFactory, onWrite);
+    // We created the mount, so we own it: `dispose()` may unmount it. An adopted
+    // context (`fromFileSystemContext`) leaves this unset and is never unmounted.
+    instance.ownedMountPoint = prefix;
     if (options.environment !== undefined) {
       instance.sidecarEnvironment = options.environment;
     }
@@ -374,6 +382,29 @@ export class SandpackFS {
   handleRemoteChange(path: string): void {
     if (this.disposed) return;
     this.notify({ path: normalize(path), external: true });
+  }
+
+  /**
+   * Tear this instance down: drop every subscriber, stop emitting changes, and
+   * release the ZenFS mount if we created it ({@link fromFiles}). An *adopted*
+   * context ({@link fromFileSystemContext}) is left mounted — its lifecycle
+   * belongs to the caller.
+   *
+   * ZenFS mounts live in a process-global table, so an instance that is never
+   * disposed keeps its backing store alive for the page's lifetime. Idempotent.
+   */
+  dispose(): void {
+    if (this.disposed) return;
+    this.disposed = true;
+    this.listeners.clear();
+    if (this.ownedMountPoint) {
+      try {
+        umount(this.ownedMountPoint);
+      } catch {
+        /* already unmounted — disposal must never throw */
+      }
+      this.ownedMountPoint = undefined;
+    }
   }
 
   // ------------------------------------------------------------------

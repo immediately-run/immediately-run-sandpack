@@ -116,6 +116,15 @@ export const useClient: UseClient = (
     Record<string, Record<string, UnsubscribeFunction>>
   >({});
   const unsubscribe = useRef<(() => void) | undefined>(undefined);
+  // Which client currently owns the global `handleMessage` subscription above.
+  // `handleMessage` is deliberately bound to ONE client per provider (it drives
+  // provider-global state: error, timeout, and the R3-109 pre-connect flush), but
+  // that one client must be a LIVE one. When the owning client is superseded —
+  // two overlapping `createClient` calls for the same clientId, which React 18
+  // StrictMode makes deterministic in dev — the subscription has to move with it,
+  // or the provider goes permanently deaf: `connectedRef` never flips and every
+  // `dispatch()` is buffered in `preConnectQueue` forever (R3-240).
+  const globalListenerClientId = useRef<string | undefined>(undefined);
   const queuedListeners = useRef<
     Record<string, Record<string, ListenerFunction>>
   >({ global: {} });
@@ -257,8 +266,17 @@ export const useClient: UseClient = (
         },
       );
 
-      if (typeof unsubscribe.current !== "function") {
+      // Take (or re-take) the global subscription: when nobody holds it, or when
+      // the holder is THIS clientId — i.e. we are replacing the client that held
+      // it — rebind to the client that is actually live. Leaving it on a
+      // superseded client is what made region frames unreachable (R3-240).
+      if (
+        typeof unsubscribe.current !== "function" ||
+        globalListenerClientId.current === clientId
+      ) {
+        unsubscribe.current?.();
         unsubscribe.current = client.listen(handleMessage);
+        globalListenerClientId.current = clientId;
       }
 
       unsubscribeClientListeners.current[clientId] =
@@ -321,6 +339,16 @@ export const useClient: UseClient = (
          */
       });
 
+      // Same intent as the guard at the top of this function ("clean up any
+      // existing client created with the given id"), but re-checked HERE because
+      // `createClient` is async: two calls for one clientId can both pass the
+      // entry guard while `clients.current[clientId]` is still empty, and only
+      // the loser is visible by the time the winner assigns. Without this the
+      // superseded client leaks a window listener and a babel worker.
+      const superseded = clients.current[clientId];
+      if (superseded && superseded !== client) {
+        superseded.destroy();
+      }
       clients.current[clientId] = client;
     },
     [filesState.environment, filesState.fs, state.reactDevTools],
@@ -333,6 +361,7 @@ export const useClient: UseClient = (
       unsubscribe.current();
       unsubscribe.current = undefined;
     }
+    globalListenerClientId.current = undefined;
 
     // Re-arm the pre-connect buffer (R3-109): the next runSandpack() begins a
     // fresh connect cycle, so early dispatches must be buffered again and any
@@ -445,6 +474,15 @@ export const useClient: UseClient = (
 
     if (timeoutHook.current) {
       clearTimeout(timeoutHook.current);
+    }
+
+    // Release the global `handleMessage` subscription when its owner goes away,
+    // so the next client created takes it instead of the provider staying bound
+    // to a dead client (see `globalListenerClientId`).
+    if (globalListenerClientId.current === clientId) {
+      unsubscribe.current?.();
+      unsubscribe.current = undefined;
+      globalListenerClientId.current = undefined;
     }
 
     const unsubscribeQueuedClients = Object.values(
@@ -724,6 +762,11 @@ export const useClient: UseClient = (
     return function unmountClient(): void {
       if (typeof unsubscribe.current === "function") {
         unsubscribe.current();
+        // Drop the reference too: under React 18 StrictMode this teardown runs
+        // between the two dev mounts, and a stale function left here would make
+        // the remount think the global subscription is still held.
+        unsubscribe.current = undefined;
+        globalListenerClientId.current = undefined;
       }
 
       if (timeoutHook.current) {

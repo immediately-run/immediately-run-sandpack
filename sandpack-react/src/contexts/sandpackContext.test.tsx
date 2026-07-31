@@ -54,10 +54,22 @@ const getAmountOfListener = (
   return (
     Object.keys(instance.sandpack.clients[name].iframeProtocol.channelListeners)
       .length -
-    1 -
-    (ignoreGlobalListener ? 0 : 1)
+    1 - // less protocol listener
+    1 - // less the per-client `__sp_timeout_reconcile__` listener
+    (ignoreGlobalListener ? 0 : 1) // less the global Sandpack-react listener
   );
 };
+
+/** Caller-registered unsubscribe functions only — excludes the internal
+ *  `__sp_timeout_reconcile__` listener the provider attaches per client. */
+const countUserUnsubscribes = (
+  /* eslint-disable @typescript-eslint/no-explicit-any */
+  instance: any,
+  name = "client-id",
+): number =>
+  Object.keys(
+    instance.current.sandpack.unsubscribeClientListenersRef.current[name] ?? {},
+  ).filter((key: string) => key !== "__sp_timeout_reconcile__").length;
 
 describe(SandpackProvider, () => {
   describe("updateFile", () => {
@@ -176,13 +188,7 @@ describe(SandpackProvider, () => {
         );
       });
 
-      expect(
-        Object.keys(
-          instance.current.sandpack.unsubscribeClientListenersRef.current[
-            "client-id"
-          ],
-        ).length,
-      ).toBe(1);
+      expect(countUserUnsubscribes(instance, "client-id")).toBe(1);
 
       expect(
         Object.keys(instance.current.sandpack.queuedListenersRef.current.global)
@@ -209,13 +215,7 @@ describe(SandpackProvider, () => {
         );
       });
 
-      expect(
-        Object.keys(
-          instance.current.sandpack.unsubscribeClientListenersRef.current[
-            "client-id"
-          ],
-        ).length,
-      ).toBe(1);
+      expect(countUserUnsubscribes(instance, "client-id")).toBe(1);
 
       expect(
         Object.keys(instance.current.sandpack.queuedListenersRef.current.global)
@@ -235,13 +235,7 @@ describe(SandpackProvider, () => {
         );
       });
 
-      expect(
-        Object.keys(
-          instance.current.sandpack.unsubscribeClientListenersRef.current[
-            "client-id"
-          ],
-        ).length,
-      ).toBe(0);
+      expect(countUserUnsubscribes(instance, "client-id")).toBe(0);
 
       expect(
         Object.keys(instance.current.sandpack.queuedListenersRef.current.global)
@@ -253,13 +247,7 @@ describe(SandpackProvider, () => {
         instance.current.listen(mock, "client-id");
       });
 
-      expect(
-        Object.keys(
-          instance.current.sandpack.unsubscribeClientListenersRef.current[
-            "client-id"
-          ],
-        ).length,
-      ).toBe(0);
+      expect(countUserUnsubscribes(instance, "client-id")).toBe(0);
 
       expect(
         Object.keys(instance.current.sandpack.queuedListenersRef.current.global)
@@ -279,13 +267,7 @@ describe(SandpackProvider, () => {
         );
       });
 
-      expect(
-        Object.keys(
-          instance.current.sandpack.unsubscribeClientListenersRef.current[
-            "client-id"
-          ],
-        ).length,
-      ).toBe(0);
+      expect(countUserUnsubscribes(instance, "client-id")).toBe(0);
 
       expect(
         Object.keys(instance.current.sandpack.queuedListenersRef.current.global)
@@ -297,13 +279,7 @@ describe(SandpackProvider, () => {
         instance.current.listen(mock);
       });
 
-      expect(
-        Object.keys(
-          instance.current.sandpack.unsubscribeClientListenersRef.current[
-            "client-id"
-          ],
-        ).length,
-      ).toBe(0);
+      expect(countUserUnsubscribes(instance, "client-id")).toBe(0);
 
       expect(
         Object.keys(instance.current.sandpack.queuedListenersRef.current.global)
@@ -328,13 +304,7 @@ describe(SandpackProvider, () => {
         );
       });
 
-      expect(
-        Object.keys(
-          instance.current.sandpack.unsubscribeClientListenersRef.current[
-            "client-id"
-          ],
-        ).length,
-      ).toBe(1);
+      expect(countUserUnsubscribes(instance, "client-id")).toBe(1);
 
       expect(
         Object.keys(instance.current.sandpack.queuedListenersRef.current.global)

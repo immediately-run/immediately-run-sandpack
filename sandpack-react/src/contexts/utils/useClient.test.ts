@@ -454,5 +454,58 @@ describe(useClient, () => {
 
       expect(result.current[0].status).toBe("running");
     });
+
+    it("starts a bundler registered while the autorun provider is idle (all prior clients unregistered)", async () => {
+      // The mobile-carousel blank-preview bug: the provider's ONLY preview
+      // unmounts (status recomputes to "idle"), then a preview mounts again in
+      // a LATER commit. Nothing calls runSandpack() again, so without the
+      // idle-register start the new iframe never gets a client and stays a
+      // src-less blank forever.
+      const { result } = renderHook(() => useClient({}, filesState));
+
+      await act(async () => {
+        await result.current[1].registerBundler(
+          document.createElement("iframe"),
+          "preview-1",
+        );
+        await result.current[1].runSandpack();
+      });
+      expect(Object.keys(result.current[1].clients)).toEqual(["preview-1"]);
+
+      act(() => {
+        result.current[1].unregisterBundler("preview-1");
+      });
+      expect(result.current[0].status).toBe("idle");
+      expect(Object.keys(result.current[1].clients)).toEqual([]);
+
+      // Registered AFTER the provider went idle — must boot on its own and
+      // put the provider back into "running" (file-watching keys off it).
+      await act(async () => {
+        await result.current[1].registerBundler(
+          document.createElement("iframe"),
+          "preview-2",
+        );
+      });
+      expect(Object.keys(result.current[1].clients)).toEqual(["preview-2"]);
+      expect(result.current[0].status).toBe("running");
+    });
+
+    it("does not auto-start a bundler registered while an autorun=false provider is idle", async () => {
+      // autorun=false starts "idle" by definition — a register must keep
+      // waiting for the caller's explicit runSandpack().
+      const { result } = renderHook(() =>
+        useClient({ options: { autorun: false } }, filesState),
+      );
+
+      await act(async () => {
+        await result.current[1].registerBundler(
+          document.createElement("iframe"),
+          "preview-1",
+        );
+      });
+
+      expect(Object.keys(result.current[1].clients)).toEqual([]);
+      expect(result.current[0].status).toBe("idle");
+    });
   });
 });

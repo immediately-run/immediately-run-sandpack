@@ -454,11 +454,37 @@ export const useClient: UseClient = (
         clientPropsOverride,
       };
 
-      if (state.status === "running") {
+      // Under autorun, "idle" means the provider HAS run and its last client
+      // was since torn down (`unregisterBundler` recomputes status from the
+      // live client set) — e.g. the mobile carousel unmounting the provider's
+      // only <SandpackPreview>. A bundler registered in that state must start
+      // itself: the provider's own autorun (`initializeSandpackIframe` →
+      // `runSandpack`) already happened and nothing else will call it again,
+      // so without this the new iframe never gets a client and stays a
+      // src-less blank forever. "initial" is deliberately NOT eligible — the
+      // autorun pass is still coming and will start every registered iframe —
+      // and "timeout" keeps its explicit-recovery contract.
+      const autorun = options?.autorun ?? true;
+      const shouldStart =
+        state.status === "running" || (autorun && state.status === "idle");
+
+      if (shouldStart) {
         await createClient(iframe, clientId, clientPropsOverride);
+        // Re-assert "running" after the create: this branch may have started
+        // from "idle", or an unregister of a same-commit-replaced sibling may
+        // have queued an "idle" that lands after this create — either way a
+        // live client means "running" (file-watching and the loading overlay
+        // both key off it). Guarded on the live client set so a client
+        // destroyed while `createClient` was awaited cannot resurrect a dead
+        // provider.
+        setState((prev) =>
+          prev.status !== "running" && Object.keys(clients.current).length > 0
+            ? { ...prev, error: null, status: "running" }
+            : prev,
+        );
       }
     },
-    [createClient, state.status],
+    [createClient, state.status, options?.autorun],
   );
 
   const unregisterBundler = (clientId: string): void => {

@@ -50,6 +50,11 @@ export type SandpackRuntimeMessage = BaseSandpackMessage &
         url: string;
         back: boolean;
         forward: boolean;
+        /** R3-268: the tri-state viewed-document declaration — ABSENT means
+         *  "derive from the URL's `files/` suffix convention", `null` means
+         *  "this view shows no file" (clears the explorer highlight), a string
+         *  is a working-tree repo-relative path the destination renders. */
+        viewedDocument?: string | null;
       }
     | {
         type: "resize";

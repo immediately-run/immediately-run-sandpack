@@ -545,9 +545,27 @@ export const useClient: UseClient = (
     // receive it, in FIFO order, exactly once. The queue empties on drain, so
     // the repeated "done"s of later recompiles are no-ops, and from here on
     // `dispatchMessage` delivers directly.
+    //
+    // `start` counts, and it is not a nicety (R3-290). Gating only on `done`
+    // DEADLOCKS anything the first compile itself depends on: a declared
+    // git-library mount is announced eagerly by the host, buffered here, and the
+    // bundler then blocks its first compile waiting for that very mount — so
+    // `done` cannot arrive until the bundler gives up (30s), and the mount lands
+    // ~1s after the wait it was supposed to satisfy. Measured on prod and local:
+    // the host posted `mount-add` at t=4073 and the frame saw it at t=31861,
+    // with both event loops healthy the whole time.
+    //
+    // `start` is emitted at the top of the sandbox's `runCompile`, BEFORE
+    // `bundler.compile()` — by which point the frame has registered, taken its
+    // transferred ports and installed its handlers, so it can certainly receive.
+    // That is the property this gate is actually about ("can the frame receive
+    // it yet"), and `done` only ever approximated it. The sandbox emits no
+    // `connected` message at all, so before this change `done` was the ONLY
+    // signal that ever flipped the gate.
     if (
       !connectedRef.current &&
       (msg.type === "connected" ||
+        msg.type === "start" ||
         (msg.type === "done" && !msg.compilatonError))
     ) {
       connectedRef.current = true;

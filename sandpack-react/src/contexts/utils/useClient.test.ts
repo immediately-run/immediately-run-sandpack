@@ -370,6 +370,115 @@ describe(useClient, () => {
     });
   });
 
+  // R3-290. The queue itself is covered in `preConnectDispatchQueue.test.ts`, and
+  // it was always correct. What had no test was the SEAM — the gate that decides
+  // when to flush it — and that is where the defect lived: gating only on `done`
+  // deadlocks every host announcement the first compile itself depends on.
+  describe("pre-connect flush gate", () => {
+    const emit = (
+      operations: UseClientOperations,
+      msg: unknown,
+      name = "client-id",
+    ): void => {
+      Object.values(
+        operations.clients[name].iframeProtocol.channelListeners as Record<
+          string,
+          (m: unknown) => void
+        >,
+      ).forEach((listener) => listener(msg));
+    };
+
+    const bootClient = async (
+      operations: UseClientOperations,
+    ): Promise<void> => {
+      await act(async () => {
+        await operations.registerBundler(
+          document.createElement("iframe"),
+          "client-id",
+        );
+        await operations.runSandpack();
+      });
+    };
+
+    it("flushes on `start`, so a mount the first compile WAITS FOR can arrive", async () => {
+      const { result } = renderHook(() => useClient({}, filesState));
+      const operations = result.current[1];
+      await bootClient(operations);
+
+      const dispatchSpy = jest.spyOn(
+        operations.clients["client-id"],
+        "dispatch",
+      );
+
+      // The host announces a declared git-library mount eagerly, before any
+      // compile has finished. Buffering it here is correct...
+      act(() => {
+        operations.dispatchMessage({
+          type: "mount-add",
+          mount: { path: "/mnt/abc", moduleName: "@scope/lib" },
+        } as never);
+      });
+      expect(dispatchSpy).not.toHaveBeenCalled();
+
+      // ...but it must be released when the bundler STARTS compiling, because the
+      // compile is about to block waiting for this very mount. Waiting for `done`
+      // is waiting for the thing that cannot happen until the mount arrives.
+      act(() => emit(operations, { type: "start", firstLoad: true }));
+
+      expect(dispatchSpy).toHaveBeenCalledTimes(1);
+      expect(dispatchSpy.mock.calls[0][0]).toMatchObject({ type: "mount-add" });
+    });
+
+    it("still flushes on `done` when no `start` was seen", async () => {
+      const { result } = renderHook(() => useClient({}, filesState));
+      const operations = result.current[1];
+      await bootClient(operations);
+
+      const dispatchSpy = jest.spyOn(
+        operations.clients["client-id"],
+        "dispatch",
+      );
+
+      act(() => {
+        operations.dispatchMessage({
+          type: "fs-change",
+          paths: ["/a"],
+        } as never);
+      });
+      expect(dispatchSpy).not.toHaveBeenCalled();
+
+      act(() => emit(operations, { type: "done", compilatonError: false }));
+
+      expect(dispatchSpy).toHaveBeenCalledTimes(1);
+    });
+
+    it("does not flush on a compilation-error `done`, and never replays twice", async () => {
+      const { result } = renderHook(() => useClient({}, filesState));
+      const operations = result.current[1];
+      await bootClient(operations);
+
+      const dispatchSpy = jest.spyOn(
+        operations.clients["client-id"],
+        "dispatch",
+      );
+
+      act(() => {
+        operations.dispatchMessage({
+          type: "fs-change",
+          paths: ["/a"],
+        } as never);
+      });
+
+      act(() => emit(operations, { type: "done", compilatonError: true }));
+      expect(dispatchSpy).not.toHaveBeenCalled();
+
+      // Now a real start releases it — exactly once, even across later signals.
+      act(() => emit(operations, { type: "start", firstLoad: true }));
+      act(() => emit(operations, { type: "done", compilatonError: false }));
+      expect(dispatchSpy).toHaveBeenCalledTimes(1);
+    });
+  });
+
   describe("status", () => {
     it("returns the initial state", () => {
       const { result } = renderHook(() => useClient({}, filesState));

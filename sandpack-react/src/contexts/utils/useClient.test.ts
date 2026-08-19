@@ -405,7 +405,10 @@ describe(useClient, () => {
       const operations = result.current[1];
       await bootClient(operations);
 
-      const dispatchSpy = jest.spyOn(operations.clients["client-id"], "dispatch");
+      const dispatchSpy = jest.spyOn(
+        operations.clients["client-id"],
+        "dispatch",
+      );
 
       // The host announces a declared git-library mount eagerly, before any
       // compile has finished. Buffering it here is correct...
@@ -431,10 +434,16 @@ describe(useClient, () => {
       const operations = result.current[1];
       await bootClient(operations);
 
-      const dispatchSpy = jest.spyOn(operations.clients["client-id"], "dispatch");
+      const dispatchSpy = jest.spyOn(
+        operations.clients["client-id"],
+        "dispatch",
+      );
 
       act(() => {
-        operations.dispatchMessage({ type: "fs-change", paths: ["/a"] } as never);
+        operations.dispatchMessage({
+          type: "fs-change",
+          paths: ["/a"],
+        } as never);
       });
       expect(dispatchSpy).not.toHaveBeenCalled();
 
@@ -448,10 +457,16 @@ describe(useClient, () => {
       const operations = result.current[1];
       await bootClient(operations);
 
-      const dispatchSpy = jest.spyOn(operations.clients["client-id"], "dispatch");
+      const dispatchSpy = jest.spyOn(
+        operations.clients["client-id"],
+        "dispatch",
+      );
 
       act(() => {
-        operations.dispatchMessage({ type: "fs-change", paths: ["/a"] } as never);
+        operations.dispatchMessage({
+          type: "fs-change",
+          paths: ["/a"],
+        } as never);
       });
 
       act(() => emit(operations, { type: "done", compilatonError: true }));

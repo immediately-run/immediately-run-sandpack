@@ -43,6 +43,18 @@ export interface ClientOptions {
    */
   babelWorkerURL?: string;
   /**
+   * Called when the client REFUSES to register a frame because it booted from a
+   * navigation the client did not perform (R3-353 — a sandboxed frame may always
+   * navigate itself, and the browsing context survives, so a page the app chose
+   * could otherwise post `initialized` and be handed this frame's grants).
+   *
+   * By the time this fires the frame has been blanked and the client destroyed:
+   * nothing was connected and no fs port was minted. The host's job is to surface
+   * it (and/or re-create the frame from a clean state), not to decide whether to
+   * allow it — that decision has already been made, fail-closed.
+   */
+  onUnexpectedNavigation?: () => void;
+  /**
    * Level of logging to do in the bundler
    */
   logLevel?: SandpackLogLevel;

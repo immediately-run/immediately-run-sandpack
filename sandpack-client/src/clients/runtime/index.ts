@@ -22,6 +22,7 @@ import { createSandboxedIframe, ensureSandboxed } from "../iframe-factory";
 import Protocol from "./file-resolver-protocol";
 import { IFrameProtocol } from "./iframe-protocol";
 import { handleImmutableFetch } from "./immutable-fetch-protocol";
+import { InitializationGuard } from "./initialization-guard";
 import { EXTENSIONS_MAP } from "./mime";
 import type { IPreviewRequestMessage, IPreviewResponseMessage } from "./types";
 import { CHANNEL_NAME, type SandpackRuntimeMessage } from "./types";
@@ -52,8 +53,19 @@ export class SandpackRuntime extends SandpackClient {
   unsubscribeFsWatcher?: () => void;
   iframeProtocol: IFrameProtocol;
   fs: SandpackFS;
+  /** Set once the teardown below has run, so a rogue document posting in a loop
+   *  cannot re-run `destroy()` or re-fire the host callback. */
+  private refusedBoot = false;
   /** Parent-owned Babel transpiler worker, connected to the iframe by port. */
   private babelWorker: Worker | null = null;
+  /**
+   * Which `initialized` messages this client will honour (R3-353). Armed by
+   * {@link setLocationURLIntoIFrame} — i.e. by every navigation THIS CLIENT
+   * causes — and spent when a boot arrives. A boot the host did not cause finds
+   * nothing armed, which is the whole check. See `initialization-guard.ts` for
+   * why the parent asks "did I put you there?" rather than "where are you?".
+   */
+  private readonly initGuard = new InitializationGuard();
 
   constructor(
     selector: string | HTMLIFrameElement,
@@ -101,6 +113,25 @@ export class SandpackRuntime extends SandpackClient {
         if (mes.type !== "initialized" || !this.iframe.contentWindow) {
           return;
         }
+        // R3-353 — the re-register guard. A sandboxed frame may always navigate
+        // ITSELF (no sandbox flag governs that), and after it does, the browsing
+        // context is the same one: `iframe.contentWindow` returns the same
+        // WindowProxy, so `IFrameProtocol`'s `evt.source !== this.frameWindow`
+        // check still passes. Whatever document is in the frame now — the
+        // policy-free baseline bundler document, or a page on an origin the app
+        // chose — can therefore post `initialized` and be handed a FRESH fs port
+        // and a fresh registration, inheriting this frame's grants.
+        //
+        // That is the escalation, and it is bigger than the CSP loss the finding
+        // leads with: the CSP travels with the document, but so does the host
+        // RELATIONSHIP, and the relationship is worth more.
+        //
+        // The host cannot read a cross-origin frame's location, so it cannot ask
+        // "where are you?". It can ask "did I put you there?" — which is the same
+        // question and one it can answer: every legitimate (re)boot follows a
+        // navigation THIS CLIENT performed (the constructor, and the `refresh`
+        // dispatch), both of which go through `setLocationURLIntoIFrame`.
+        if (!this.consumeExpectedInitialization()) return;
         // this may not work with a boundedcontext, it may require an actual FS instance
         const remotePortPromise = this.fs.connectRemote();
         remotePortPromise.then(async (remotePort) => {
@@ -363,8 +394,40 @@ export class SandpackRuntime extends SandpackClient {
       ? new URL(this.options.startRoute, this.bundlerURL).toString()
       : this.bundlerURL;
 
+    // Arm one expected `initialized` (R3-353): this navigation is host-initiated,
+    // so the boot that follows it is legitimate. Every legitimate (re)boot in the
+    // system passes through here — the constructor and the `refresh` dispatch —
+    // which is exactly what makes "nothing armed" mean "not ours".
+    this.initGuard.arm();
     this.iframe.contentWindow?.location.replace(urlSource);
     this.iframe.src = urlSource;
+  }
+
+  /**
+   * Spend one armed `initialized`, or refuse this boot (R3-353).
+   *
+   * Refusing is terminal for this client: the frame is blanked so the rogue
+   * document — which still holds whatever it scraped before navigating — stops
+   * executing, the client detaches, and the host is told through
+   * `onUnexpectedNavigation` so it can surface or re-create the frame. Nothing is
+   * connected and nothing is registered, so no fs port is ever minted for it.
+   */
+  private consumeExpectedInitialization(): boolean {
+    if (this.initGuard.consume()) return true;
+    if (this.refusedBoot) return false; // already torn down; stay quiet
+    this.refusedBoot = true;
+    console.error(
+      "[Sandpack] Refusing to register a frame that booted from a navigation " +
+        "this client did not perform (R3-353). The frame is being torn down.",
+    );
+    try {
+      this.iframe.src = "about:blank";
+    } catch {
+      /* the element may already be gone */
+    }
+    this.destroy();
+    this.options.onUnexpectedNavigation?.();
+    return false;
   }
 
   destroy(): void {

@@ -105,3 +105,129 @@ describe("handleImmutableFetch — integrity-aware caching", () => {
     ).rejects.toThrow(/not allowed/i);
   });
 });
+
+// ── R3-364 — policy on the PARSED URL + redirect end-state validation ────────
+
+describe("handleImmutableFetch — allowlist matching (R3-364)", () => {
+  beforeEach(() => {
+    (globalThis as any).caches = undefined;
+    let calls = 0;
+    (globalThis as any).fetch = async () => {
+      calls++;
+      return new Response("OK-BYTES", {
+        status: 200,
+        headers: { "content-type": "text/javascript" },
+      });
+    };
+    (globalThis as any).__fetchCalls = () => calls;
+  });
+
+  const refused = async (url: string) => {
+    await expect(handleImmutableFetch(url)).rejects.toThrow(/not allowed/);
+    expect((globalThis as any).__fetchCalls()).toBe(0); // pre-request, never fetched
+  };
+
+  it("the legitimate allowlist shapes still pass", async () => {
+    for (const url of [
+      "https://sandpack-cdn-staging.blazingly.io/package/react@18.0.0.json",
+      "https://unpkg.com/@scope/pkg@1.2.3/dist/index.js",
+      "https://immediately-run.github.io/immediately-run-sdk/v/0.8.0/runtime.js",
+    ]) {
+      const res = await handleImmutableFetch(url);
+      expect(res.status).toBe(200);
+    }
+  });
+
+  it("a raw /../ traversal past the /v/ prefix is refused pre-request", async () => {
+    await refused(
+      "https://immediately-run.github.io/immediately-run-sdk/v/../other/path.js",
+    );
+    // The URL parser normalizes /../ — the normalized path leaves the prefix. A
+    // traversal that lands back INSIDE the prefix (…/v/../immediately-run-sdk/v/x)
+    // normalizes to an in-policy path and is allowed — that is what "match the
+    // normalized path" means; (unpkg's entry is origin-wide by design, so a
+    // traversal there cannot leave policy at all).
+  });
+
+  it("percent-encoded dot segments are refused — every spelling, pre-request", async () => {
+    // Node's WHATWG URL parser resolves the ENCODED spellings of `..` too, so
+    // these normalize past the /v/ prefix and fail it; the explicit dot-segment
+    // and %2e refusals in inPolicy are the belt-and-braces for parsers/servers
+    // that decode differently than the check.
+    await refused(
+      "https://immediately-run.github.io/immediately-run-sdk/v/%2e%2e/secret.js",
+    );
+    await refused(
+      "https://immediately-run.github.io/immediately-run-sdk/v/%2E%2E/secret.js",
+    );
+    await refused(
+      "https://immediately-run.github.io/immediately-run-sdk/v/.%2e/secret.js",
+    );
+    await refused(
+      "https://immediately-run.github.io/immediately-run-sdk/v/%2e./secret.js",
+    );
+    // A traversal out of the prefix on unpkg cannot leave POLICY (its entry is
+    // origin-wide by design) — but a same-position traversal on the sdk host
+    // must still refuse, which the cases above pin.
+  });
+
+  it("an allowlist prefix inside a DIFFERENT origin's path is refused", async () => {
+    await refused("https://evil.example/https://unpkg.com/pkg@1.0.0/x.js");
+    await refused("https://evil.example/probe?url=https://unpkg.com/");
+  });
+
+  it("userinfo tricks do not match the allowlist origin", async () => {
+    await refused("https://unpkg.com@evil.example/pkg@1.0.0/x.js");
+    await refused("https://user:pass@unpkg.com.evil.example/x.js");
+  });
+
+  it("a non-http(s) or malformed URL refuses", async () => {
+    await refused("javascript:alert(1)");
+    await refused("not a url");
+    await refused("");
+  });
+});
+
+describe("handleImmutableFetch — redirect end-state validation (R3-364)", () => {
+  beforeEach(() => {
+    const cache = new FakeCache();
+    (globalThis as any).caches = { open: async () => cache };
+    (globalThis as any).__cache = cache;
+  });
+
+  /** A response DOUBLE that reports where the browser's redirect-follow ended
+   *  up — the fields handleImmutableFetch reads beyond the body. */
+  const redirected = (finalUrl: string, body = "REDIRECTED-BYTES") =>
+    ({
+      ok: true,
+      status: 200,
+      redirected: true,
+      url: finalUrl,
+      headers: new Headers({ "content-type": "text/javascript" }),
+      arrayBuffer: async () => new TextEncoder().encode(body),
+    }) as unknown as Response;
+
+  it("a prefix-host 302 to an off-allowlist origin is REFUSED, not followed-then-used", async () => {
+    (globalThis as any).fetch = async () =>
+      redirected("https://evil.example/payload.js");
+    await expect(
+      handleImmutableFetch(
+        "https://immediately-run.github.io/immediately-run-sdk/v/0.8.0/runtime.js",
+      ),
+    ).rejects.toThrow(/redirected outside the allowlist/);
+    // And nothing from that exchange was cached under the allowlisted key.
+    expect((globalThis as any).__cache.store.size).toBe(0);
+  });
+
+  it("a redirect that STAYS inside the allowlist is served", async () => {
+    (globalThis as any).fetch = async () =>
+      redirected(
+        "https://immediately-run.github.io/immediately-run-sdk/v/0.8.0/runtime.js",
+      );
+    const res = await handleImmutableFetch(
+      "https://immediately-run.github.io/immediately-run-sdk/v/0.8.0/runtime.js",
+    );
+    expect(new TextDecoder().decode(res.body)).toBe("REDIRECTED-BYTES");
+    expect((globalThis as any).__cache.store.size).toBe(1); // verified bytes cached
+  });
+});

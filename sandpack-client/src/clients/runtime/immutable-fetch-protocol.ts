@@ -16,23 +16,63 @@
  */
 
 /**
- * URL prefixes whose responses never change for a given URL (the URL encodes
- * the exact content version). Only these may be fetched on the iframe's
- * behalf, and they are safe to cache forever.
+ * Allowlist entries: an exact ORIGIN plus a path prefix matched against the
+ * NORMALIZED pathname. R3-364: the old check was `url.startsWith(prefix)` on
+ * the RAW string before any normalization, so
+ * `https://immediately-run.github.io/immediately-run-sdk/v/../x` passed the
+ * `/v/` check and normalized to any path on the origin, and percent-encoded
+ * dot segments (`/v/%2e%2e/…`) slid past the URL parser entirely (it resolves
+ * literal `/../` but not its encoded spelling — the server may decode it back
+ * into a traversal). Matching happens on the parsed URL's origin and normalized
+ * pathname, with encoded dot segments rejected explicitly.
  */
-const IMMUTABLE_URL_ALLOWLIST = [
+interface AllowedOrigin {
+  origin: string;
+  pathPrefix: string;
+}
+
+const IMMUTABLE_URL_ALLOWLIST: AllowedOrigin[] = [
   // Module CDN, exact-versioned package bundles. (NOT /dep_tree/, which
   // resolves semver ranges and changes as new versions publish.)
-  "https://sandpack-cdn-staging.blazingly.io/package/",
+  {
+    origin: "https://sandpack-cdn-staging.blazingly.io",
+    pathPrefix: "/package/",
+  },
   // unpkg files, requested by the bundler at registry-resolved exact versions.
-  "https://unpkg.com/",
+  { origin: "https://unpkg.com", pathPrefix: "/" },
   // Self-hosted, versioned @immediately-run/sdk builds (SDK_PACKAGING_SPEC
   // §5/§11, Option A). The /v/<version>/ path encodes the exact version, so
   // responses are immutable; the bundler fetches these when an app opts the SDK
   // into immediately.run.resolveFromRegistry. Keep in sync with the prefix the
   // bundler registers via registerImmutableUrlPrefix (sandbox bundler.ts).
-  "https://immediately-run.github.io/immediately-run-sdk/v/",
+  {
+    origin: "https://immediately-run.github.io",
+    pathPrefix: "/immediately-run-sdk/v/",
+  },
 ];
+
+/**
+ * Is a PARSED URL inside the allowlist? Origin is compared exactly (a userinfo
+ * or lookalike host cannot match) and the path prefix against the URL parser's
+ * NORMALIZED pathname; additionally, any dot segment — literal or
+ * percent-encoded, in any hex case — is refused, so no spelling of `..` can
+ * cross the prefix boundary after a server-side decode.
+ */
+const inPolicy = (u: URL): boolean => {
+  const segments = u.pathname.split("/").map((segment) => {
+    try {
+      return decodeURIComponent(segment).toLowerCase();
+    } catch {
+      return segment.toLowerCase();
+    }
+  });
+  if (segments.some((s) => s === ".." || s === ".")) return false;
+  if (/%2e/.test(u.pathname.toLowerCase())) return false;
+  return IMMUTABLE_URL_ALLOWLIST.some(
+    ({ origin, pathPrefix }) =>
+      u.origin === origin && u.pathname.startsWith(pathPrefix),
+  );
+};
 
 const IMMUTABLE_CACHE_NAME = "sandpack-immutable-fetch-v1";
 
@@ -108,11 +148,19 @@ export async function handleImmutableFetch(
   url: unknown,
   integrity?: unknown,
 ): Promise<ImmutableFetchResult> {
-  if (
-    typeof url !== "string" ||
-    !IMMUTABLE_URL_ALLOWLIST.some((prefix) => url.startsWith(prefix))
-  ) {
+  if (typeof url !== "string") {
     throw new Error(`URL not allowed for immutable fetch: ${String(url)}`);
+  }
+  // R3-364: the policy check runs on the PARSED, NORMALIZED URL — never on the
+  // raw string (see IMMUTABLE_URL_ALLOWLIST). A malformed URL refuses here.
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    throw new Error(`URL not allowed for immutable fetch: ${url}`);
+  }
+  if (!inPolicy(parsed)) {
+    throw new Error(`URL not allowed for immutable fetch: ${url}`);
   }
   const expected = typeof integrity === "string" ? integrity : undefined;
 
@@ -129,9 +177,20 @@ export async function handleImmutableFetch(
     }
   }
 
-  const res = await fetch(url);
+  const res = await fetch(parsed);
   if (!res.ok) {
     throw new Error(`Immutable fetch failed with status ${res.status}: ${url}`);
+  }
+  // R3-364: the prefix hosts are exact-version content hosts; a redirect that
+  // leaves the allowlist means the bytes did NOT come from an in-policy origin —
+  // refuse rather than serve (and never cache) them. The browser follows
+  // redirects itself (cross-origin `redirect: 'manual'` responses are opaque),
+  // so this is the final-URL check: `res.url` is where the bytes actually came
+  // from. A response that reports no URL (test doubles) skips the check.
+  if (res.redirected && res.url !== "" && !inPolicy(new URL(res.url))) {
+    throw new Error(
+      `Immutable fetch redirected outside the allowlist: ${res.url}`,
+    );
   }
   const result = await serializeResponse(res);
   if (cache && (await matchesIntegrity(result.body, expected))) {

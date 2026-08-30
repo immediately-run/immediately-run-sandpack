@@ -309,7 +309,13 @@ export type SandpackMessageConsoleMethods =
 
 export interface BaseSandpackMessage {
   type: string;
-  $id?: number;
+  /**
+   * The sender's channel id. Newer peers mint it as a crypto-random hex STRING
+   * (R3-367 — 64 bits); ids older peers minted as numbers still flow, because
+   * each side compares the value it itself sent. Correlation only — never an
+   * authenticator (the evt.source check in IFrameProtocol is).
+   */
+  $id?: string | number;
   codesandbox?: boolean;
   /**
    * Transferable objects (e.g. a `MessagePort`) to hand to the iframe alongside

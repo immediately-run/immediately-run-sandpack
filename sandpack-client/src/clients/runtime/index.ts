@@ -38,6 +38,13 @@ const BUNDLER_URL =
         "-",
       )}${SUFFIX_PLACEHOLDER}-sandpack.codesandbox.io/`;
 
+// ── R3-367 — the getCodeSandboxURL gesture gate (see gestureGate.ts) ─────────
+
+export {
+  codeSandboxExportAllowed,
+  notifyCodeSandboxExportRefused,
+} from "./gestureGate";
+
 export class SandpackRuntime extends SandpackClient {
   fileResolverProtocol?: Protocol;
   immutableFetchProtocol?: Protocol;
@@ -579,13 +586,33 @@ export class SandpackRuntime extends SandpackClient {
   }
 
   /**
-   * Get the URL of the contents of the current sandbox
+   * Get the URL of the contents of the current sandbox.
+   *
+   * R3-367 — GESTURE-GATED. This POSTs the ENTIRE app filesystem to
+   * codesandbox.io from the parent page; the fs may contain the user's data
+   * (spaces, mounts), so the export is reachable only when the user has been
+   * active on the page (`navigator.userActivation.hasBeenActive` — the sticky
+   * flag, because the fs snapshot can outlive a transient-activation window).
+   * Without any user activation this refuses BEFORE reading the filesystem:
+   * nothing is posted, and a `sandpack-security-violation` CustomEvent is
+   * dispatched on the window for the host to journal (site-main wires the
+   * listener into its security-events seam).
    */
   public async getCodeSandboxURL(): Promise<{
     sandboxId: string;
     editorUrl: string;
     embedUrl: string;
   }> {
+    if (!codeSandboxExportAllowed()) {
+      // No user has ever interacted with this page: an export initiated here
+      // would be app- or script-initiated, not user-initiated. Refuse and make
+      // the refusal observable — BEFORE reading the filesystem.
+      notifyCodeSandboxExportRefused();
+      throw new Error(
+        "getCodeSandboxURL requires user activation (R3-367 gesture gate)",
+      );
+    }
+
     const snapshot = await snapshotFS(this.sandboxSetup.fs);
 
     const paramFiles = Object.keys(snapshot).reduce(

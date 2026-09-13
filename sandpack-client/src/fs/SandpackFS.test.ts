@@ -86,4 +86,33 @@ describe("SandpackFS — out-of-band write guard (R3-110)", () => {
     expect(flagged).toHaveLength(1);
     expect(flagged[0][0]).toContain("unlink");
   });
+
+  it("does not stack the guard when the same context is adopted again (R3-614)", async () => {
+    // One mount, then the same context adopted twice more — the shape that previously
+    // re-captured the prior instance's wrapper as "raw" and accused SandpackFS's own
+    // ensureMetaDir write, once per prior adoption.
+    const fs = await SandpackFS.fromFiles({}, {}, noopPortFactory);
+    await SandpackFS.fromFileSystemContext(fs.fsContext, noopPortFactory);
+    await SandpackFS.fromFileSystemContext(fs.fsContext, noopPortFactory);
+
+    expect(outOfBandCalls()).toHaveLength(0);
+  });
+
+  it("fires exactly once for a genuine out-of-band write with three instances sharing the context", async () => {
+    const fs = await SandpackFS.fromFiles({}, {}, noopPortFactory);
+    await SandpackFS.fromFileSystemContext(fs.fsContext, noopPortFactory);
+    await SandpackFS.fromFileSystemContext(fs.fsContext, noopPortFactory);
+
+    const changes: SandpackFSChange[] = [];
+    fs.onChange((c) => changes.push(c));
+
+    await fs.fsContext.fs.promises.writeFile("/x", "y");
+
+    const flagged = outOfBandCalls();
+    expect(flagged).toHaveLength(1);
+    expect(flagged[0][0]).toContain("writeFile");
+    expect(flagged[0][0]).toContain("/x");
+    expect(await fs.readFile("/x")).toBe("y");
+    expect(changes).toHaveLength(0);
+  });
 });

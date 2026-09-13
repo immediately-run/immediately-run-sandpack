@@ -72,7 +72,7 @@ const GUARDED_WRITE_METHODS = [
  * (roadmap R3-110).
  *
  * This is a module-level function (not a class method) and its **only** reference
- * is behind the `if (IS_DEV)` branch in the constructor — so once a consumer's
+ * is behind the `if (IS_DEV)` branch in {@link ensureGuard} — so once a consumer's
  * production build folds `IS_DEV` to `false`, the branch and this whole function
  * tree-shake away (a class method would be retained). No-op in production.
  */
@@ -94,6 +94,48 @@ function installOutOfBandGuard(fsContext: BoundContext): void {
       return call.apply(p, args);
     };
   }
+}
+
+/**
+ * The raw (unguarded) write methods of one bound context, captured *before* the guard
+ * wraps them. SandpackFS's own writes go through these so they never trip the
+ * out-of-band guard, which is installed on `fsContext.fs.promises` (the object external
+ * callers reach via the public `fsContext`).
+ */
+interface RawMethods {
+  writeFile: (path: string, data: string) => Promise<void>;
+  unlink: (path: string) => Promise<void>;
+  mkdir: (path: string, opts?: { recursive?: boolean }) => Promise<unknown>;
+}
+
+/**
+ * The true raw write methods per bound context, captured once and shared by every
+ * SandpackFS instance that adopts that context. Without this, a second instance's
+ * constructor captures the first instance's wrapper as its "raw" method — because the
+ * guard has already replaced `fsContext.fs.promises` entries — so SandpackFS's own
+ * writes trip the guard once per prior adoption (the R3-614 stacking bug).
+ */
+const RAW = new WeakMap<BoundContext, RawMethods>();
+
+/**
+ * Return the context's raw write methods, capturing them and installing the out-of-band
+ * guard exactly once per context (see {@link installOutOfBandGuard}). Reads `RAW` first,
+ * so adopting the same context any number of times never re-wraps, never re-captures a
+ * wrapper as raw, and never disarms a sibling instance.
+ */
+function ensureGuard(fsContext: BoundContext): RawMethods {
+  const existing = RAW.get(fsContext);
+  if (existing) return existing;
+
+  const p = fsContext.fs.promises as unknown as RawMethods;
+  const raw: RawMethods = {
+    writeFile: p.writeFile.bind(p),
+    unlink: p.unlink.bind(p),
+    mkdir: p.mkdir.bind(p),
+  };
+  RAW.set(fsContext, raw);
+  if (IS_DEV) installOutOfBandGuard(fsContext);
+  return raw;
 }
 
 /**
@@ -158,8 +200,8 @@ export class SandpackFS {
    *  belongs to the caller. */
   private ownedMountPoint: string | undefined = undefined;
 
-  // Raw (unguarded) fs write methods captured at construction, bound to this
-  // instance's bound-context `promises`. SandpackFS's own writes go through these
+  // Raw (unguarded) fs write methods, sourced from the bound context's one entry in
+  // {@link RAW} (see {@link ensureGuard}). SandpackFS's own writes go through these
   // so they never trip the dev out-of-band guard, which is installed *on*
   // `fsContext.fs.promises` (the object external callers reach via the public
   // `fsContext`). Reads keep using `fsContext.fs.promises` directly (unguarded).
@@ -181,15 +223,10 @@ export class SandpackFS {
     // iframe writes go through `remotePortFactory`/`handleRemoteChange` instead.
     private readonly onWrite?: (path: string) => void,
   ) {
-    const p = fsContext.fs.promises as unknown as {
-      writeFile: (path: string, data: string) => Promise<void>;
-      unlink: (path: string) => Promise<void>;
-      mkdir: (path: string, opts?: { recursive?: boolean }) => Promise<unknown>;
-    };
-    this.rawWriteFile = p.writeFile.bind(p);
-    this.rawUnlink = p.unlink.bind(p);
-    this.rawMkdir = p.mkdir.bind(p);
-    if (IS_DEV) installOutOfBandGuard(fsContext);
+    const raw = ensureGuard(fsContext);
+    this.rawWriteFile = raw.writeFile;
+    this.rawUnlink = raw.unlink;
+    this.rawMkdir = raw.mkdir;
   }
 
   /**

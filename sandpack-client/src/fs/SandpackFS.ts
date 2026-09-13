@@ -127,11 +127,7 @@ function ensureGuard(fsContext: BoundContext): RawMethods {
   const existing = RAW.get(fsContext);
   if (existing) return existing;
 
-  const p = fsContext.fs.promises as unknown as {
-    writeFile: (path: string, data: string) => Promise<void>;
-    unlink: (path: string) => Promise<void>;
-    mkdir: (path: string, opts?: { recursive?: boolean }) => Promise<unknown>;
-  };
+  const p = fsContext.fs.promises as unknown as RawMethods;
   const raw: RawMethods = {
     writeFile: p.writeFile.bind(p),
     unlink: p.unlink.bind(p),

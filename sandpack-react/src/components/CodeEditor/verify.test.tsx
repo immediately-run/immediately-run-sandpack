@@ -73,13 +73,31 @@ describe("SandpackCodeEditor loads file content from ZenFS", () => {
       expect(snap().code).toEqual(stylesCss);
     });
 
-    // An external write to the active file refreshes the editor via the ZenFS
-    // watch, and the deferred re-read observes the *completed* write (no torn
-    // mid-write content), regardless of whether the new content is shorter or
-    // longer than the previous content.
+    // An external write to the active file refreshes the editor, and the
+    // deferred re-read observes the *completed* write (no torn mid-write
+    // content), regardless of whether the new content is shorter or longer
+    // than the previous content.
+    //
+    // "External" is a defined term since 727504c ("zenfs editing fixes",
+    // 2026-05-27 — one day AFTER this test): the editor re-reads only on
+    // changes relayed from the child iframe, i.e. `handleRemoteChange(path)`
+    // after the bytes landed in the shared store (the Port backend forwards no
+    // watch events, which is why the relay exists). A bare `fs.writeFile` is a
+    // LOCAL write and must NOT refresh — that suppression is what keeps typing
+    // echo-free. This test predates the split and drove the local path; it now
+    // drives the production one (write, then relay — the useLocalLiveUpdates
+    // shape) and additionally pins the no-echo half of the contract.
     const shorter = "x";
     await act(async () => {
       await fs.writeFile("/styles.css", shorter);
+    });
+    // No relay yet: a local write alone must not touch the editor buffer.
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 50));
+    });
+    expect(snap().code).toEqual(stylesCss);
+    act(() => {
+      fs.handleRemoteChange("/styles.css");
     });
     await waitFor(() => {
       expect(snap().code).toEqual(shorter);
@@ -88,6 +106,9 @@ describe("SandpackCodeEditor loads file content from ZenFS", () => {
     const longer = stylesCss + "\n/* appended */\n";
     await act(async () => {
       await fs.writeFile("/styles.css", longer);
+    });
+    act(() => {
+      fs.handleRemoteChange("/styles.css");
     });
     await waitFor(() => {
       expect(snap().code).toEqual(longer);

@@ -34,7 +34,12 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Setup | Node.js
-        uses: actions/setup-node@v2
+        # v2 -> v4: the v2 action's yarn-cache integration dies on the current
+        # runners ("Cache service responded with 400" before eslint ever runs —
+        # PR #31's Lint leg 2026-09-13 and this item's own fault-injection run
+        # 2026-09-19). The test/format jobs already run v4. Without this the lint
+        # gate never reaches eslint, and a gate that dies in setup never gates.
+        uses: actions/setup-node@v4
         with:
           node-version-file: .nvmrc
           cache: "yarn"

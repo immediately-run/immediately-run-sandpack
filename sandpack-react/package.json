@@ -40,7 +40,7 @@
   "scripts": {
     "clean": "rm -rf dist",
     "test": "TZ=UTC TEST_ENV=true jest . --transformIgnorePatterns \"node_modules/(?!(@codemirror|@zenfs))/\" --modulePathIgnorePatterns \"e2e\"",
-    "lint": "eslint '**/*.ts?(x)' --fix",
+    "lint": "eslint '**/*.ts?(x)' --max-warnings 0",
     "build": "rollup -c",
     "build:publish": "yarn clean && yarn build",
     "dev": "storybook dev -p 6006 --quiet",

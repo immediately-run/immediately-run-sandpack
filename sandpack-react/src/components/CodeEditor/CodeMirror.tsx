@@ -472,6 +472,7 @@ export const CodeMirror = React.forwardRef<CodeMirrorRef, CodeMirrorProps>(
 
         return (): void => unsubscribe();
       },
+      // eslint-disable-next-line react-hooks/exhaustive-deps -- upstream sandpack's deliberate omission: adding it re-subscribes/re-runs on identity churn (the fork keeps upstream's hook semantics)
       [listen, showInlineErrors],
     );
 

@@ -119,5 +119,8 @@ tests with the working tree stashed). Unrelated to this pass — recorded, not f
 `iframe-protocol.ts:57` + `runtime/index.ts:106` `no-console`, `immutable-fetch-protocol.ts:128/141`
 empty arrow functions). Baseline (verified on the pristine tree). The `runtime/index.ts:106` console
 and the `immutable-fetch` empty-catch arrows are also recorded in `REFACTOR_CANDIDATES.md` §1–2.
-Note: the package `lint` script runs `eslint --fix`, which **reformats unrelated files** (import
-ordering, the `SandpackFS.ts` import) — run a non-`--fix` lint to inspect without churn.
+*(Superseded 2026-09-19, R3-664 / sandpack#32: the five no longer reproduce — strict
+`eslint '**/*.ts?(x)' --max-warnings 0` exits 0 on the package on that head; fixed piecemeal
+since this entry was written. The note's second half is gone with the same PR: the `lint`
+script no longer runs `eslint --fix`, so the "reformats unrelated files" churn hazard is
+deleted rather than documented.)*

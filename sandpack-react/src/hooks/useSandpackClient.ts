@@ -49,6 +49,7 @@ export const useSandpackClient = (
     }
 
     return (): void => sandpack.unregisterBundler(clientIdValue);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- upstream sandpack's deliberate omission: adding it re-subscribes/re-runs on identity churn (the fork keeps upstream's hook semantics)
   }, []);
 
   const getClient = (): InstanceType<typeof SandpackClient> | null => {

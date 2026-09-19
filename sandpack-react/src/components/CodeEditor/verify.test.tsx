@@ -85,8 +85,10 @@ describe("SandpackCodeEditor loads file content from ZenFS", () => {
     // watch events, which is why the relay exists). A bare `fs.writeFile` is a
     // LOCAL write and must NOT refresh — that suppression is what keeps typing
     // echo-free. This test predates the split and drove the local path; it now
-    // drives the production one (write, then relay — the useLocalLiveUpdates
-    // shape) and additionally pins the no-echo half of the contract.
+    // drives the production one (write, then relay — the shape of site-main's
+    // useLocalLiveUpdates.ts, which relays host-observed writes into
+    // sandpackFS.handleRemoteChange(path)) and additionally pins the no-echo
+    // half of the contract.
     const shorter = "x";
     await act(async () => {
       await fs.writeFile("/styles.css", shorter);

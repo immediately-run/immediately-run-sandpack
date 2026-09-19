@@ -434,7 +434,7 @@ export const useClient: UseClient = (
     } else {
       runSandpack();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- the advisory is an UNNECESSARY dep (unregisterAllClients is stable by construction); upstream's deliberate shape, kept for a clean dep read on identity churn
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- the advisory is an unnecessary dep (unregisterAllClients is stable by construction); upstream's deliberate shape, kept for a clean dep read on identity churn
   }, [
     options?.autorun,
     options?.initModeObserverOptions,

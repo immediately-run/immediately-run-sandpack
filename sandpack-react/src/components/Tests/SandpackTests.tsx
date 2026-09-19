@@ -347,6 +347,7 @@ export const SandpackTests: React.FC<
     });
 
     return unsubscribe;
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- upstream sandpack's deliberate omission: adding it re-subscribes/re-runs on identity churn (the fork keeps upstream's hook semantics)
   }, [state.suiteOnly, state.watchMode, sandpack.activeFile]);
 
   React.useEffect(
@@ -363,6 +364,7 @@ export const SandpackTests: React.FC<
 
       return unsunscribe;
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- upstream sandpack's deliberate omission: adding it re-subscribes/re-runs on identity churn (the fork keeps upstream's hook semantics)
     [runSpec, runAllTests, state.watchMode, isSpecOpen],
   );
 

@@ -48,7 +48,7 @@
     "clean": "rm -rf dist sandpack src/clients/node/inject-scripts/dist",
     "prebuild": "yarn run clean",
     "test": "jest . --transformIgnorePatterns \"node_modules/(?!@zenfs)/\"",
-    "lint": "eslint '**/*.ts?(x)' --fix",
+    "lint": "eslint '**/*.ts?(x)' --max-warnings 0",
     "build": "rollup -c --bundleConfigAsCjs",
     "build:publish": "yarn build && gulp",
     "build:bundler": "gulp",

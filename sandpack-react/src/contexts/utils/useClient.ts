@@ -170,7 +170,7 @@ export const useClient: UseClient = (
         clientPropsOverride,
       });
 
-      // eslint-disable-next-line react-hooks/exhaustive-deps -- upstream sandpack's deliberate omission: adding it re-subscribes/re-runs on identity churn (the fork keeps upstream's hook semantics)
+      // eslint-disable-next-line react-hooks/exhaustive-deps -- the advisory is an assignment-to-outer-variable inside the callback (`options ??= {}`), upstream's own shape; the fork keeps upstream's hook semantics
       options ??= {};
 
       const timeOut = options?.bundlerTimeOut ?? BUNDLER_TIMEOUT;
@@ -434,7 +434,7 @@ export const useClient: UseClient = (
     } else {
       runSandpack();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- upstream sandpack's deliberate omission: adding it re-subscribes/re-runs on identity churn (the fork keeps upstream's hook semantics)
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- the advisory is an UNNECESSARY dep (unregisterAllClients is stable by construction); upstream's deliberate shape, kept for a clean dep read on identity churn
   }, [
     options?.autorun,
     options?.initModeObserverOptions,

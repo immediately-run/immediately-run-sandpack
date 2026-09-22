@@ -67,7 +67,9 @@ const OUT_OF_BAND_GUARD_KEY = Symbol.for(
   "@immediately-run/sandpack-client:out-of-band-guard",
 );
 
-let guardBypassDepth = 0;
+const RAW_WRITE_METHODS_KEY = Symbol.for(
+  "@immediately-run/sandpack-client:raw-write-methods",
+);
 
 function installOutOfBandGuard(fsContext: BoundContext): void {
   const p = fsContext.fs.promises as unknown as Record<
@@ -79,16 +81,14 @@ function installOutOfBandGuard(fsContext: BoundContext): void {
     if (typeof original !== "function") continue;
     const call = original as (...args: unknown[]) => unknown;
     p[method] = (...args: unknown[]) => {
-      if (guardBypassDepth === 0) {
-        console.error(
-          `[SandpackFS] out-of-band write: '${method}(${String(
-            args[0],
-          )})' bypassed SandpackFS.writeFile()/handleRemoteChange(), so it emits ` +
-            `no onChange — the editor view and bundler relay will miss it. Route the ` +
-            `write through SandpackFS (EDITOR_AS_APP_SPEC D-EDIT-1 writer invariant; ` +
-            `LOCAL_DEVELOPMENT_SPEC §6.5).`,
-        );
-      }
+      console.error(
+        `[SandpackFS] out-of-band write: '${method}(${String(
+          args[0],
+        )})' bypassed SandpackFS.writeFile()/handleRemoteChange(), so it emits ` +
+          `no onChange — the editor view and bundler relay will miss it. Route the ` +
+          `write through SandpackFS (EDITOR_AS_APP_SPEC D-EDIT-1 writer invariant; ` +
+          `LOCAL_DEVELOPMENT_SPEC §6.5).`,
+      );
       return call.apply(p, args);
     };
   }
@@ -101,35 +101,28 @@ interface RawMethods {
   mkdir: (path: string, opts?: { recursive?: boolean }) => Promise<unknown>;
 }
 
-function bypassGuard<Args extends unknown[], Result>(
-  fn: (...args: Args) => Result,
-): (...args: Args) => Result {
-  if (!IS_DEV) return fn;
-  return (...args: Args): Result => {
-    guardBypassDepth += 1;
-    try {
-      return fn(...args);
-    } finally {
-      guardBypassDepth -= 1;
-    }
-  };
-}
-
 function ensureGuard(fsContext: BoundContext): RawMethods {
-  const guarded = fsContext.fs.promises as unknown as Record<
+  const p = fsContext.fs.promises as unknown as Record<
     string | symbol,
     unknown
-  >;
-  if (IS_DEV && !guarded[OUT_OF_BAND_GUARD_KEY]) {
+  > &
+    RawMethods;
+
+  const existing = p[RAW_WRITE_METHODS_KEY] as RawMethods | undefined;
+  if (existing) return existing;
+
+  const raw: RawMethods = {
+    writeFile: p.writeFile.bind(p),
+    unlink: p.unlink.bind(p),
+    mkdir: p.mkdir.bind(p),
+  };
+  p[RAW_WRITE_METHODS_KEY] = raw;
+
+  if (IS_DEV && !p[OUT_OF_BAND_GUARD_KEY]) {
     installOutOfBandGuard(fsContext);
   }
 
-  const p = fsContext.fs.promises as unknown as RawMethods;
-  return {
-    writeFile: bypassGuard(p.writeFile.bind(p)),
-    unlink: bypassGuard(p.unlink.bind(p)),
-    mkdir: bypassGuard(p.mkdir.bind(p)),
-  };
+  return raw;
 }
 
 /**
@@ -194,11 +187,12 @@ export class SandpackFS {
    *  belongs to the caller. */
   private ownedMountPoint: string | undefined = undefined;
 
-  // Raw (unguarded) fs write methods, sourced from the bound context's one entry in
-  // {@link RAW} (see {@link ensureGuard}). SandpackFS's own writes go through these
-  // so they never trip the dev out-of-band guard, which is installed *on*
-  // `fsContext.fs.promises` (the object external callers reach via the public
-  // `fsContext`). Reads keep using `fsContext.fs.promises` directly (unguarded).
+  // Pristine fs write methods captured before the dev guard wraps
+  // `fsContext.fs.promises` and stashed once per shared promises target under
+  // {@link RAW_WRITE_METHODS_KEY} (see {@link ensureGuard}). SandpackFS's own writes
+  // go through these so they never trip the dev out-of-band guard, including when
+  // later adoptions reach the same target through fresh Proxy faces. Reads keep
+  // using `fsContext.fs.promises` directly.
   private readonly rawWriteFile: (path: string, data: string) => Promise<void>;
   private readonly rawUnlink: (path: string) => Promise<void>;
   private readonly rawMkdir: (

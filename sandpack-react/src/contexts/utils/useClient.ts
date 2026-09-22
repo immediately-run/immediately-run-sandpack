@@ -33,6 +33,7 @@ type SandpackClientType = InstanceType<typeof SandpackClient>;
 
 const BUNDLER_TIMEOUT = 40_000;
 const MAX_UNEXPECTED_NAVIGATION_RECOVERIES = 3;
+const UNEXPECTED_NAVIGATION_RECOVERY_WINDOW_MS = 10_000;
 
 interface SandpackConfigState {
   reactDevTools?: ReactDevToolsMode;
@@ -144,7 +145,7 @@ export const useClient: UseClient = (
   }
   const connectedRef = useRef(false);
 
-  const unexpectedRecoveryAttempts = useRef<Record<string, number>>({});
+  const unexpectedRecoveryHistory = useRef<Record<string, number[]>>({});
   const recoveryTimers = useRef<
     Record<string, ReturnType<typeof setTimeout> | undefined>
   >({});
@@ -160,26 +161,52 @@ export const useClient: UseClient = (
     undefined,
   );
 
+  const pruneUnexpectedRecoveryHistory = useCallback((clientId: string) => {
+    const now = Date.now();
+    const history = (unexpectedRecoveryHistory.current[clientId] ?? []).filter(
+      (attemptAt) => now - attemptAt < UNEXPECTED_NAVIGATION_RECOVERY_WINDOW_MS,
+    );
+
+    if (history.length === 0) {
+      delete unexpectedRecoveryHistory.current[clientId];
+    } else {
+      unexpectedRecoveryHistory.current[clientId] = history;
+    }
+
+    return history;
+  }, []);
+
   const recoverUnexpectedNavigation = useCallback(
     (
       iframe: HTMLIFrameElement,
       clientId: string,
       clientPropsOverride?: ClientPropsOverride,
     ): void => {
-      const attempts = unexpectedRecoveryAttempts.current[clientId] ?? 0;
-      if (attempts >= MAX_UNEXPECTED_NAVIGATION_RECOVERIES) {
+      const history = pruneUnexpectedRecoveryHistory(clientId);
+      if (history.length >= MAX_UNEXPECTED_NAVIGATION_RECOVERIES) {
         unregisterBundlerRef.current?.(clientId);
         return;
       }
 
-      unexpectedRecoveryAttempts.current[clientId] = attempts + 1;
+      unexpectedRecoveryHistory.current[clientId] = [...history, Date.now()];
       clearTimeout(recoveryTimers.current[clientId]);
       recoveryTimers.current[clientId] = setTimeout(() => {
         delete recoveryTimers.current[clientId];
-        void createClientRef.current?.(iframe, clientId, clientPropsOverride);
+        const recovery = createClientRef.current?.(
+          iframe,
+          clientId,
+          clientPropsOverride,
+        );
+        recovery?.catch((error) => {
+          console.error("[Sandpack] unexpected-navigation recovery failed", {
+            clientId,
+            error,
+          });
+          unregisterBundlerRef.current?.(clientId);
+        });
       }, 0);
     },
-    [],
+    [pruneUnexpectedRecoveryHistory],
   );
 
   const asyncSandpackId = useAsyncSandpackId(
@@ -338,7 +365,7 @@ export const useClient: UseClient = (
           (msg.type === "done" && !msg.compilatonError) ||
           msg.type === "connected"
         ) {
-          delete unexpectedRecoveryAttempts.current[clientId];
+          pruneUnexpectedRecoveryHistory(clientId);
           if (timeoutHook.current) {
             clearTimeout(timeoutHook.current);
             timeoutHook.current = null;
@@ -398,6 +425,7 @@ export const useClient: UseClient = (
     [
       filesState.environment,
       filesState.fs,
+      pruneUnexpectedRecoveryHistory,
       recoverUnexpectedNavigation,
       state.reactDevTools,
     ],
@@ -540,7 +568,7 @@ export const useClient: UseClient = (
   const unregisterBundler = (clientId: string): void => {
     clearTimeout(recoveryTimers.current[clientId]);
     delete recoveryTimers.current[clientId];
-    delete unexpectedRecoveryAttempts.current[clientId];
+    delete unexpectedRecoveryHistory.current[clientId];
 
     const client = clients.current[clientId];
     if (client) {
@@ -887,7 +915,7 @@ export const useClient: UseClient = (
         if (timer) clearTimeout(timer);
       });
       recoveryTimers.current = {};
-      unexpectedRecoveryAttempts.current = {};
+      unexpectedRecoveryHistory.current = {};
 
       if (intersectionObserver.current) {
         intersectionObserver.current.disconnect();

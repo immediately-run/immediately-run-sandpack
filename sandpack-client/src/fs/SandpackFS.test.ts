@@ -1,3 +1,4 @@
+import type { BoundContext } from "@zenfs/core";
 import { SandpackFS, type SandpackFSChange } from "./SandpackFS";
 
 // A stub remote-port factory: `connectRemote()` is never called in these tests,
@@ -113,6 +114,80 @@ describe("SandpackFS — out-of-band write guard (R3-110)", () => {
     expect(flagged[0][0]).toContain("writeFile");
     expect(flagged[0][0]).toContain("/x");
     expect(await fs.readFile("/x")).toBe("y");
+    expect(changes).toHaveLength(0);
+  });
+
+  const freshProxyFace = (context: BoundContext): BoundContext => {
+    const fs = new Proxy(context.fs, {
+      get(target, prop, receiver) {
+        const value = Reflect.get(target, prop, receiver);
+        if (prop === "promises" && value && typeof value === "object") {
+          return new Proxy(value as object, {});
+        }
+        if (typeof value === "function") {
+          return value.bind(target);
+        }
+        return value;
+      },
+    });
+
+    return new Proxy(context, {
+      get(target, prop, receiver) {
+        if (prop === "fs") return fs;
+        return Reflect.get(target, prop, receiver);
+      },
+    }) as BoundContext;
+  };
+
+  it("does not stack the guard when six adoptions see fresh proxy faces over one promises target (R3-422)", async () => {
+    const fs = await SandpackFS.fromFiles({}, {}, noopPortFactory);
+
+    for (let i = 0; i < 5; i += 1) {
+      await SandpackFS.fromFileSystemContext(
+        freshProxyFace(fs.fsContext),
+        noopPortFactory,
+      );
+    }
+
+    expect(outOfBandCalls()).toHaveLength(0);
+  });
+
+  it("keeps a later proxy-face instance's own writes quiet", async () => {
+    const fs = await SandpackFS.fromFiles({}, {}, noopPortFactory);
+    const later = await SandpackFS.fromFileSystemContext(
+      freshProxyFace(fs.fsContext),
+      noopPortFactory,
+    );
+    const changes: SandpackFSChange[] = [];
+    later.onChange((c) => changes.push(c));
+
+    await later.writeFile("/later.ts", "later");
+
+    expect(outOfBandCalls()).toHaveLength(0);
+    expect(changes).toContainEqual({ path: "/later.ts", external: false });
+    expect(await later.readFile("/later.ts")).toBe("later");
+  });
+
+  it("fires exactly once for a genuine out-of-band write through a fresh proxy face", async () => {
+    const fs = await SandpackFS.fromFiles({}, {}, noopPortFactory);
+    await SandpackFS.fromFileSystemContext(
+      freshProxyFace(fs.fsContext),
+      noopPortFactory,
+    );
+    await SandpackFS.fromFileSystemContext(
+      freshProxyFace(fs.fsContext),
+      noopPortFactory,
+    );
+    const changes: SandpackFSChange[] = [];
+    fs.onChange((c) => changes.push(c));
+
+    await freshProxyFace(fs.fsContext).fs.promises.writeFile("/proxy.ts", "y");
+
+    const flagged = outOfBandCalls();
+    expect(flagged).toHaveLength(1);
+    expect(flagged[0][0]).toContain("writeFile");
+    expect(flagged[0][0]).toContain("/proxy.ts");
+    expect(await fs.readFile("/proxy.ts")).toBe("y");
     expect(changes).toHaveLength(0);
   });
 });

@@ -63,79 +63,73 @@ const GUARDED_WRITE_METHODS = [
   "rmdir",
 ] as const;
 
-/**
- * Dev-only. Wrap the store-mutating methods on a SandpackFS instance's
- * bound-context `fs.promises` so any write that did **not** go through
- * `SandpackFS.writeFile` / `handleRemoteChange` (those use captured raw methods,
- * which stay unwrapped) emits a single loud `console.error` naming the offending
- * method + path, then still performs the write. Enforces the class writer invariant
- * (roadmap R3-110).
- *
- * This is a module-level function (not a class method) and its **only** reference
- * is behind the `if (IS_DEV)` branch in {@link ensureGuard} — so once a consumer's
- * production build folds `IS_DEV` to `false`, the branch and this whole function
- * tree-shake away (a class method would be retained). No-op in production.
- */
+const OUT_OF_BAND_GUARD_KEY = Symbol.for(
+  "@immediately-run/sandpack-client:out-of-band-guard",
+);
+
+let guardBypassDepth = 0;
+
 function installOutOfBandGuard(fsContext: BoundContext): void {
-  const p = fsContext.fs.promises as unknown as Record<string, unknown>;
+  const p = fsContext.fs.promises as unknown as Record<
+    string | symbol,
+    unknown
+  >;
   for (const method of GUARDED_WRITE_METHODS) {
     const original = p[method];
     if (typeof original !== "function") continue;
     const call = original as (...args: unknown[]) => unknown;
     p[method] = (...args: unknown[]) => {
-      console.error(
-        `[SandpackFS] out-of-band write: '${method}(${String(
-          args[0],
-        )})' bypassed SandpackFS.writeFile()/handleRemoteChange(), so it emits ` +
-          `no onChange — the editor view and bundler relay will miss it. Route the ` +
-          `write through SandpackFS (EDITOR_AS_APP_SPEC D-EDIT-1 writer invariant; ` +
-          `LOCAL_DEVELOPMENT_SPEC §6.5).`,
-      );
+      if (guardBypassDepth === 0) {
+        console.error(
+          `[SandpackFS] out-of-band write: '${method}(${String(
+            args[0],
+          )})' bypassed SandpackFS.writeFile()/handleRemoteChange(), so it emits ` +
+            `no onChange — the editor view and bundler relay will miss it. Route the ` +
+            `write through SandpackFS (EDITOR_AS_APP_SPEC D-EDIT-1 writer invariant; ` +
+            `LOCAL_DEVELOPMENT_SPEC §6.5).`,
+        );
+      }
       return call.apply(p, args);
     };
   }
+  p[OUT_OF_BAND_GUARD_KEY] = true;
 }
 
-/**
- * The raw (unguarded) write methods of one bound context, captured *before* the guard
- * wraps them. SandpackFS's own writes go through these so they never trip the
- * out-of-band guard, which is installed on `fsContext.fs.promises` (the object external
- * callers reach via the public `fsContext`).
- */
 interface RawMethods {
   writeFile: (path: string, data: string) => Promise<void>;
   unlink: (path: string) => Promise<void>;
   mkdir: (path: string, opts?: { recursive?: boolean }) => Promise<unknown>;
 }
 
-/**
- * The true raw write methods per bound context, captured once and shared by every
- * SandpackFS instance that adopts that context. Without this, a second instance's
- * constructor captures the first instance's wrapper as its "raw" method — because the
- * guard has already replaced `fsContext.fs.promises` entries — so SandpackFS's own
- * writes trip the guard once per prior adoption (the R3-614 stacking bug).
- */
-const RAW = new WeakMap<BoundContext, RawMethods>();
+function bypassGuard<Args extends unknown[], Result>(
+  fn: (...args: Args) => Result,
+): (...args: Args) => Result {
+  if (!IS_DEV) return fn;
+  return (...args: Args): Result => {
+    guardBypassDepth += 1;
+    try {
+      return fn(...args);
+    } finally {
+      guardBypassDepth -= 1;
+    }
+  };
+}
 
-/**
- * Return the context's raw write methods, capturing them and installing the out-of-band
- * guard exactly once per context (see {@link installOutOfBandGuard}). Reads `RAW` first,
- * so adopting the same context any number of times never re-wraps, never re-captures a
- * wrapper as raw, and never disarms a sibling instance.
- */
 function ensureGuard(fsContext: BoundContext): RawMethods {
-  const existing = RAW.get(fsContext);
-  if (existing) return existing;
+  const guarded = fsContext.fs.promises as unknown as Record<
+    string | symbol,
+    unknown
+  >;
+  if (IS_DEV && !guarded[OUT_OF_BAND_GUARD_KEY]) {
+    installOutOfBandGuard(fsContext);
+  }
 
   const p = fsContext.fs.promises as unknown as RawMethods;
-  const raw: RawMethods = {
-    writeFile: p.writeFile.bind(p),
-    unlink: p.unlink.bind(p),
-    mkdir: p.mkdir.bind(p),
+  return {
+    writeFile: bypassGuard(p.writeFile.bind(p)),
+    unlink: bypassGuard(p.unlink.bind(p)),
+    mkdir: bypassGuard(p.mkdir.bind(p)),
   };
-  RAW.set(fsContext, raw);
-  if (IS_DEV) installOutOfBandGuard(fsContext);
-  return raw;
 }
 
 /**

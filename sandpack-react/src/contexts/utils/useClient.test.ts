@@ -617,4 +617,69 @@ describe(useClient, () => {
       expect(result.current[0].status).toBe("idle");
     });
   });
+
+  describe("unexpected-navigation recovery (R3-353/R3-422)", () => {
+    const refuseCurrentClient = async (
+      operations: UseClientOperations,
+      clientId = "client-id",
+    ): Promise<void> => {
+      const client = operations.clients[clientId] as unknown as {
+        options: { onUnexpectedNavigation?: () => void };
+      };
+      expect(typeof client.options.onUnexpectedNavigation).toBe("function");
+      await act(async () => {
+        client.options.onUnexpectedNavigation?.();
+        await new Promise((resolve) => setTimeout(resolve, 0));
+      });
+    };
+
+    it("recreates a client whose frame was refused", async () => {
+      const { result } = renderHook(() => useClient({}, filesState));
+      const operations = result.current[1];
+
+      await act(async () => {
+        await operations.registerBundler(
+          document.createElement("iframe"),
+          "client-id",
+        );
+        await operations.runSandpack();
+      });
+
+      const first = operations.clients["client-id"];
+      expect(first).toBeDefined();
+
+      await refuseCurrentClient(operations);
+
+      const second = operations.clients["client-id"];
+      expect(second).toBeDefined();
+      expect(second).not.toBe(first);
+      expect(result.current[0].status).toBe("running");
+    });
+
+    it("bounds consecutive refusals and unregisters the client after the budget", async () => {
+      const { result } = renderHook(() => useClient({}, filesState));
+      const operations = result.current[1];
+
+      await act(async () => {
+        await operations.registerBundler(
+          document.createElement("iframe"),
+          "client-id",
+        );
+        await operations.runSandpack();
+      });
+
+      const seen = new Set([operations.clients["client-id"]]);
+      for (let i = 0; i < 3; i += 1) {
+        await refuseCurrentClient(operations);
+        const current = operations.clients["client-id"];
+        expect(current).toBeDefined();
+        expect(seen.has(current)).toBe(false);
+        seen.add(current);
+      }
+
+      await refuseCurrentClient(operations);
+      expect(operations.clients["client-id"]).toBeUndefined();
+      expect(result.current[0].status).toBe("idle");
+    });
+  });
 });

@@ -32,6 +32,7 @@ import type { FilesState } from "./useFiles";
 type SandpackClientType = InstanceType<typeof SandpackClient>;
 
 const BUNDLER_TIMEOUT = 40_000;
+const MAX_UNEXPECTED_NAVIGATION_RECOVERIES = 3;
 
 interface SandpackConfigState {
   reactDevTools?: ReactDevToolsMode;
@@ -143,6 +144,44 @@ export const useClient: UseClient = (
   }
   const connectedRef = useRef(false);
 
+  const unexpectedRecoveryAttempts = useRef<Record<string, number>>({});
+  const recoveryTimers = useRef<
+    Record<string, ReturnType<typeof setTimeout> | undefined>
+  >({});
+  const createClientRef = useRef<
+    | ((
+        iframe: HTMLIFrameElement,
+        clientId: string,
+        clientPropsOverride?: ClientPropsOverride,
+      ) => Promise<void>)
+    | null
+  >(null);
+  const unregisterBundlerRef = useRef<((clientId: string) => void) | undefined>(
+    undefined,
+  );
+
+  const recoverUnexpectedNavigation = useCallback(
+    (
+      iframe: HTMLIFrameElement,
+      clientId: string,
+      clientPropsOverride?: ClientPropsOverride,
+    ): void => {
+      const attempts = unexpectedRecoveryAttempts.current[clientId] ?? 0;
+      if (attempts >= MAX_UNEXPECTED_NAVIGATION_RECOVERIES) {
+        unregisterBundlerRef.current?.(clientId);
+        return;
+      }
+
+      unexpectedRecoveryAttempts.current[clientId] = attempts + 1;
+      clearTimeout(recoveryTimers.current[clientId]);
+      recoveryTimers.current[clientId] = setTimeout(() => {
+        delete recoveryTimers.current[clientId];
+        void createClientRef.current?.(iframe, clientId, clientPropsOverride);
+      }, 0);
+    },
+    [],
+  );
+
   const asyncSandpackId = useAsyncSandpackId(
     filesState.fileList,
     filesState.fs,
@@ -227,6 +266,8 @@ export const useClient: UseClient = (
           externalResources: options.externalResources,
           bundlerURL: options.bundlerURL,
           babelWorkerURL: options.babelWorkerURL,
+          onUnexpectedNavigation: () =>
+            recoverUnexpectedNavigation(iframe, clientId, clientPropsOverride),
           // R3-195: forward the host-resolved trust stance so the client emits the
           // M3-hardened iframe (sandbox flags + delegated features); absent/M0–M2
           // keeps the exact baseline.
@@ -294,12 +335,14 @@ export const useClient: UseClient = (
       // before this listener attached (a fast warm-cache load).
       const clearTimeoutOnReady = (msg: SandpackMessage): void => {
         if (
-          ((msg.type === "done" && !msg.compilatonError) ||
-            msg.type === "connected") &&
-          timeoutHook.current
+          (msg.type === "done" && !msg.compilatonError) ||
+          msg.type === "connected"
         ) {
-          clearTimeout(timeoutHook.current);
-          timeoutHook.current = null;
+          delete unexpectedRecoveryAttempts.current[clientId];
+          if (timeoutHook.current) {
+            clearTimeout(timeoutHook.current);
+            timeoutHook.current = null;
+          }
         }
       };
       unsubscribeClientListeners.current[clientId]["__sp_timeout_reconcile__"] =
@@ -352,7 +395,12 @@ export const useClient: UseClient = (
       }
       clients.current[clientId] = client;
     },
-    [filesState.environment, filesState.fs, state.reactDevTools],
+    [
+      filesState.environment,
+      filesState.fs,
+      recoverUnexpectedNavigation,
+      state.reactDevTools,
+    ],
   );
 
   const unregisterAllClients = useCallback((): void => {
@@ -490,6 +538,10 @@ export const useClient: UseClient = (
   );
 
   const unregisterBundler = (clientId: string): void => {
+    clearTimeout(recoveryTimers.current[clientId]);
+    delete recoveryTimers.current[clientId];
+    delete unexpectedRecoveryAttempts.current[clientId];
+
     const client = clients.current[clientId];
     if (client) {
       client.destroy();
@@ -703,6 +755,14 @@ export const useClient: UseClient = (
    * Effects
    */
 
+  useEffect(() => {
+    createClientRef.current = createClient;
+  }, [createClient]);
+
+  useEffect(() => {
+    unregisterBundlerRef.current = unregisterBundler;
+  });
+
   useEffect(
     function watchFileChanges() {
       if (state.status !== "running" || !filesState.shouldUpdatePreview) {
@@ -822,6 +882,12 @@ export const useClient: UseClient = (
       if (debounceHook.current) {
         clearTimeout(debounceHook.current);
       }
+
+      Object.values(recoveryTimers.current).forEach((timer) => {
+        if (timer) clearTimeout(timer);
+      });
+      recoveryTimers.current = {};
+      unexpectedRecoveryAttempts.current = {};
 
       if (intersectionObserver.current) {
         intersectionObserver.current.disconnect();

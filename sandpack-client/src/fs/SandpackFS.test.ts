@@ -1,4 +1,10 @@
-import type { BoundContext } from "@zenfs/core";
+import {
+  InMemory,
+  bindContext,
+  mount,
+  resolveMountConfig,
+  type BoundContext,
+} from "@zenfs/core";
 import { SandpackFS, type SandpackFSChange } from "./SandpackFS";
 
 // A stub remote-port factory: `connectRemote()` is never called in these tests,
@@ -139,6 +145,93 @@ describe("SandpackFS — out-of-band write guard (R3-110)", () => {
     }) as BoundContext;
   };
 
+  const WRITE_PATH_ARGS: Record<string, number[]> = {
+    writeFile: [0],
+    appendFile: [0],
+    truncate: [0],
+    rm: [0],
+    rmdir: [0],
+    unlink: [0],
+    mkdir: [0],
+    rename: [0, 1],
+  };
+
+  const readOnlyErrno = (): Error => {
+    const error = new Error("EROFS: read-only file system") as Error & {
+      code?: string;
+    };
+    error.code = "EROFS";
+    return error;
+  };
+
+  const isReadOnlySidecarPath = (path: unknown): boolean =>
+    typeof path === "string" &&
+    (path === "/.sandpack" || path.startsWith("/.sandpack/"));
+
+  const writesOnlyReadOnlySidecar = (
+    method: string,
+    args: unknown[],
+  ): boolean => {
+    const indexes = WRITE_PATH_ARGS[method];
+    if (!indexes) return true;
+    return indexes.every((index) => isReadOnlySidecarPath(args[index]));
+  };
+
+  const readOnlyFsFace = <T extends object>(face: T): T =>
+    new Proxy(face, {
+      get(target, prop, receiver) {
+        const value = Reflect.get(target, prop, receiver);
+        if (typeof prop !== "string" || typeof value !== "function") {
+          return value;
+        }
+        if (!(prop in WRITE_PATH_ARGS)) return value.bind(target);
+        return (...args: unknown[]) => {
+          if (!writesOnlyReadOnlySidecar(prop, args)) throw readOnlyErrno();
+          return (value as (...a: unknown[]) => unknown).apply(target, args);
+        };
+      },
+    }) as T;
+
+  const readOnlyEditorFace = (context: BoundContext): BoundContext => {
+    const fs = new Proxy(context.fs, {
+      get(target, prop, receiver) {
+        const value = Reflect.get(target, prop, receiver);
+        if (prop === "promises" && value && typeof value === "object") {
+          return readOnlyFsFace(value as object);
+        }
+        if (typeof prop === "string" && typeof value === "function") {
+          if (prop in WRITE_PATH_ARGS) {
+            return (...args: unknown[]) => {
+              if (!writesOnlyReadOnlySidecar(prop, args)) throw readOnlyErrno();
+              return (value as (...a: unknown[]) => unknown).apply(
+                target,
+                args,
+              );
+            };
+          }
+          return value.bind(target);
+        }
+        return value;
+      },
+    });
+
+    return new Proxy(context, {
+      get(target, prop, receiver) {
+        if (prop === "fs") return fs;
+        return Reflect.get(target, prop, receiver);
+      },
+    }) as BoundContext;
+  };
+
+  let rawContextCounter = 0;
+  const createRawContext = async (): Promise<BoundContext> => {
+    rawContextCounter += 1;
+    const prefix = `/__sandpack_test_${rawContextCounter}`;
+    const backend = await resolveMountConfig({ backend: InMemory });
+    mount(prefix, backend);
+    return bindContext({ root: prefix });
+  };
+
   it("does not stack the guard when six adoptions see fresh proxy faces over one promises target (R3-422)", async () => {
     const fs = await SandpackFS.fromFiles({}, {}, noopPortFactory);
 
@@ -189,5 +282,84 @@ describe("SandpackFS — out-of-band write guard (R3-110)", () => {
     expect(flagged[0][0]).toContain("/proxy.ts");
     expect(await fs.readFile("/proxy.ts")).toBe("y");
     expect(changes).toHaveLength(0);
+  });
+
+  it("preserves a later EROFS face's source refusal after a raw adoption (R3-422)", async () => {
+    const raw = await SandpackFS.fromFiles({}, {}, noopPortFactory);
+    const ro = await SandpackFS.fromFileSystemContext(
+      readOnlyEditorFace(raw.fsContext),
+      noopPortFactory,
+    );
+
+    await raw.writeFile("/raw.ts", "raw");
+    await expect(ro.writeFile("/App.tsx", "ro")).rejects.toMatchObject({
+      code: "EROFS",
+    });
+    await ro.setMetadata("/raw.ts", { hidden: true });
+
+    expect(outOfBandCalls()).toHaveLength(0);
+    expect(await raw.readFile("/raw.ts")).toBe("raw");
+    expect(await raw.exists("/App.tsx")).toBe(false);
+  });
+
+  it("preserves both face policies when an EROFS face adopts before a raw face (R3-422)", async () => {
+    const context = await createRawContext();
+    const ro = await SandpackFS.fromFileSystemContext(
+      readOnlyEditorFace(context),
+      noopPortFactory,
+    );
+    const raw = await SandpackFS.fromFileSystemContext(
+      context,
+      noopPortFactory,
+    );
+
+    await expect(ro.writeFile("/App.tsx", "ro")).rejects.toMatchObject({
+      code: "EROFS",
+    });
+    await raw.writeFile("/raw.ts", "raw");
+    await ro.setMetadata("/raw.ts", { hidden: true });
+
+    expect(outOfBandCalls()).toHaveLength(0);
+    expect(await raw.readFile("/raw.ts")).toBe("raw");
+    expect(await raw.exists("/App.tsx")).toBe(false);
+  });
+
+  it("fires exactly once for a raw out-of-band write after an EROFS-first adoption", async () => {
+    const context = await createRawContext();
+    await SandpackFS.fromFileSystemContext(
+      readOnlyEditorFace(context),
+      noopPortFactory,
+    );
+    const raw = await SandpackFS.fromFileSystemContext(
+      context,
+      noopPortFactory,
+    );
+    const changes: SandpackFSChange[] = [];
+    raw.onChange((c) => changes.push(c));
+
+    await context.fs.promises.writeFile("/oob.ts", "y");
+
+    const flagged = outOfBandCalls();
+    expect(flagged).toHaveLength(1);
+    expect(flagged[0][0]).toContain("writeFile");
+    expect(flagged[0][0]).toContain("/oob.ts");
+    expect(await raw.readFile("/oob.ts")).toBe("y");
+    expect(changes).toHaveLength(0);
+  });
+
+  it("keeps an EROFS face's out-of-band source refusal ahead of the guard", async () => {
+    const context = await createRawContext();
+    await SandpackFS.fromFileSystemContext(
+      readOnlyEditorFace(context),
+      noopPortFactory,
+    );
+    await SandpackFS.fromFileSystemContext(context, noopPortFactory);
+
+    await expect(
+      (async () =>
+        readOnlyEditorFace(context).fs.promises.writeFile("/oob.ts", "y"))(),
+    ).rejects.toMatchObject({ code: "EROFS" });
+
+    expect(outOfBandCalls()).toHaveLength(0);
   });
 });

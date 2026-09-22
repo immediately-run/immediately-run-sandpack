@@ -123,6 +123,8 @@ describe("SandpackFS — out-of-band write guard (R3-110)", () => {
     expect(changes).toHaveLength(0);
   });
 
+  // Models the fresh-face shape of immediately-run-site-main
+  // src/filesystem/roEditorContext.ts without its EROFS policy.
   const freshProxyFace = (context: BoundContext): BoundContext => {
     const fs = new Proxy(context.fs, {
       get(target, prop, receiver) {
@@ -192,6 +194,8 @@ describe("SandpackFS — out-of-band write guard (R3-110)", () => {
       },
     }) as T;
 
+  // Models immediately-run-site-main src/filesystem/roEditorContext.ts: fresh
+  // Proxy faces, symbol-get pass-through, no set trap, and EROFS source writes.
   const readOnlyEditorFace = (context: BoundContext): BoundContext => {
     const fs = new Proxy(context.fs, {
       get(target, prop, receiver) {

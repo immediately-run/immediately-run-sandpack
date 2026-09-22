@@ -106,6 +106,9 @@ const faceAddsWritePolicy = (
   face.unlink !== current.unlink ||
   face.mkdir !== current.mkdir;
 
+// site-main's `src/filesystem/roEditorContext.ts` returns a fresh write-wrapper
+// closure on every `fs.promises` access; that instability distinguishes a policy
+// face from a raw ZenFS face when no pristine stash exists yet.
 const isLikelyPolicyFace = (face: PromisesRecord): boolean =>
   face.writeFile !== face.writeFile ||
   face.unlink !== face.unlink ||
@@ -198,26 +201,18 @@ const capturePolicyRaw = (face: PromisesRecord): RawMethods => {
 
 function ensureGuard(fsContext: BoundContext): RawMethods {
   const face = fsContext.fs.promises as unknown as PromisesRecord & RawMethods;
-  const pristine = face[PRISTINE_WRITE_METHODS_KEY] as
+  const existing = face[PRISTINE_WRITE_METHODS_KEY] as
     | PristineStore
     | undefined;
 
-  if (pristine) {
-    const raw = captureRaw(face, pristine);
-    if (IS_DEV && !face[OUT_OF_BAND_GUARD_KEY]) {
-      installOutOfBandGuard(face, pristine);
-    }
-    return raw;
-  }
-
-  if (isLikelyPolicyFace(face)) {
+  if (!existing && isLikelyPolicyFace(face)) {
     return capturePolicyRaw(face);
   }
 
-  const store = capturePristine(face);
-  const raw = captureRaw(face, store);
+  const pristine = existing ?? capturePristine(face);
+  const raw = captureRaw(face, pristine);
   if (IS_DEV && !face[OUT_OF_BAND_GUARD_KEY]) {
-    installOutOfBandGuard(face, store);
+    installOutOfBandGuard(face, pristine);
   }
   return raw;
 }

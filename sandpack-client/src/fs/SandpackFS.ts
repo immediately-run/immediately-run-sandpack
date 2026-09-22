@@ -63,26 +63,65 @@ const GUARDED_WRITE_METHODS = [
   "rmdir",
 ] as const;
 
-/**
- * Dev-only. Wrap the store-mutating methods on a SandpackFS instance's
- * bound-context `fs.promises` so any write that did **not** go through
- * `SandpackFS.writeFile` / `handleRemoteChange` (those use captured raw methods,
- * which stay unwrapped) emits a single loud `console.error` naming the offending
- * method + path, then still performs the write. Enforces the class writer invariant
- * (roadmap R3-110).
- *
- * This is a module-level function (not a class method) and its **only** reference
- * is behind the `if (IS_DEV)` branch in {@link ensureGuard} — so once a consumer's
- * production build folds `IS_DEV` to `false`, the branch and this whole function
- * tree-shake away (a class method would be retained). No-op in production.
- */
-function installOutOfBandGuard(fsContext: BoundContext): void {
-  const p = fsContext.fs.promises as unknown as Record<string, unknown>;
+const OUT_OF_BAND_GUARD_KEY = Symbol.for(
+  "@immediately-run/sandpack-client:out-of-band-guard",
+);
+
+const PRISTINE_WRITE_METHODS_KEY = Symbol.for(
+  "@immediately-run/sandpack-client:pristine-write-methods",
+);
+
+type WriteMethod = (...args: unknown[]) => unknown;
+type PromisesRecord = Record<string | symbol, unknown>;
+
+interface PristineMethods {
+  writeFile?: WriteMethod;
+  unlink?: WriteMethod;
+  mkdir?: WriteMethod;
+  [method: string]: WriteMethod | undefined;
+}
+
+interface PristineStore {
+  receiver: PromisesRecord;
+  methods: PristineMethods;
+}
+
+interface RawMethods {
+  writeFile: (path: string, data: string) => Promise<void>;
+  unlink: (path: string) => Promise<void>;
+  mkdir: (path: string, opts?: { recursive?: boolean }) => Promise<unknown>;
+}
+
+const asWriteMethod = (value: unknown): WriteMethod | undefined =>
+  typeof value === "function" ? (value as WriteMethod) : undefined;
+
+const isSidecarPath = (path: unknown): boolean =>
+  path === META_DIR || path === META_PATH;
+
+const faceAddsWritePolicy = (
+  face: PromisesRecord,
+  current: PromisesRecord,
+): boolean =>
+  face.writeFile !== current.writeFile ||
+  face.unlink !== current.unlink ||
+  face.mkdir !== current.mkdir;
+
+// site-main's `src/filesystem/roEditorContext.ts` returns a fresh write-wrapper
+// closure on every `fs.promises` access; that instability distinguishes a policy
+// face from a raw ZenFS face when no pristine stash exists yet.
+const isLikelyPolicyFace = (face: PromisesRecord): boolean =>
+  face.writeFile !== face.writeFile ||
+  face.unlink !== face.unlink ||
+  face.mkdir !== face.mkdir;
+
+function installOutOfBandGuard(
+  face: PromisesRecord,
+  pristine: PristineStore,
+): void {
   for (const method of GUARDED_WRITE_METHODS) {
-    const original = p[method];
+    const original = pristine.methods[method];
     if (typeof original !== "function") continue;
-    const call = original as (...args: unknown[]) => unknown;
-    p[method] = (...args: unknown[]) => {
+    face[method] = (...args: unknown[]) => {
       console.error(
         `[SandpackFS] out-of-band write: '${method}(${String(
           args[0],
@@ -91,50 +130,90 @@ function installOutOfBandGuard(fsContext: BoundContext): void {
           `write through SandpackFS (EDITOR_AS_APP_SPEC D-EDIT-1 writer invariant; ` +
           `LOCAL_DEVELOPMENT_SPEC §6.5).`,
       );
-      return call.apply(p, args);
+      return original.apply(pristine.receiver, args);
     };
   }
+  face[OUT_OF_BAND_GUARD_KEY] = true;
 }
 
-/**
- * The raw (unguarded) write methods of one bound context, captured *before* the guard
- * wraps them. SandpackFS's own writes go through these so they never trip the
- * out-of-band guard, which is installed on `fsContext.fs.promises` (the object external
- * callers reach via the public `fsContext`).
- */
-interface RawMethods {
-  writeFile: (path: string, data: string) => Promise<void>;
-  unlink: (path: string) => Promise<void>;
-  mkdir: (path: string, opts?: { recursive?: boolean }) => Promise<unknown>;
-}
+const capturePristine = (face: PromisesRecord): PristineStore => {
+  const methods: PristineMethods = {};
+  for (const method of GUARDED_WRITE_METHODS) {
+    const original = asWriteMethod(face[method]);
+    if (original) methods[method] = original;
+  }
 
-/**
- * The true raw write methods per bound context, captured once and shared by every
- * SandpackFS instance that adopts that context. Without this, a second instance's
- * constructor captures the first instance's wrapper as its "raw" method — because the
- * guard has already replaced `fsContext.fs.promises` entries — so SandpackFS's own
- * writes trip the guard once per prior adoption (the R3-614 stacking bug).
- */
-const RAW = new WeakMap<BoundContext, RawMethods>();
+  const pristine: PristineStore = { receiver: face, methods };
+  face[PRISTINE_WRITE_METHODS_KEY] = pristine;
+  return pristine;
+};
 
-/**
- * Return the context's raw write methods, capturing them and installing the out-of-band
- * guard exactly once per context (see {@link installOutOfBandGuard}). Reads `RAW` first,
- * so adopting the same context any number of times never re-wraps, never re-captures a
- * wrapper as raw, and never disarms a sibling instance.
- */
-function ensureGuard(fsContext: BoundContext): RawMethods {
-  const existing = RAW.get(fsContext);
-  if (existing) return existing;
+const captureRaw = (
+  face: PromisesRecord,
+  pristine: PristineStore,
+): RawMethods => {
+  const policy = faceAddsWritePolicy(face, pristine.receiver);
+  const faceWriteFile = asWriteMethod(face.writeFile);
+  const faceUnlink = asWriteMethod(face.unlink);
+  const faceMkdir = asWriteMethod(face.mkdir);
 
-  const p = fsContext.fs.promises as unknown as RawMethods;
-  const raw: RawMethods = {
-    writeFile: p.writeFile.bind(p),
-    unlink: p.unlink.bind(p),
-    mkdir: p.mkdir.bind(p),
+  const call = (
+    faceMethod: WriteMethod | undefined,
+    pristineMethod: WriteMethod | undefined,
+    path: unknown,
+    args: unknown[],
+  ): Promise<unknown> => {
+    if (policy && !isSidecarPath(path) && faceMethod) {
+      return faceMethod.apply(face, args) as Promise<unknown>;
+    }
+
+    const method = (pristineMethod ?? faceMethod) as WriteMethod;
+    return method.apply(pristine.receiver, args) as Promise<unknown>;
   };
-  RAW.set(fsContext, raw);
-  if (IS_DEV) installOutOfBandGuard(fsContext);
+
+  return {
+    writeFile: (path, data) =>
+      call(faceWriteFile, pristine.methods.writeFile, path, [
+        path,
+        data,
+      ]) as Promise<void>,
+    unlink: (path) =>
+      call(faceUnlink, pristine.methods.unlink, path, [path]) as Promise<void>,
+    mkdir: (path, opts) =>
+      call(faceMkdir, pristine.methods.mkdir, path, [
+        path,
+        opts,
+      ]) as Promise<unknown>,
+  };
+};
+
+const capturePolicyRaw = (face: PromisesRecord): RawMethods => {
+  const faceWriteFile = face.writeFile as RawMethods["writeFile"];
+  const faceUnlink = face.unlink as RawMethods["unlink"];
+  const faceMkdir = face.mkdir as RawMethods["mkdir"];
+
+  return {
+    writeFile: (path, data) => faceWriteFile.call(face, path, data),
+    unlink: (path) => faceUnlink.call(face, path),
+    mkdir: (path, opts) => faceMkdir.call(face, path, opts),
+  };
+};
+
+function ensureGuard(fsContext: BoundContext): RawMethods {
+  const face = fsContext.fs.promises as unknown as PromisesRecord & RawMethods;
+  const existing = face[PRISTINE_WRITE_METHODS_KEY] as
+    | PristineStore
+    | undefined;
+
+  if (!existing && isLikelyPolicyFace(face)) {
+    return capturePolicyRaw(face);
+  }
+
+  const pristine = existing ?? capturePristine(face);
+  const raw = captureRaw(face, pristine);
+  if (IS_DEV && !face[OUT_OF_BAND_GUARD_KEY]) {
+    installOutOfBandGuard(face, pristine);
+  }
   return raw;
 }
 
@@ -200,11 +279,14 @@ export class SandpackFS {
    *  belongs to the caller. */
   private ownedMountPoint: string | undefined = undefined;
 
-  // Raw (unguarded) fs write methods, sourced from the bound context's one entry in
-  // {@link RAW} (see {@link ensureGuard}). SandpackFS's own writes go through these
-  // so they never trip the dev out-of-band guard, which is installed *on*
-  // `fsContext.fs.promises` (the object external callers reach via the public
-  // `fsContext`). Reads keep using `fsContext.fs.promises` directly (unguarded).
+  // Pristine fs write methods captured before the dev guard wraps the shared
+  // `fsContext.fs.promises` target and stashed once per target under
+  // {@link PRISTINE_WRITE_METHODS_KEY} (see {@link ensureGuard}). SandpackFS's own
+  // writes go through these so they never trip the dev out-of-band guard, including
+  // when later adoptions reach the same target through fresh Proxy faces. When an
+  // adopting face adds its own write policy, source writes keep that face's policy
+  // and only the exact `/.sandpack` sidecar writes use the pristine methods. Reads
+  // keep using `fsContext.fs.promises` directly.
   private readonly rawWriteFile: (path: string, data: string) => Promise<void>;
   private readonly rawUnlink: (path: string) => Promise<void>;
   private readonly rawMkdir: (

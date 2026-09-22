@@ -2,9 +2,19 @@
  * @jest-environment jsdom
  */
 
+import { loadSandpackClient } from "@immediately-run/sandpack-client";
 import { renderHook, act } from "@testing-library/react";
 
 import { createTestFilesState } from "./testHelpers";
+
+jest.mock("@immediately-run/sandpack-client", () => {
+  const actual = jest.requireActual("@immediately-run/sandpack-client");
+  return {
+    __esModule: true,
+    ...actual,
+    loadSandpackClient: jest.fn(actual.loadSandpackClient),
+  };
+});
 import { useClient } from "./useClient";
 import type { UseClientOperations } from "./useClient";
 import type { FilesState } from "./useFiles";
@@ -615,6 +625,137 @@ describe(useClient, () => {
 
       expect(Object.keys(result.current[1].clients)).toEqual([]);
       expect(result.current[0].status).toBe("idle");
+    });
+  });
+
+  describe("unexpected-navigation recovery (R3-353/R3-422)", () => {
+    const emit = (
+      operations: UseClientOperations,
+      msg: unknown,
+      clientId = "client-id",
+    ): void => {
+      Object.values(
+        operations.clients[clientId].iframeProtocol.channelListeners as Record<
+          string,
+          (m: unknown) => void
+        >,
+      ).forEach((listener) => listener(msg));
+    };
+
+    const markConnected = (
+      operations: UseClientOperations,
+      clientId = "client-id",
+    ): void => {
+      act(() => emit(operations, { type: "connected" }, clientId));
+    };
+
+    const refuseCurrentClient = async (
+      operations: UseClientOperations,
+      clientId = "client-id",
+    ): Promise<void> => {
+      const client = operations.clients[clientId] as unknown as {
+        options: { onUnexpectedNavigation?: () => void };
+      };
+      expect(typeof client.options.onUnexpectedNavigation).toBe("function");
+      await act(async () => {
+        client.options.onUnexpectedNavigation?.();
+        await new Promise((resolve) => setTimeout(resolve, 0));
+      });
+    };
+
+    const bootClient = async (
+      operations: UseClientOperations,
+    ): Promise<void> => {
+      await act(async () => {
+        await operations.registerBundler(
+          document.createElement("iframe"),
+          "client-id",
+        );
+        await operations.runSandpack();
+      });
+    };
+
+    it("recreates a client whose frame was refused", async () => {
+      const { result } = renderHook(() => useClient({}, filesState));
+      const operations = result.current[1];
+      await bootClient(operations);
+
+      const first = operations.clients["client-id"];
+      expect(first).toBeDefined();
+
+      await refuseCurrentClient(operations);
+
+      const second = operations.clients["client-id"];
+      expect(second).toBeDefined();
+      expect(second).not.toBe(first);
+      expect(result.current[0].status).toBe("running");
+    });
+
+    it("bounds refusals within the recovery window and unregisters the client after the budget", async () => {
+      const { result } = renderHook(() => useClient({}, filesState));
+      const operations = result.current[1];
+      await bootClient(operations);
+
+      const seen = new Set([operations.clients["client-id"]]);
+      for (let i = 0; i < 3; i += 1) {
+        await refuseCurrentClient(operations);
+        const current = operations.clients["client-id"];
+        expect(current).toBeDefined();
+        expect(seen.has(current)).toBe(false);
+        seen.add(current);
+      }
+
+      await refuseCurrentClient(operations);
+      expect(operations.clients["client-id"]).toBeUndefined();
+      expect(result.current[0].status).toBe("idle");
+    });
+
+    it("does not let a frame-controlled connected message reset the recovery budget inside the window", async () => {
+      const { result } = renderHook(() => useClient({}, filesState));
+      const operations = result.current[1];
+      await bootClient(operations);
+
+      const seen = new Set([operations.clients["client-id"]]);
+      await refuseCurrentClient(operations);
+      await refuseCurrentClient(operations);
+      markConnected(operations);
+
+      await refuseCurrentClient(operations);
+      const third = operations.clients["client-id"];
+      expect(third).toBeDefined();
+      expect(seen.has(third)).toBe(false);
+      seen.add(third);
+
+      await refuseCurrentClient(operations);
+      expect(operations.clients["client-id"]).toBeUndefined();
+      expect(result.current[0].status).toBe("idle");
+    });
+
+    it("unregisters instead of leaving an unhandled rejection when recovery creation fails", async () => {
+      const { result } = renderHook(() => useClient({}, filesState));
+      const operations = result.current[1];
+      await bootClient(operations);
+
+      const error = new Error("recovery failed");
+      const loadSpy = jest.mocked(loadSandpackClient);
+      loadSpy.mockRejectedValueOnce(error);
+      const consoleSpy = jest
+        .spyOn(console, "error")
+        .mockImplementation(() => {});
+
+      try {
+        await refuseCurrentClient(operations);
+
+        expect(consoleSpy).toHaveBeenCalledWith(
+          "[Sandpack] unexpected-navigation recovery failed",
+          { clientId: "client-id", error },
+        );
+        expect(operations.clients["client-id"]).toBeUndefined();
+        expect(result.current[0].status).toBe("idle");
+      } finally {
+        loadSpy.mockClear();
+        consoleSpy.mockRestore();
+      }
     });
   });
 });

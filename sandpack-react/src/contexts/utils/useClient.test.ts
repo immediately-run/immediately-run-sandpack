@@ -759,3 +759,65 @@ describe(useClient, () => {
     });
   });
 });
+
+// R3-564 — the client-creation trace must log primitives only. Chromium's
+// DevTools console retains logged objects as a GC root, so a logged
+// `{ iframe }` pins every torn-down frame with its whole evaluated module
+// graph (the ~60 MB/remount leak the item filed; the heap-snapshot retainer
+// walk named this exact call). The regression guard: boot a real client with
+// the trace enabled (logLevel > 0) and assert the logged arguments carry no
+// object — reverting to the object form fails the assertion.
+describe(useClient, () => {
+  describe("R3-564 — the client-creation trace logs primitives only", () => {
+    it("is silent without logLevel (the production default)", async () => {
+      const { result, unmount } = renderHook(() => useClient({}, filesState));
+      const operations = result.current[1];
+      const logSpy = jest.spyOn(console, "log").mockImplementation(() => {});
+      try {
+        await act(async () => {
+          await operations.registerBundler(
+            document.createElement("iframe"),
+            "trace-silent",
+          );
+          await operations.runSandpack();
+        });
+        expect(
+          logSpy.mock.calls.filter(([tag]) =>
+            String(tag).includes("[Sandpack] Creating client"),
+          ),
+        ).toHaveLength(0);
+      } finally {
+        logSpy.mockRestore();
+        unmount();
+      }
+    });
+
+    it("logs exactly the clientId string when enabled — never an object", async () => {
+      const { result, unmount } = renderHook(() =>
+        useClient({ options: { logLevel: 2 } }, filesState),
+      );
+      const operations = result.current[1];
+      const logSpy = jest.spyOn(console, "log").mockImplementation(() => {});
+      try {
+        await act(async () => {
+          await operations.registerBundler(
+            document.createElement("iframe"),
+            "trace-loud",
+          );
+          await operations.runSandpack();
+        });
+        const calls = logSpy.mock.calls.filter(([tag]) =>
+          String(tag).includes("[Sandpack] Creating client"),
+        );
+        expect(calls.length).toBeGreaterThan(0);
+        for (const call of calls) {
+          expect(call.length).toBe(2); // the tag + exactly one argument
+          expect(typeof call[1]).toBe("string"); // the clientId — never an object
+        }
+      } finally {
+        logSpy.mockRestore();
+        unmount();
+      }
+    });
+  });
+});

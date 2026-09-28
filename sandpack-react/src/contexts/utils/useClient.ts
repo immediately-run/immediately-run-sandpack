@@ -84,6 +84,10 @@ export const useClient: UseClient = (
 ) => {
   options ??= {};
 
+  // R3-564: the client-creation trace's gate, hoisted so the createClient
+  // callback's closure can never go stale on it (and so no cast is needed).
+  const traceLogLevel: number = options.logLevel ?? 0;
+
   const initModeFromProps = options?.initMode || "lazy";
 
   const [state, setState] = useState<SandpackConfigState>({
@@ -229,12 +233,19 @@ export const useClient: UseClient = (
         clients.current[clientId].destroy();
       }
 
-      // eslint-disable-next-line no-console -- dev client-creation trace
-      console.log("[Sandpack] Creating client", {
-        iframe,
-        clientId,
-        clientPropsOverride,
-      });
+      // Client-creation trace (R3-564): logs primitives only — never the iframe
+      // element or the props object. Chromium's DevTools console retains logged
+      // objects (the "(Global handles) / N / DevTools console" root), so a
+      // logged `{ iframe }` pins the torn-down frame and its whole evaluated
+      // module graph: measured on the venue at ~60 MB per editor remount, the
+      // detached iframes retained solely by that edge (heap-snapshot retainer
+      // walk, 2026-09-28). Gated on the client's own `logLevel` (0 = the default,
+      // silent in production); when enabled, `clientId` answers the same
+      // debugging question with nothing retainable.
+      if (traceLogLevel > 0) {
+        // eslint-disable-next-line no-console -- the opt-in client-creation trace
+        console.log("[Sandpack] Creating client", clientId);
+      }
 
       // eslint-disable-next-line react-hooks/exhaustive-deps -- the advisory is an assignment-to-outer-variable inside the callback (`options ??= {}`), upstream's own shape; the fork keeps upstream's hook semantics
       options ??= {};
@@ -428,6 +439,7 @@ export const useClient: UseClient = (
       pruneUnexpectedRecoveryHistory,
       recoverUnexpectedNavigation,
       state.reactDevTools,
+      traceLogLevel, // R3-564 — the trace gate rides the callback, never stale
     ],
   );
 

@@ -759,3 +759,65 @@ describe(useClient, () => {
     });
   });
 });
+
+// R3-564 — the client-creation trace must log primitives only. Chromium's
+// DevTools console retains logged objects as a GC root, so a logged
+// `{ iframe }` pins every torn-down frame with its whole evaluated module
+// graph (the ~60 MB/remount leak the item filed; the heap-snapshot retainer
+// walk named this exact call). The regression guard: boot a real client with
+// the trace ENABLED (logLevel > 0) and assert the logged arguments carry no
+// object — reverting to the object form fails the assertion.
+describe(useClient, () => {
+  describe("R3-564 — the client-creation trace logs primitives only", () => {
+    it("is silent without logLevel (the production default) and logs only the clientId when enabled — never an object", async () => {
+      // Production default: no logLevel — the trace is silent.
+      const quiet = renderHook(() => useClient({}, filesState));
+      const quietOps = quiet.result.current[1];
+      const logSpy = jest.spyOn(console, "log").mockImplementation(() => {});
+      try {
+        await act(async () => {
+          await quietOps.registerBundler(
+            document.createElement("iframe"),
+            "trace-silent",
+          );
+          await quietOps.runSandpack();
+        });
+        expect(
+          logSpy.mock.calls.filter(([tag]) =>
+            String(tag).includes("[Sandpack] Creating client"),
+          ),
+        ).toHaveLength(0);
+      } finally {
+        logSpy.mockRestore();
+      }
+      quiet.unmount();
+
+      // Enabled: the trace fires, and every argument is a primitive — the
+      // iframe/props objects must never ride a console.log (the DevTools
+      // console retains them as a GC root; that edge was the whole leak).
+      const loud = renderHook(() => useClient({ logLevel: 2 }, filesState));
+      const loudOps = loud.result.current[1];
+      const spy = jest.spyOn(console, "log").mockImplementation(() => {});
+      try {
+        await act(async () => {
+          await loudOps.registerBundler(
+            document.createElement("iframe"),
+            "trace-loud",
+          );
+          await loudOps.runSandpack();
+        });
+        const calls = spy.mock.calls.filter(([tag]) =>
+          String(tag).includes("[Sandpack] Creating client"),
+        );
+        expect(calls.length).toBeGreaterThan(0);
+        for (const call of calls) {
+          expect(call.length).toBe(2); // the tag + exactly one argument
+          expect(typeof call[1]).toBe("string"); // the clientId — never an object
+        }
+      } finally {
+        spy.mockRestore();
+        loud.unmount();
+      }
+    });
+  });
+});

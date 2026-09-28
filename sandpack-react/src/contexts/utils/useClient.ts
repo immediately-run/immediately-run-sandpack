@@ -229,12 +229,16 @@ export const useClient: UseClient = (
         clients.current[clientId].destroy();
       }
 
+      // Dev client-creation trace. R3-564: logs PRIMITIVES ONLY — never the
+      // iframe element or the props object. Chromium's DevTools console retains
+      // logged objects (the "(Global handles) / N / DevTools console" root), so a
+      // logged { iframe } pins the torn-down frame AND its whole evaluated module
+      // graph forever: measured on the venue, ~60 MB leaked per editor
+      // remount, the detached iframes retained solely by this edge (heap-snapshot
+      // retainer walk, 2026-09-28). clientId + a tag answer the same debugging
+      // question with nothing retainable.
       // eslint-disable-next-line no-console -- dev client-creation trace
-      console.log("[Sandpack] Creating client", {
-        iframe,
-        clientId,
-        clientPropsOverride,
-      });
+      console.log("[Sandpack] Creating client", clientId);
 
       // eslint-disable-next-line react-hooks/exhaustive-deps -- the advisory is an assignment-to-outer-variable inside the callback (`options ??= {}`), upstream's own shape; the fork keeps upstream's hook semantics
       options ??= {};

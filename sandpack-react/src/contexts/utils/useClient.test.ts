@@ -765,7 +765,7 @@ describe(useClient, () => {
 // `{ iframe }` pins every torn-down frame with its whole evaluated module
 // graph (the ~60 MB/remount leak the item filed; the heap-snapshot retainer
 // walk named this exact call). The regression guard: boot a real client with
-// the trace ENABLED (logLevel > 0) and assert the logged arguments carry no
+// the trace enabled (logLevel > 0) and assert the logged arguments carry no
 // object — reverting to the object form fails the assertion.
 describe(useClient, () => {
   describe("R3-564 — the client-creation trace logs primitives only", () => {
@@ -792,7 +792,7 @@ describe(useClient, () => {
       }
     });
 
-    it("logs exactly the clientId string when enabled — never an object (round 2: the earlier failure was the prop shape — logLevel rides inside options, where the gate reads it)", async () => {
+    it("logs exactly the clientId string when enabled — never an object", async () => {
       const { result, unmount } = renderHook(() =>
         useClient({ options: { logLevel: 2 } }, filesState),
       );

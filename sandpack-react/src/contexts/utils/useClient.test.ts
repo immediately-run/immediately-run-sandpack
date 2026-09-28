@@ -769,18 +769,17 @@ describe(useClient, () => {
 // object — reverting to the object form fails the assertion.
 describe(useClient, () => {
   describe("R3-564 — the client-creation trace logs primitives only", () => {
-    it("is silent without logLevel (the production default) and logs only the clientId when enabled — never an object", async () => {
-      // Production default: no logLevel — the trace is silent.
-      const quiet = renderHook(() => useClient({}, filesState));
-      const quietOps = quiet.result.current[1];
+    it("is silent without logLevel (the production default)", async () => {
+      const { result, unmount } = renderHook(() => useClient({}, filesState));
+      const operations = result.current[1];
       const logSpy = jest.spyOn(console, "log").mockImplementation(() => {});
       try {
         await act(async () => {
-          await quietOps.registerBundler(
+          await operations.registerBundler(
             document.createElement("iframe"),
             "trace-silent",
           );
-          await quietOps.runSandpack();
+          await operations.runSandpack();
         });
         expect(
           logSpy.mock.calls.filter(([tag]) =>
@@ -789,24 +788,25 @@ describe(useClient, () => {
         ).toHaveLength(0);
       } finally {
         logSpy.mockRestore();
+        unmount();
       }
-      quiet.unmount();
+    });
 
-      // Enabled: the trace fires, and every argument is a primitive — the
-      // iframe/props objects must never ride a console.log (the DevTools
-      // console retains them as a GC root; that edge was the whole leak).
-      const spy = jest.spyOn(console, "log").mockImplementation(() => {});
-      const loud = renderHook(() => useClient({ logLevel: 2 }, filesState));
-      const loudOps = loud.result.current[1];
+    it("logs only the clientId when enabled — never an object (the DevTools console retains logged objects as a GC root; that edge was the whole leak)", async () => {
+      const { result, unmount } = renderHook(() =>
+        useClient({ logLevel: 2 }, filesState),
+      );
+      const operations = result.current[1];
+      const logSpy = jest.spyOn(console, "log").mockImplementation(() => {});
       try {
         await act(async () => {
-          await loudOps.registerBundler(
+          await operations.registerBundler(
             document.createElement("iframe"),
             "trace-loud",
           );
-          await loudOps.runSandpack();
+          await operations.runSandpack();
         });
-        const calls = spy.mock.calls.filter(([tag]) =>
+        const calls = logSpy.mock.calls.filter(([tag]) =>
           String(tag).includes("[Sandpack] Creating client"),
         );
         expect(calls.length).toBeGreaterThan(0);
@@ -815,8 +815,8 @@ describe(useClient, () => {
           expect(typeof call[1]).toBe("string"); // the clientId — never an object
         }
       } finally {
-        spy.mockRestore();
-        loud.unmount();
+        logSpy.mockRestore();
+        unmount();
       }
     });
   });

@@ -84,6 +84,10 @@ export const useClient: UseClient = (
 ) => {
   options ??= {};
 
+  // R3-564: the client-creation trace's gate, hoisted so the createClient
+  // callback's closure can never go stale on it (and so no cast is needed).
+  const traceLogLevel: number = options.logLevel ?? 0;
+
   const initModeFromProps = options?.initMode || "lazy";
 
   const [state, setState] = useState<SandpackConfigState>({
@@ -238,7 +242,7 @@ export const useClient: UseClient = (
       // walk, 2026-09-28). Gated on the client's own `logLevel` (0 = the default,
       // silent in production); when enabled, `clientId` answers the same
       // debugging question with nothing retainable.
-      if (options.logLevel !== undefined && options.logLevel > 0) {
+      if (traceLogLevel > 0) {
         // eslint-disable-next-line no-console -- the opt-in client-creation trace
         console.log("[Sandpack] Creating client", clientId);
       }
@@ -435,6 +439,7 @@ export const useClient: UseClient = (
       pruneUnexpectedRecoveryHistory,
       recoverUnexpectedNavigation,
       state.reactDevTools,
+      traceLogLevel, // R3-564 — the trace gate rides the callback, never stale
     ],
   );
 

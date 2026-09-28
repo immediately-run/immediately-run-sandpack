@@ -795,9 +795,9 @@ describe(useClient, () => {
       // Enabled: the trace fires, and every argument is a primitive — the
       // iframe/props objects must never ride a console.log (the DevTools
       // console retains them as a GC root; that edge was the whole leak).
+      const spy = jest.spyOn(console, "log").mockImplementation(() => {});
       const loud = renderHook(() => useClient({ logLevel: 2 }, filesState));
       const loudOps = loud.result.current[1];
-      const spy = jest.spyOn(console, "log").mockImplementation(() => {});
       try {
         await act(async () => {
           await loudOps.registerBundler(

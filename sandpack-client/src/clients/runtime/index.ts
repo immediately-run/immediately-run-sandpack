@@ -19,6 +19,7 @@ import { extractErrorDetails, createPackageJSON } from "../../utils";
 import { SandpackClient } from "../base";
 import { createSandboxedIframe, ensureSandboxed } from "../iframe-factory";
 
+import { leaseBabelWorker, type BabelWorkerLease } from "./babel-worker";
 import Protocol from "./file-resolver-protocol";
 import { IFrameProtocol } from "./iframe-protocol";
 import { handleImmutableFetch } from "./immutable-fetch-protocol";
@@ -63,8 +64,10 @@ export class SandpackRuntime extends SandpackClient {
   /** Set once the teardown below has run, so a rogue document posting in a loop
    *  cannot re-run `destroy()` or re-fire the host callback. */
   private refusedBoot = false;
-  /** Parent-owned Babel transpiler worker, connected to the iframe by port. */
-  private babelWorker: Worker | null = null;
+  /** This client's hold on the parent-owned Babel transpiler worker, connected to the
+   *  iframe by port. The worker itself may be shared with the page's other clients
+   *  (`babelWorkerShared`) — see `babel-worker.ts`. */
+  private babelWorkerLease: BabelWorkerLease | null = null;
   /**
    * Which `initialized` messages this client will honour (R3-353). Armed by
    * {@link setLocationURLIntoIFrame} — i.e. by every navigation THIS CLIENT
@@ -261,12 +264,15 @@ export class SandpackRuntime extends SandpackClient {
   }
 
   /**
-   * Creates (or recreates) the parent-owned Babel transpiler worker and returns
+   * Leases the parent-owned Babel transpiler worker (again, on a reload) and returns
    * the `MessagePort` to transfer into the iframe. The iframe can no longer run
    * its own worker — without `allow-same-origin` it has an opaque origin, and a
    * same-origin worker script won't load there — so transpilation happens in
-   * this worker on the parent's real origin. Per-transform traffic then flows
+   * a worker on the parent's real origin. Per-transform traffic then flows
    * iframe<->worker directly over the entangled ports; the parent doesn't relay.
+   *
+   * Whether that worker is this client's own or the page's shared one is
+   * `babelWorkerShared`'s call; `babel-worker.ts` owns the lifetime either way.
    */
   private createBabelWorkerPort(): MessagePort | undefined {
     const workerURL = this.options.babelWorkerURL;
@@ -277,21 +283,16 @@ export class SandpackRuntime extends SandpackClient {
       return undefined;
     }
 
-    // A reload re-runs this handshake; terminate the previous worker first so
-    // we don't leak one per reload.
-    this.babelWorker?.terminate();
-
-    // Classic (not module) worker: the bundled worker lazily loads its Babel
-    // plugin/preset chunks via importScripts(), which a `{ type: "module" }`
-    // worker forbids. The worker artifact is built with outputFormat "global"
-    // to match (see sandpack-bundler's babelWorker Parcel target).
-    const worker = new Worker(workerURL);
-    this.babelWorker = worker;
-
-    const channel = new MessageChannel();
-    // Hand the worker one end; it binds its message bus to this port on receipt.
-    worker.postMessage({ type: "connect" }, [channel.port1]);
-    return channel.port2;
+    // A reload re-runs this handshake. Take the new lease BEFORE giving up the old
+    // one: a dedicated worker is still replaced (never one leaked per reload), and a
+    // shared worker is never momentarily unheld, so it is not torn down and respawned
+    // under the frames that are still using it.
+    const previous = this.babelWorkerLease;
+    this.babelWorkerLease = leaseBabelWorker(workerURL, {
+      shared: this.options.babelWorkerShared,
+    });
+    previous?.release();
+    return this.babelWorkerLease.port;
   }
 
   private serviceWorkerHandshake() {
@@ -443,7 +444,8 @@ export class SandpackRuntime extends SandpackClient {
     this.unsubscribeFsWatcher?.();
     this.fileResolverProtocol?.dispose();
     this.immutableFetchProtocol?.dispose();
-    this.babelWorker?.terminate();
+    this.babelWorkerLease?.release();
+    this.babelWorkerLease = null;
     this.iframeProtocol.cleanup();
   }
 

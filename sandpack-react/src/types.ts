@@ -162,6 +162,17 @@ export interface SandpackOptions {
   logLevel?: SandpackLogLevel;
   bundlerURL?: string;
   babelWorkerURL?: string;
+  /**
+   * Lease the page's ONE shared Babel worker instead of spawning a worker for this
+   * client alone. A page with several frames (the app, the file explorer, the editor)
+   * then loads the worker bundle and grows a Babel heap once, not once per frame.
+   *
+   * Opt-in because it needs a worker that answers more than one `connect` —
+   * `@immediately-run/transpiler` >= 0.11.0. An older worker binds the first frame's
+   * port and ignores the rest, so only turn this on together with such a worker.
+   * Default `false`: one worker per client, terminated with it.
+   */
+  babelWorkerShared?: boolean;
   startRoute?: string;
   /**
    * The app's resolved trust stance (TRUST_MODES_SPEC §3 / R3-195). Forwarded to
@@ -368,6 +379,8 @@ export interface SandpackInternalOptions {
   logLevel?: SandpackLogLevel;
   bundlerURL?: string;
   babelWorkerURL?: string;
+  /** See `SandpackOptions["babelWorkerShared"]`. */
+  babelWorkerShared?: boolean;
   bundlerTimeOut?: number;
   startRoute?: string;
   /**

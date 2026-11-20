@@ -304,6 +304,7 @@ export const useClient: UseClient = (
           externalResources: options.externalResources,
           bundlerURL: options.bundlerURL,
           babelWorkerURL: options.babelWorkerURL,
+          babelWorkerShared: options.babelWorkerShared,
           onUnexpectedNavigation: () =>
             recoverUnexpectedNavigation(iframe, clientId, clientPropsOverride),
           // R3-195: forward the host-resolved trust stance so the client emits the
